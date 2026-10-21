@@ -8,15 +8,15 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(GuiButton.class)
 public interface AccessorGuiButton_MainMenu {
 
-    @Accessor("field_146120_f")
+    @Accessor("width")
     int gtnhtweaks$getWidth();
 
-    @Accessor("field_146120_f")
+    @Accessor("width")
     void gtnhtweaks$setWidth(int width);
 
-    @Accessor("field_146121_g")
+    @Accessor("height")
     int gtnhtweaks$getHeight();
 
-    @Accessor("field_146121_g")
+    @Accessor("height")
     void gtnhtweaks$setHeight(int height);
 }
