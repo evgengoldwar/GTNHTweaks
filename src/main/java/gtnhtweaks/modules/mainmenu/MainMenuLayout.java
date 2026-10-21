@@ -31,7 +31,7 @@ public class MainMenuLayout {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onInitGui(GuiScreenEvent.InitGuiEvent.Post event) {
-        if (!(event.gui instanceof GuiMainMenu)) return;
+        if (!(event.gui instanceof GuiMainMenu) || MainMenuRenderer.replacedByPack()) return;
         @SuppressWarnings("unchecked")
         List<GuiButton> buttons = event.buttonList;
 

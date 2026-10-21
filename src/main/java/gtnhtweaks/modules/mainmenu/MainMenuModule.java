@@ -22,6 +22,7 @@ public final class MainMenuModule extends TweakModule {
     public static boolean showSplashText = true;
     public static boolean showLoadTime = true;
     public static boolean showBranding = true;
+    public static boolean respectResourcePacks = true;
 
     public static String subtitle = "GT: New Horizons";
 
@@ -51,6 +52,13 @@ public final class MainMenuModule extends TweakModule {
             CATEGORY_GENERAL,
             showBranding,
             "Show the Minecraft, Forge and mod count lines in the bottom left corner");
+        respectResourcePacks = config.getBoolean(
+            "respectResourcePacks",
+            CATEGORY_GENERAL,
+            respectResourcePacks,
+            "If an enabled resource pack replaces the Minecraft logo (title/minecraft.png), the panorama or the "
+                + "buttons (widgets.png), show the vanilla main menu with the resource pack instead of the GTNH one.\n"
+                + "false: the GTNH main menu is always shown");
 
         config.addCustomCategoryComment(CATEGORY_TEXT, "Texts of the main menu. Latin and Cyrillic are supported");
         subtitle = config.getString("subtitle", CATEGORY_TEXT, subtitle, "Line under the GTNH logo, empty to hide");

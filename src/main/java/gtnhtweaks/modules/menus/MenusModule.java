@@ -30,6 +30,7 @@ public final class MenusModule extends TweakModule {
 
     public static GTNHTheme style = GTNHTheme.DARK;
     public static boolean recolorText = true;
+    public static boolean respectResourcePacks = true;
     public static boolean themeVanillaScreens = true;
     public static boolean themeInGame = true;
     public static boolean themeInventories = true;
@@ -55,6 +56,14 @@ public final class MenusModule extends TweakModule {
             CATEGORY_GENERAL,
             recolorText,
             "Replace the white and gray text of the screens with the theme colors. Needed for the LIGHT style");
+        respectResourcePacks = config.getBoolean(
+            "respectResourcePacks",
+            CATEGORY_GENERAL,
+            respectResourcePacks,
+            "If an enabled resource pack replaces a vanilla GUI texture, show the resource pack instead of the theme:\n"
+                + "options_background.png - backgrounds and lists, widgets.png - buttons and sliders,\n"
+                + "inventory textures - the dark tint of that inventory.\n"
+                + "false: the theme is always drawn, resource packs do not change these GUIs");
 
         config.addCustomCategoryComment(CATEGORY_SCREENS, "Which screens are restyled. Changes require a restart");
         themeVanillaScreens = config.getBoolean(

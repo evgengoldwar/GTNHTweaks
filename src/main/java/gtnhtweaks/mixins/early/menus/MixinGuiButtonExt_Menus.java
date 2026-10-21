@@ -22,7 +22,7 @@ public class MixinGuiButtonExt_Menus {
     @Inject(method = { "drawButton", "func_146112_a" }, at = @At("HEAD"), cancellable = true, require = 0)
     private void gtnhtweaks$drawButton(Minecraft mc, int mouseX, int mouseY, CallbackInfo ci) {
         GuiButton self = (GuiButton) (Object) this;
-        if (!MenuStyle.isActive() || !MenuStyle.canTheme(self, GuiButtonExt.class)) return;
+        if (!MenuStyle.themesButtons() || !MenuStyle.canTheme(self, GuiButtonExt.class)) return;
         MenuStyle.drawButton(self, mc, mouseX, mouseY);
         ci.cancel();
     }

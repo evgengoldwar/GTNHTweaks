@@ -27,11 +27,23 @@ public class MixinGuiContainer_Menus {
         method = "drawScreen",
         at = @At(
             value = "INVOKE",
+            target = "Lnet/minecraft/client/gui/inventory/GuiContainer;drawGuiContainerBackgroundLayer(FII)V"),
+        require = 0)
+    private void gtnhtweaks$recordBackgroundTextures(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        MenuStyle.beginInventoryBackground();
+    }
+
+    /** Skipped if a resource pack replaces a texture the background was drawn with. */
+    @Inject(
+        method = "drawScreen",
+        at = @At(
+            value = "INVOKE",
             target = "Lnet/minecraft/client/gui/inventory/GuiContainer;drawGuiContainerBackgroundLayer(FII)V",
             shift = At.Shift.AFTER),
         require = 0)
     private void gtnhtweaks$tintBackground(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        if (MenuStyle.tintsInventory((GuiContainer) (Object) this)) {
+        boolean replacedByPack = MenuStyle.endInventoryBackground();
+        if (!replacedByPack && MenuStyle.tintsInventory((GuiContainer) (Object) this)) {
             MenuStyle.tintInventory(guiLeft, guiTop, xSize, ySize);
         }
     }

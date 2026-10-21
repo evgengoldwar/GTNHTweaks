@@ -9,11 +9,13 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.util.ResourceLocation;
 
 import com.google.common.collect.Lists;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.common.ResourcePackOverrides;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHLogo;
 import gtnhtweaks.common.render.GTNHTheme;
@@ -31,10 +33,26 @@ public final class MainMenuRenderer {
 
     private MainMenuRenderer() {}
 
+    private static final ResourceLocation[] PACK_TEXTURES = { //
+        new ResourceLocation("textures/gui/title/minecraft.png"), //
+        new ResourceLocation("textures/gui/widgets.png"), //
+        new ResourceLocation("textures/gui/title/background/panorama_0.png"), //
+        new ResourceLocation("textures/gui/title/background/panorama_1.png"), //
+        new ResourceLocation("textures/gui/title/background/panorama_2.png"), //
+        new ResourceLocation("textures/gui/title/background/panorama_3.png"), //
+        new ResourceLocation("textures/gui/title/background/panorama_4.png"), //
+        new ResourceLocation("textures/gui/title/background/panorama_5.png"), //
+    };
+
+    /** True if a resource pack replaces the vanilla main menu textures and the vanilla menu must be shown. */
+    static boolean replacedByPack() {
+        return MainMenuModule.respectResourcePacks && ResourcePackOverrides.isAnyOverridden(PACK_TEXTURES);
+    }
+
     /** @return true if the menu was drawn and the vanilla drawing must be skipped */
     public static boolean draw(GuiScreen gui, FontRenderer font, List<?> buttons, int mouseX, int mouseY,
         String splashText) {
-        if (broken) return false;
+        if (broken || replacedByPack()) return false;
         glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT);
         try {
             drawMenu(gui, font, buttons, mouseX, mouseY, splashText, MainMenuModule.style);

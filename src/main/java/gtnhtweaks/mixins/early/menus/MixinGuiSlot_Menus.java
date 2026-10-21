@@ -29,7 +29,7 @@ public class MixinGuiSlot_Menus {
     /** Added by Forge: the dirt behind the list entries. */
     @Inject(method = "drawContainerBackground", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void gtnhtweaks$drawContainerBackground(CallbackInfo ci) {
-        if (!MenuStyle.isActive()) return;
+        if (!MenuStyle.themesBackground()) return;
         MenuStyle.drawListPanel(left, top, right, bottom);
         ci.cancel();
     }
@@ -37,7 +37,7 @@ public class MixinGuiSlot_Menus {
     /** The dirt strips above and below the list. */
     @Inject(method = "overlayBackground", at = @At("HEAD"), cancellable = true, require = 0)
     private void gtnhtweaks$overlayBackground(int y0, int y1, int alpha0, int alpha1, CallbackInfo ci) {
-        if (!MenuStyle.isActive()) return;
+        if (!MenuStyle.themesBackground()) return;
         MenuStyle.drawBackgroundSlice(0, y0, width, y1);
         ci.cancel();
     }

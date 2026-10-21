@@ -44,13 +44,13 @@ public class MixinGuiScrollingList_Menus {
             remap = true),
         require = 0)
     private void gtnhtweaks$drawListBackground(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        if (Minecraft.getMinecraft().theWorld != null || !MenuStyle.isActive()) return;
+        if (Minecraft.getMinecraft().theWorld != null || !MenuStyle.themesBackground()) return;
         MenuStyle.drawListPanel(left, top, right, bottom);
     }
 
     @Inject(method = "overlayBackground", at = @At("HEAD"), cancellable = true, require = 0)
     private void gtnhtweaks$overlayBackground(int y0, int y1, int alpha0, int alpha1, CallbackInfo ci) {
-        if (!MenuStyle.isActive()) return;
+        if (!MenuStyle.themesBackground()) return;
         MenuStyle.drawBackgroundSlice(0, y0, listWidth + 30, y1);
         ci.cancel();
     }

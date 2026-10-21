@@ -40,6 +40,7 @@ public enum Mixins implements IMixins {
             "menus.MixinGui_Menus",
             "menus.MixinGuiTextField_Menus",
             "menus.MixinGuiContainer_Menus",
+            "menus.MixinTextureManager_Menus",
             "menus.MixinGuiSlot_Menus",
             "menus.MixinGuiScrollingList_Menus",
             "menus.MixinFontRenderer_Menus")),

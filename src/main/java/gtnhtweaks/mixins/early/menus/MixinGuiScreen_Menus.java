@@ -25,7 +25,7 @@ public class MixinGuiScreen_Menus {
     /** Outside of a world: the dirt background. */
     @Inject(method = "drawBackground", at = @At("HEAD"), cancellable = true)
     private void gtnhtweaks$drawBackground(int tint, CallbackInfo ci) {
-        if (!MenuStyle.isActive()) return;
+        if (!MenuStyle.themesBackground()) return;
         GuiScreen self = (GuiScreen) (Object) this;
         MenuStyle.drawScreenBackground(self.width, self.height);
         ci.cancel();

@@ -3,7 +3,9 @@ package gtnhtweaks.modules.menus;
 import static org.lwjgl.opengl.GL11.*;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
@@ -16,6 +18,7 @@ import net.minecraftforge.client.event.GuiScreenEvent;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import gtnhtweaks.common.ResourcePackOverrides;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHTheme;
 import gtnhtweaks.common.render.ThemedButton;
@@ -38,12 +41,17 @@ public final class MenuStyle {
     private static final int VANILLA_INVENTORY_GRAY = 0xC6;
 
     private static final ResourceLocation BUTTON_TEXTURES = new ResourceLocation("textures/gui/widgets.png");
+    private static final ResourceLocation OPTIONS_BACKGROUND = new ResourceLocation(
+        "textures/gui/options_background.png");
 
     private static final Map<Class<?>, Boolean> SCREEN_MATCHES = new HashMap<>();
     private static final Map<Class<?>, Boolean> CUSTOM_DRAWN_BUTTONS = new HashMap<>();
 
     /** True while the current screen is drawn, so the HUD drawn before it is never touched. */
     private static boolean inScreenDraw;
+    /** Textures bound while an inventory draws its background, to find out if a resource pack replaces them. */
+    private static final List<ResourceLocation> INVENTORY_TEXTURES = new ArrayList<>();
+    private static boolean recordingInventoryTextures;
     /** True while a themed button runs mouseDragged, where sliders draw their knob. */
     private static boolean inSliderKnob;
     /** True while a tooltip is drawn: tooltips keep their own dark background, so their text is not recolored. */
@@ -80,6 +88,21 @@ public final class MenuStyle {
         return matches(screen.getClass());
     }
 
+    /** True if resource packs are respected and an enabled one replaces the texture. */
+    private static boolean replacedByPack(ResourceLocation texture) {
+        return MenusModule.respectResourcePacks && ResourcePackOverrides.isOverridden(texture);
+    }
+
+    /** Backgrounds, lists, text fields and text colors: themed unless a pack replaces the dirt background. */
+    public static boolean themesBackground() {
+        return isActive() && !replacedByPack(OPTIONS_BACKGROUND);
+    }
+
+    /** Buttons and sliders: themed unless a pack replaces the button texture. */
+    public static boolean themesButtons() {
+        return isActive() && !replacedByPack(BUTTON_TEXTURES);
+    }
+
     /** True while an inventory is drawn and inventories are themed. */
     private static GuiContainer activeInventory() {
         GuiScreen screen = currentScreen();
@@ -90,6 +113,28 @@ public final class MenuStyle {
     /** Vanilla inventory textures are tinted only in the DARK style: a multiplied tint can only darken. */
     public static boolean tintsInventory(GuiContainer gui) {
         return gui == activeInventory() && theme() == GTNHTheme.DARK && isVanilla(gui.getClass().getName());
+    }
+
+    /** Starts recording the textures the inventory binds for its background. */
+    public static void beginInventoryBackground() {
+        INVENTORY_TEXTURES.clear();
+        recordingInventoryTextures = true;
+    }
+
+    /** @return true if a resource pack replaces one of the textures the inventory background used */
+    public static boolean endInventoryBackground() {
+        recordingInventoryTextures = false;
+        if (!MenusModule.respectResourcePacks) return false;
+        for (ResourceLocation texture : INVENTORY_TEXTURES) {
+            if (ResourcePackOverrides.isOverridden(texture)) return true;
+        }
+        return false;
+    }
+
+    public static void onBindTexture(ResourceLocation texture) {
+        if (recordingInventoryTextures && texture != null && INVENTORY_TEXTURES.size() < 16) {
+            INVENTORY_TEXTURES.add(texture);
+        }
     }
 
     private static boolean matches(Class<?> type) {
@@ -198,7 +243,7 @@ public final class MenuStyle {
             }
             return color;
         }
-        if (!isActive()) return color;
+        if (!themesBackground()) return color;
         GTNHTheme theme = theme();
         int rgb = color & 0xFFFFFF;
         if (rgb == (theme.text & 0xFFFFFF) || rgb == (theme.textDim & 0xFFFFFF)
@@ -214,20 +259,20 @@ public final class MenuStyle {
 
     /** Text shadows look dirty on the light style. */
     public static boolean suppressShadow() {
-        return MenusModule.recolorText && !inTooltip && theme() == GTNHTheme.LIGHT && isActive();
+        return MenusModule.recolorText && !inTooltip && theme() == GTNHTheme.LIGHT && themesBackground();
     }
 
     // ---- lists and text fields
 
     public static int selectionColor(int color) {
-        if (!isActive()) return color;
+        if (!themesBackground()) return color;
         if (color == VANILLA_SELECTION_BORDER) return theme().barFill & 0xFFFFFF;
         if (color == VANILLA_SELECTION_FILL) return theme().buttonHover & 0xFFFFFF;
         return color;
     }
 
     public static int textFieldColor(int color) {
-        if (!isActive()) return color;
+        if (!themesBackground()) return color;
         if (color == VANILLA_FIELD_BORDER) return theme().barBorder;
         if (color == VANILLA_FIELD_FILL) return theme().barBackground;
         return color;
