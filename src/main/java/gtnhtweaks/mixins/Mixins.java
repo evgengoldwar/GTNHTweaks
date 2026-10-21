@@ -3,6 +3,7 @@ package gtnhtweaks.mixins;
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
+import gtnhtweaks.modules.mainmenu.MainMenuModule;
 
 import javax.annotation.Nonnull;
 
@@ -19,7 +20,13 @@ public enum Mixins implements IMixins {
         .setPhase(Phase.EARLY)
         .setApplyIf(LoadingScreenModule.INSTANCE::isEnabled)
         .addRequiredMod(TargetMods.BETTER_LOADING_SCREEN)
-        .addClientMixins("loadingscreen.MixinBetterLoadingScreen_LoadingScreen"));
+        .addClientMixins("loadingscreen.MixinBetterLoadingScreen_LoadingScreen")),
+
+    // Main menu module
+    MAIN_MENU(new MixinBuilder("GTNH main menu")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(MainMenuModule.INSTANCE::isEnabled)
+        .addClientMixins("mainmenu.MixinGuiMainMenu_MainMenu", "mainmenu.AccessorGuiButton_MainMenu"));
 
     private final MixinBuilder builder;
 

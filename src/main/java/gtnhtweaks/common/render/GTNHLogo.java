@@ -1,11 +1,9 @@
-package gtnhtweaks.modules.loadingscreen.render;
+package gtnhtweaks.common.render;
 
-import static gtnhtweaks.modules.loadingscreen.render.GLDraw.rect;
-
-import gtnhtweaks.modules.loadingscreen.LoadingScreenTheme;
+import static gtnhtweaks.common.render.GLDraw.rect;
 
 /** The "GTNH" block-letter logo that takes the place of the Mojang logo. Drawn with plain quads, no textures. */
-final class GTNHLogo {
+public final class GTNHLogo {
 
     private static final String[][] LETTERS = { //
         { ".###.", "#...#", "#....", "#.###", "#...#", "#...#", ".###." }, // G
@@ -20,15 +18,15 @@ final class GTNHLogo {
 
     private GTNHLogo() {}
 
-    static int width(int cell) {
+    public static int width(int cell) {
         return (LETTERS.length * LETTER_WIDTH + (LETTERS.length - 1) * LETTER_GAP) * cell;
     }
 
-    static int height(int cell) {
+    public static int height(int cell) {
         return LETTER_HEIGHT * cell;
     }
 
-    static void draw(int x, int y, int cell, LoadingScreenTheme theme) {
+    public static void draw(int x, int y, int cell, GTNHTheme theme) {
         int shadow = Math.max(1, cell / 3);
         int edge = Math.max(1, cell / 5);
         drawCells(x + shadow, y + shadow, cell, 0, theme.logoShadow, 0, 0);

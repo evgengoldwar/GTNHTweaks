@@ -1,14 +1,16 @@
 package gtnhtweaks.modules.loadingscreen.render;
 
-import static gtnhtweaks.modules.loadingscreen.render.GLDraw.rect;
+import static gtnhtweaks.common.render.GLDraw.rect;
 import static org.lwjgl.opengl.GL11.*;
 
 import java.util.List;
 
 import org.lwjgl.opengl.Display;
 
+import gtnhtweaks.common.render.GLDraw;
+import gtnhtweaks.common.render.GTNHLogo;
+import gtnhtweaks.common.render.GTNHTheme;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
-import gtnhtweaks.modules.loadingscreen.LoadingScreenTheme;
 import gtnhtweaks.modules.loadingscreen.LoadingTimer;
 
 /**
@@ -65,7 +67,7 @@ public final class LoadingScreenRenderer {
         SplashFont.dispose();
     }
 
-    private static void drawScreen(int width, int height, List<ProgressLine> lines, LoadingScreenTheme theme) {
+    private static void drawScreen(int width, int height, List<ProgressLine> lines, GTNHTheme theme) {
         float ui = Math.max(1F, Math.min(width / 640F, height / 480F));
         int textScale = Math.max(1, Math.round(1.5F * ui));
         int titleScale = Math.max(1, Math.round(2F * ui));
@@ -148,7 +150,7 @@ public final class LoadingScreenRenderer {
         }
     }
 
-    private static void drawBar(int x, int y, int width, int height, float progress, LoadingScreenTheme theme) {
+    private static void drawBar(int x, int y, int width, int height, float progress, GTNHTheme theme) {
         rect(x, y, width, height, theme.barBorder);
         rect(x + 1, y + 1, width - 2, height - 2, theme.barBackground);
         rect(x + 1, y + 1, (width - 2) * progress, height - 2, theme.barFill);

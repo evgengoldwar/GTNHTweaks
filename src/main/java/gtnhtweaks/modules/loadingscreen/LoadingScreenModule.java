@@ -6,6 +6,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
 
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import gtnhtweaks.common.render.GTNHTheme;
 import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
 
@@ -21,7 +22,7 @@ public final class LoadingScreenModule extends TweakModule {
     private static final String CATEGORY_INTEGRATION = "integration";
     private static final String CATEGORY_TEXT = "text";
 
-    public static LoadingScreenTheme style = LoadingScreenTheme.DARK;
+    public static GTNHTheme style = GTNHTheme.DARK;
     public static boolean showTimer = true;
     public static boolean showPreviousLaunch = true;
     public static boolean showMemory = true;
@@ -50,8 +51,8 @@ public final class LoadingScreenModule extends TweakModule {
             CATEGORY_GENERAL,
             style.name(),
             "Color style of the loading screen: DARK or LIGHT",
-            LoadingScreenTheme.names());
-        style = parseTheme(styleName);
+            GTNHTheme.names());
+        style = GTNHTheme.parse(styleName);
         showTimer = config.getBoolean("showTimer", CATEGORY_GENERAL, showTimer, "Show the loading timer");
         showPreviousLaunch = config.getBoolean(
             "showPreviousLaunch",
@@ -101,14 +102,6 @@ public final class LoadingScreenModule extends TweakModule {
         if (isEnabled()) {
             LoadingTimer.init(new File(ModuleManager.getConfigDir(), "loadingscreen-stats.properties"));
         }
-    }
-
-    private static LoadingScreenTheme parseTheme(String name) {
-        for (LoadingScreenTheme theme : LoadingScreenTheme.values()) {
-            if (theme.name()
-                .equalsIgnoreCase(name.trim())) return theme;
-        }
-        return LoadingScreenTheme.DARK;
     }
 
     @Override

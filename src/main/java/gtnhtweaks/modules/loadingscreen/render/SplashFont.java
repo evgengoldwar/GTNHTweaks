@@ -16,6 +16,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL12;
 
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.common.render.GLDraw;
 
 /**
  * Minimal Minecraft-style font renderer that works in any GL context (main thread, Forge splash thread,

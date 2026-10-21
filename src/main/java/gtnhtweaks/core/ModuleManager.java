@@ -14,6 +14,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
+import gtnhtweaks.modules.mainmenu.MainMenuModule;
 
 public final class ModuleManager {
 
@@ -21,7 +22,7 @@ public final class ModuleManager {
 
     /** Every module of the mod. Register new modules here. */
     private static final List<TweakModule> MODULES = Collections
-        .unmodifiableList(Arrays.<TweakModule>asList(LoadingScreenModule.INSTANCE));
+        .unmodifiableList(Arrays.<TweakModule>asList(LoadingScreenModule.INSTANCE, MainMenuModule.INSTANCE));
 
     private static boolean configLoaded;
 
