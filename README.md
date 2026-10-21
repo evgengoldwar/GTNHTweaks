@@ -8,7 +8,8 @@
 `gtnhtweaks.core.TweakModule`. Новые модули регистрируются в `gtnhtweaks.core.ModuleManager`.
 Миксины модуля лежат в `src/main/java/gtnhtweaks/mixins/early/<модуль>` (пакет миксинов общий для мода)
 и подключаются в `gtnhtweaks.mixins.Mixins` только когда модуль включён.
-Общий стиль (темы `DARK`/`LIGHT`, логотип GTNH) лежит в `src/main/java/gtnhtweaks/common/render`.
+Общий стиль (темы `DARK`/`LIGHT`, логотип GTNH, кнопка) лежит в `src/main/java/gtnhtweaks/common/render`,
+общие миксины — в `src/main/java/gtnhtweaks/mixins/early/common`.
 
 Конфиги (`config/GTNHTweaks/`):
 
@@ -75,3 +76,35 @@
 | `general/showLoadTime` | `true` | время загрузки сборки |
 | `general/showBranding` | `true` | строки Minecraft/Forge/модов слева внизу |
 | `text/subtitle` | `GT: New Horizons` | подпись под логотипом, пусто чтобы скрыть |
+
+### menus: экраны меню
+
+Экраны, открываемые из главного меню, в том же стиле:
+
+- одиночная игра (`GuiSelectWorld`);
+- сетевая игра (`GuiMultiplayer`);
+- список модов и настройки модов (`GuiModList`, `GuiConfig`);
+- настройки (`GuiOptions`);
+- язык (`GuiLanguage`).
+
+Что меняется:
+
+- фон темы вместо земли;
+- списки: панель в цветах темы, рамка выделения цвета логотипа;
+- обычные кнопки плоские, в цветах темы;
+- белый и серый текст экранов перекрашивается в цвета темы (цветной текст остаётся),
+  в светлом стиле тени текста отключаются. Подсказки (тултипы) не трогаются.
+
+Экраны меняются только вне мира: настройки, открытые в игре, остаются ванильными.
+Ползунки (например FOV) и кнопки со своим классом сохраняют ванильный вид, чтобы не сломать их работу.
+
+Настройки в `config/GTNHTweaks/menus.cfg`:
+
+| Параметр | По умолчанию | Описание |
+| --- | --- | --- |
+| `general/style` | `DARK` | стиль: `DARK` или `LIGHT` |
+| `general/recolorText` | `true` | перекрашивать белый и серый текст в цвета темы |
+| `general/screens` | экраны выше | полные имена классов экранов; подклассы тоже меняются |
+
+Другие экраны можно добавить в `screens`, например `net.minecraft.client.gui.GuiVideoSettings`,
+`net.minecraft.client.gui.GuiControls`, `net.minecraft.client.gui.GuiCreateWorld`.

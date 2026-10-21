@@ -1,6 +1,5 @@
 package gtnhtweaks.modules.mainmenu;
 
-import static gtnhtweaks.common.render.GLDraw.rect;
 import static org.lwjgl.opengl.GL11.*;
 
 import java.util.List;
@@ -18,7 +17,7 @@ import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHLogo;
 import gtnhtweaks.common.render.GTNHTheme;
-import gtnhtweaks.mixins.early.mainmenu.AccessorGuiButton_MainMenu;
+import gtnhtweaks.common.render.ThemedButton;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.loadingscreen.LoadingTimer;
 
@@ -73,12 +72,6 @@ public final class MainMenuRenderer {
         GTNHLogo.draw((width - GTNHLogo.width(cell)) / 2, y, cell, theme);
         y += logoHeight + 6;
 
-        // button frames
-        for (Object element : buttons) {
-            GuiButton button = (GuiButton) element;
-            if (isThemed(button) && button.visible) drawButtonFrame(button, mouseX, mouseY, theme);
-        }
-
         endShapes();
 
         if (hasSubtitle) {
@@ -99,12 +92,12 @@ public final class MainMenuRenderer {
             glPopMatrix();
         }
 
-        // button labels, and buttons that draw themselves (custom buttons of other mods)
+        // buttons; custom button classes of other mods draw themselves
         Minecraft mc = Minecraft.getMinecraft();
         for (Object element : buttons) {
             GuiButton button = (GuiButton) element;
             if (!button.visible) continue;
-            if (isThemed(button)) drawButtonLabel(button, font, mouseX, mouseY, theme, shadow);
+            if (isThemed(button)) ThemedButton.draw(button, label(button), font, mouseX, mouseY, theme);
             else button.drawButton(mc, mouseX, mouseY);
         }
 
@@ -141,46 +134,12 @@ public final class MainMenuRenderer {
         return MainMenuLayout.isKnown(button.id) || button.getClass() == GuiButton.class;
     }
 
-    private static int widthOf(GuiButton button) {
-        return ((AccessorGuiButton_MainMenu) button).gtnhtweaks$getWidth();
-    }
-
-    private static int heightOf(GuiButton button) {
-        return ((AccessorGuiButton_MainMenu) button).gtnhtweaks$getHeight();
-    }
-
-    private static boolean isHovered(GuiButton button, int mouseX, int mouseY) {
-        int width = widthOf(button);
-        int height = heightOf(button);
-        return button.enabled && mouseX >= button.xPosition
-            && mouseY >= button.yPosition
-            && mouseX < button.xPosition + width
-            && mouseY < button.yPosition + height;
-    }
-
-    private static void drawButtonFrame(GuiButton button, int mouseX, int mouseY, GTNHTheme theme) {
-        int x = button.xPosition;
-        int y = button.yPosition;
-        int width = widthOf(button);
-        int height = heightOf(button);
-        boolean hovered = isHovered(button, mouseX, mouseY);
-        rect(x, y, width, height, hovered ? theme.barFill : theme.barBorder);
-        rect(x + 1, y + 1, width - 2, height - 2, hovered ? theme.buttonHover : theme.buttonBackground);
-        if (hovered) rect(x + 1, y + 1, 2, height - 2, theme.barFill);
-    }
-
-    private static void drawButtonLabel(GuiButton button, FontRenderer font, int mouseX, int mouseY,
-        GTNHTheme theme, boolean shadow) {
+    private static String label(GuiButton button) {
         String label = button.displayString;
         if (button.id == MainMenuLayout.LANGUAGE && (label == null || label.isEmpty())) {
             label = I18n.format("options.language");
         }
-        if (label == null || label.isEmpty()) return;
-        int color = !button.enabled ? theme.textDisabled
-            : isHovered(button, mouseX, mouseY) ? theme.logo : theme.text;
-        int width = widthOf(button);
-        int height = heightOf(button);
-        drawCentered(font, label, button.xPosition + width / 2, button.yPosition + (height - 8) / 2, color, shadow);
+        return label;
     }
 
     private static void drawCentered(FontRenderer font, String text, int centerX, int y, int color, boolean shadow) {

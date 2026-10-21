@@ -9,7 +9,7 @@ import net.minecraftforge.client.event.GuiScreenEvent;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import gtnhtweaks.mixins.early.mainmenu.AccessorGuiButton_MainMenu;
+import gtnhtweaks.mixins.early.common.AccessorGuiButton;
 
 /**
  * Arranges the vanilla main menu buttons into a compact column under the logo. Runs last, after other mods added
@@ -56,8 +56,8 @@ public class MainMenuLayout {
                 GuiButton button = cells.get(i);
                 button.xPosition = width / 2 - BUTTON_WIDTH / 2 + i * (cellWidth + GAP);
                 button.yPosition = top + row * ROW_STEP;
-                ((AccessorGuiButton_MainMenu) button).gtnhtweaks$setWidth(cellWidth);
-                ((AccessorGuiButton_MainMenu) button).gtnhtweaks$setHeight(BUTTON_HEIGHT);
+                ((AccessorGuiButton) button).gtnhtweaks$setWidth(cellWidth);
+                ((AccessorGuiButton) button).gtnhtweaks$setHeight(BUTTON_HEIGHT);
             }
         }
     }
