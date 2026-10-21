@@ -7,8 +7,7 @@ import javax.annotation.Nonnull;
 
 public enum TargetMods implements ITargetMod {
 
-    COFHCORE("cofh.asm.LoadingPlugin", "CoFHCore"),
-    OPTIFINE("optifine.OptiFineForgeTweaker", "Optifine");
+    BETTER_LOADING_SCREEN("alexiil.mods.load.coremod.LoadingScreenLoadPlugin", "betterloadingscreen");
 
     private final TargetModBuilder builder;
 
