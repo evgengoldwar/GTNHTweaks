@@ -11,6 +11,7 @@ import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.GuiScreenEvent;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
@@ -36,11 +37,15 @@ public final class MenuStyle {
     /** Base gray of the vanilla inventory textures. */
     private static final int VANILLA_INVENTORY_GRAY = 0xC6;
 
+    private static final ResourceLocation BUTTON_TEXTURES = new ResourceLocation("textures/gui/widgets.png");
+
     private static final Map<Class<?>, Boolean> SCREEN_MATCHES = new HashMap<>();
     private static final Map<Class<?>, Boolean> CUSTOM_DRAWN_BUTTONS = new HashMap<>();
 
     /** True while the current screen is drawn, so the HUD drawn before it is never touched. */
     private static boolean inScreenDraw;
+    /** True while a themed button runs mouseDragged, where sliders draw their knob. */
+    private static boolean inSliderKnob;
     /** True while a tooltip is drawn: tooltips keep their own dark background, so their text is not recolored. */
     private static boolean inTooltip;
 
@@ -155,12 +160,29 @@ public final class MenuStyle {
         return false;
     }
 
-    /** Same order as vanilla drawButton: frame, mouseDragged (slider knob and value), label. */
+    /**
+     * Same order as vanilla drawButton: frame, mouseDragged (slider value and knob), label. The button texture is bound
+     * like vanilla does, and the knob textures drawn by mouseDragged are replaced, see {@link #drawSliderKnob}.
+     */
     public static void drawButton(GuiButton button, Minecraft mc, int mouseX, int mouseY) {
         if (!button.visible) return;
         ThemedButton.drawFrame(button, mouseX, mouseY, theme());
-        ((AccessorGuiButton) button).gtnhtweaks$mouseDragged(mc, mouseX, mouseY);
+        mc.getTextureManager()
+            .bindTexture(BUTTON_TEXTURES);
+        inSliderKnob = true;
+        try {
+            ((AccessorGuiButton) button).gtnhtweaks$mouseDragged(mc, mouseX, mouseY);
+        } finally {
+            inSliderKnob = false;
+        }
         ThemedButton.drawLabel(button, button.displayString, mc.fontRenderer, mouseX, mouseY, theme());
+    }
+
+    /** Draws a themed slider knob part in place of a knob texture, if a themed button is drawing its knob. */
+    public static boolean drawSliderKnob(int x, int y, int width, int height) {
+        if (!inSliderKnob) return false;
+        ThemedButton.drawKnob(x, y, width, height, theme());
+        return true;
     }
 
     // ---- text
