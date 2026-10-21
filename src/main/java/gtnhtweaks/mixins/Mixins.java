@@ -35,7 +35,6 @@ public enum Mixins implements IMixins {
         .setApplyIf(MenusModule.INSTANCE::isEnabled)
         .addClientMixins(
             "menus.MixinGuiScreen_Menus",
-            "menus.MixinGuiUtils_Menus",
             "menus.MixinGuiButton_Menus",
             "menus.MixinGuiButtonExt_Menus",
             "menus.MixinGuiSlot_Menus",
