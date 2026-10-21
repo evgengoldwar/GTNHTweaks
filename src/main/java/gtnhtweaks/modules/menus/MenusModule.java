@@ -4,36 +4,40 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
 
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import gtnhtweaks.common.render.GTNHTheme;
 import gtnhtweaks.core.TweakModule;
 
 /**
- * Restyles the screens opened from the main menu (singleplayer, multiplayer, mod list, mod settings, options,
- * language) like the GTNH loading screen: themed background and lists, flat buttons and theme text colors.
+ * Restyles every vanilla, Forge and FML screen like the GTNH loading screen: themed background and lists, flat buttons,
+ * sliders and text fields, theme text colors. In game the menus get a translucent themed background, and vanilla
+ * inventories get a dark tint in the DARK style.
  */
 public final class MenusModule extends TweakModule {
 
     public static final MenusModule INSTANCE = new MenusModule();
 
     private static final String CATEGORY_GENERAL = "general";
+    private static final String CATEGORY_SCREENS = "screens";
 
-    private static final String[] DEFAULT_SCREENS = { //
-        "net.minecraft.client.gui.GuiSelectWorld", //
-        "net.minecraft.client.gui.GuiMultiplayer", //
-        "cpw.mods.fml.client.GuiModList", //
-        "cpw.mods.fml.client.config.GuiConfig", //
-        "net.minecraft.client.gui.GuiOptions", //
-        "net.minecraft.client.gui.GuiLanguage", //
+    private static final String[] DEFAULT_EXCLUDED = { //
+        "net.minecraft.client.gui.GuiChat", //
+        "net.minecraft.client.gui.inventory.GuiContainerCreative", //
     };
 
     public static GTNHTheme style = GTNHTheme.DARK;
     public static boolean recolorText = true;
-    public static Set<String> screens = Collections.emptySet();
+    public static boolean themeVanillaScreens = true;
+    public static boolean themeInGame = true;
+    public static boolean themeInventories = true;
+    public static Set<String> extraScreens = Collections.emptySet();
+    public static Set<String> excludedScreens = Collections.emptySet();
 
     private MenusModule() {
-        super("menus", "Singleplayer, multiplayer, mod list, options and language screens in the GTNH style", true);
+        super("menus", "Vanilla, Forge and in-game menus and inventories in the GTNH style", true);
     }
 
     @Override
@@ -51,19 +55,50 @@ public final class MenusModule extends TweakModule {
             CATEGORY_GENERAL,
             recolorText,
             "Replace the white and gray text of the screens with the theme colors. Needed for the LIGHT style");
-        String[] names = config.getStringList(
-            "screens",
-            CATEGORY_GENERAL,
-            DEFAULT_SCREENS,
-            "Full class names of the screens to restyle. Subclasses are restyled too. Screens are only restyled "
-                + "outside of a world, the in-game options keep the vanilla look.\n"
-                + "More examples: net.minecraft.client.gui.GuiVideoSettings, net.minecraft.client.gui.GuiControls, "
-                + "net.minecraft.client.gui.GuiCreateWorld, net.minecraft.client.gui.GuiScreenAddServer");
-        Set<String> trimmed = new LinkedHashSet<>();
+
+        config.addCustomCategoryComment(CATEGORY_SCREENS, "Which screens are restyled. Changes require a restart");
+        themeVanillaScreens = config.getBoolean(
+            "themeVanillaScreens",
+            CATEGORY_SCREENS,
+            themeVanillaScreens,
+            "Restyle every Minecraft, Forge and FML screen and the screens of mods that extend them "
+                + "(e.g. mod config screens)");
+        themeInGame = config.getBoolean(
+            "themeInGame",
+            CATEGORY_SCREENS,
+            themeInGame,
+            "Also restyle the menus opened in game (pause menu, options...). The world stays visible behind them");
+        themeInventories = config.getBoolean(
+            "themeInventories",
+            CATEGORY_SCREENS,
+            themeInventories,
+            "Themed background behind every inventory, and a dark tint of the vanilla inventory textures in the "
+                + "DARK style. Mod inventories keep their own textures");
+        extraScreens = trimmed(
+            config.getStringList(
+                "extraScreens",
+                CATEGORY_SCREENS,
+                new String[0],
+                "Full class names of other mod screens to restyle. Subclasses are restyled too"));
+        excludedScreens = trimmed(
+            config.getStringList(
+                "excludedScreens",
+                CATEGORY_SCREENS,
+                DEFAULT_EXCLUDED,
+                "Full class names of screens that keep the vanilla look. Subclasses are excluded too"));
+    }
+
+    private static Set<String> trimmed(String[] names) {
+        Set<String> result = new LinkedHashSet<>();
         for (String name : names) {
             if (!name.trim()
-                .isEmpty()) trimmed.add(name.trim());
+                .isEmpty()) result.add(name.trim());
         }
-        screens = Collections.unmodifiableSet(trimmed);
+        return Collections.unmodifiableSet(result);
+    }
+
+    @Override
+    public void preInit(FMLPreInitializationEvent event) {
+        MinecraftForge.EVENT_BUS.register(new MenuStyle.ScreenDrawTracker());
     }
 }

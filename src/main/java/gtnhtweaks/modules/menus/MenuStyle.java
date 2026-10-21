@@ -2,24 +2,45 @@ package gtnhtweaks.modules.menus;
 
 import static org.lwjgl.opengl.GL11.*;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraftforge.client.event.GuiScreenEvent;
 
+import cpw.mods.fml.common.eventhandler.EventPriority;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHTheme;
+import gtnhtweaks.common.render.ThemedButton;
+import gtnhtweaks.mixins.early.common.AccessorGuiButton;
+import gtnhtweaks.modules.mainmenu.MainMenuModule;
 
-/** Decides when a screen is restyled and draws the themed parts. Called from the menus mixins. */
+/** Decides what is restyled and draws the themed parts. Called from the menus mixins. */
 public final class MenuStyle {
 
-    /** Vanilla colors of list selection boxes. */
+    private static final String[] VANILLA_PACKAGES = { "net.minecraft.", "cpw.mods.fml.", "net.minecraftforge." };
+    private static final String[] DRAW_BUTTON_NAMES = { "drawButton", "func_146112_a" };
+
+    /** Vanilla colors that get theme colors. */
     private static final int VANILLA_SELECTION_BORDER = 0x808080;
     private static final int VANILLA_SELECTION_FILL = 0x000000;
+    private static final int VANILLA_FIELD_BORDER = 0xFFA0A0A0;
+    private static final int VANILLA_FIELD_FILL = 0xFF000000;
+    private static final int VANILLA_INVENTORY_TITLE = 0x404040;
+    /** Base gray of the vanilla inventory textures. */
+    private static final int VANILLA_INVENTORY_GRAY = 0xC6;
 
-    private static final Map<Class<?>, Boolean> MATCHES = new HashMap<>();
+    private static final Map<Class<?>, Boolean> SCREEN_MATCHES = new HashMap<>();
+    private static final Map<Class<?>, Boolean> CUSTOM_DRAWN_BUTTONS = new HashMap<>();
 
+    /** True while the current screen is drawn, so the HUD drawn before it is never touched. */
+    private static boolean inScreenDraw;
     /** True while a tooltip is drawn: tooltips keep their own dark background, so their text is not recolored. */
     private static boolean inTooltip;
 
@@ -29,45 +50,141 @@ public final class MenuStyle {
         return MenusModule.style;
     }
 
-    /** True if the current screen is restyled. Only outside of a world: in game the screens stay vanilla. */
-    public static boolean isActive() {
-        if (!MenusModule.INSTANCE.isEnabled()) return false;
+    public static void setInTooltip(boolean value) {
+        inTooltip = value;
+    }
+
+    // ---- scopes
+
+    private static GuiScreen currentScreen() {
+        if (!inScreenDraw || !MenusModule.INSTANCE.isEnabled()) return null;
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc == null || mc.theWorld != null) return false;
-        GuiScreen screen = mc.currentScreen;
-        if (screen == null) return false;
-        Boolean match = MATCHES.get(screen.getClass());
+        return mc == null ? null : mc.currentScreen;
+    }
+
+    private static boolean inGame() {
+        return Minecraft.getMinecraft().theWorld != null;
+    }
+
+    /** True while a restyled menu screen is drawn: backgrounds, lists, buttons, text fields and text are themed. */
+    public static boolean isActive() {
+        GuiScreen screen = currentScreen();
+        if (screen == null || screen instanceof GuiContainer) return false;
+        if (inGame() && !MenusModule.themeInGame) return false;
+        if (screen instanceof GuiMainMenu && MainMenuModule.INSTANCE.isEnabled()) return false;
+        return matches(screen.getClass());
+    }
+
+    /** True while an inventory is drawn and inventories are themed. */
+    private static GuiContainer activeInventory() {
+        GuiScreen screen = currentScreen();
+        if (!(screen instanceof GuiContainer) || !MenusModule.themeInventories) return null;
+        return isExcluded(screen.getClass()) ? null : (GuiContainer) screen;
+    }
+
+    /** Vanilla inventory textures are tinted only in the DARK style: a multiplied tint can only darken. */
+    public static boolean tintsInventory(GuiContainer gui) {
+        return gui == activeInventory() && theme() == GTNHTheme.DARK && isVanilla(gui.getClass().getName());
+    }
+
+    private static boolean matches(Class<?> type) {
+        Boolean match = SCREEN_MATCHES.get(type);
         if (match == null) {
-            match = matches(screen.getClass());
-            MATCHES.put(screen.getClass(), match);
+            match = !isExcluded(type) && isThemedScreen(type);
+            SCREEN_MATCHES.put(type, match);
         }
         return match;
     }
 
-    private static boolean matches(Class<?> type) {
+    private static boolean isExcluded(Class<?> type) {
         for (Class<?> c = type; c != null; c = c.getSuperclass()) {
-            if (MenusModule.screens.contains(c.getName())) return true;
+            if (MenusModule.excludedScreens.contains(c.getName())) return true;
         }
         return false;
     }
 
-    public static void setInTooltip(boolean value) {
-        inTooltip = value;
+    /** A vanilla screen, or a mod screen extending one (e.g. a mod config screen), or a configured extra screen. */
+    private static boolean isThemedScreen(Class<?> type) {
+        for (Class<?> c = type; c != null && c != GuiScreen.class; c = c.getSuperclass()) {
+            if (MenusModule.extraScreens.contains(c.getName())) return true;
+            if (MenusModule.themeVanillaScreens && isVanilla(c.getName())) return true;
+        }
+        return false;
+    }
+
+    private static boolean isVanilla(String className) {
+        for (String prefix : VANILLA_PACKAGES) {
+            if (className.startsWith(prefix)) return true;
+        }
+        return false;
+    }
+
+    // ---- buttons
+
+    /**
+     * Buttons are themed unless their class draws itself: a subclass of {@code base} that overrides drawButton (icon
+     * buttons, check boxes, mod buttons with textures). Plain subclasses and sliders are themed.
+     */
+    public static boolean canTheme(GuiButton button, Class<?> base) {
+        Class<?> type = button.getClass();
+        Boolean custom = CUSTOM_DRAWN_BUTTONS.get(type);
+        if (custom == null) {
+            try {
+                custom = overridesDrawButton(type, base);
+            } catch (Throwable t) {
+                // Reflection on mod classes can fail on missing optional classes: leave such buttons alone
+                custom = true;
+            }
+            CUSTOM_DRAWN_BUTTONS.put(type, custom);
+        }
+        return !custom;
+    }
+
+    private static boolean overridesDrawButton(Class<?> type, Class<?> base) {
+        for (Class<?> c = type; c != null && c != base; c = c.getSuperclass()) {
+            for (Method method : c.getDeclaredMethods()) {
+                Class<?>[] params = method.getParameterTypes();
+                if (params.length != 3 || params[0] != Minecraft.class
+                    || params[1] != int.class
+                    || params[2] != int.class) continue;
+                for (String name : DRAW_BUTTON_NAMES) {
+                    if (name.equals(method.getName())) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Same order as vanilla drawButton: frame, mouseDragged (slider knob and value), label. */
+    public static void drawButton(GuiButton button, Minecraft mc, int mouseX, int mouseY) {
+        if (!button.visible) return;
+        ThemedButton.drawFrame(button, mouseX, mouseY, theme());
+        ((AccessorGuiButton) button).gtnhtweaks$mouseDragged(mc, mouseX, mouseY);
+        ThemedButton.drawLabel(button, button.displayString, mc.fontRenderer, mouseX, mouseY, theme());
     }
 
     // ---- text
 
     /** Maps the white and gray text colors of vanilla screens to the theme. Colored text is kept. */
     public static int textColor(int color) {
-        if (!MenusModule.recolorText || inTooltip || !isActive()) return color;
-        int r = color >> 16 & 0xFF, g = color >> 8 & 0xFF, b = color & 0xFF;
-        int min = Math.min(r, Math.min(g, b));
-        int max = Math.max(r, Math.max(g, b));
-        int alpha = color & 0xFF000000;
+        if (!MenusModule.recolorText || inTooltip) return color;
+        GuiContainer inventory = activeInventory();
+        if (inventory != null) {
+            // Only the dark gray titles of tinted vanilla inventories, the rest of their text is drawn on items
+            if (tintsInventory(inventory) && (color & 0xFFFFFF) == VANILLA_INVENTORY_TITLE) {
+                return color & 0xFF000000 | theme().text & 0xFFFFFF;
+            }
+            return color;
+        }
+        if (!isActive()) return color;
         GTNHTheme theme = theme();
         int rgb = color & 0xFFFFFF;
         if (rgb == (theme.text & 0xFFFFFF) || rgb == (theme.textDim & 0xFFFFFF)
             || rgb == (theme.textDisabled & 0xFFFFFF)) return color;
+        int r = color >> 16 & 0xFF, g = color >> 8 & 0xFF, b = color & 0xFF;
+        int min = Math.min(r, Math.min(g, b));
+        int max = Math.max(r, Math.max(g, b));
+        int alpha = color & 0xFF000000;
         if (min >= 0xC8 && max - min <= 0x30) return alpha | (theme.text & 0xFFFFFF);
         if (max - min <= 0x10 && max >= 0x60) return alpha | (theme.textDim & 0xFFFFFF);
         return color;
@@ -78,12 +195,19 @@ public final class MenuStyle {
         return MenusModule.recolorText && !inTooltip && theme() == GTNHTheme.LIGHT && isActive();
     }
 
-    // ---- lists
+    // ---- lists and text fields
 
     public static int selectionColor(int color) {
         if (!isActive()) return color;
         if (color == VANILLA_SELECTION_BORDER) return theme().barFill & 0xFFFFFF;
         if (color == VANILLA_SELECTION_FILL) return theme().buttonHover & 0xFFFFFF;
+        return color;
+    }
+
+    public static int textFieldColor(int color) {
+        if (!isActive()) return color;
+        if (color == VANILLA_FIELD_BORDER) return theme().barBorder;
+        if (color == VANILLA_FIELD_FILL) return theme().barBackground;
         return color;
     }
 
@@ -94,6 +218,27 @@ public final class MenuStyle {
         begin();
         try {
             GLDraw.verticalGradient(0, 0, width, height, theme().backgroundTop, theme().backgroundBottom);
+        } finally {
+            end();
+        }
+    }
+
+    /** True if the in-game background of the current screen is themed. */
+    public static boolean themesWorldBackground() {
+        return isActive() || activeInventory() != null;
+    }
+
+    /** Translucent background over the world, in place of the vanilla dark gradient. */
+    public static void drawWorldBackground(int width, int height) {
+        begin();
+        try {
+            GLDraw.verticalGradient(
+                0,
+                0,
+                width,
+                height,
+                withAlpha(theme().backgroundTop, 0xC0),
+                withAlpha(theme().backgroundBottom, 0xD8));
         } finally {
             end();
         }
@@ -133,6 +278,24 @@ public final class MenuStyle {
         }
     }
 
+    /**
+     * Multiplies the vanilla inventory texture with the theme color: the light gray background becomes the theme
+     * panel color, slots and borders keep their relative shading.
+     */
+    public static void tintInventory(int x, int y, int width, int height) {
+        int target = theme().buttonBackground;
+        int r = Math.min(255, (target >> 16 & 0xFF) * 255 / VANILLA_INVENTORY_GRAY);
+        int g = Math.min(255, (target >> 8 & 0xFF) * 255 / VANILLA_INVENTORY_GRAY);
+        int b = Math.min(255, (target & 0xFF) * 255 / VANILLA_INVENTORY_GRAY);
+        begin();
+        try {
+            glBlendFunc(GL_DST_COLOR, GL_ZERO);
+            GLDraw.rect(x, y, width, height, 0xFF000000 | r << 16 | g << 8 | b);
+        } finally {
+            end();
+        }
+    }
+
     private static void begin() {
         glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT);
         glDisable(GL_TEXTURE_2D);
@@ -149,6 +312,10 @@ public final class MenuStyle {
         glColor4f(1, 1, 1, 1);
     }
 
+    private static int withAlpha(int color, int alpha) {
+        return alpha << 24 | color & 0xFFFFFF;
+    }
+
     private static int lerp(int from, int to, float t) {
         t = Math.max(0, Math.min(1, t));
         int result = 0;
@@ -158,5 +325,19 @@ public final class MenuStyle {
             result |= Math.round(a + (b - a) * t) << shift;
         }
         return result;
+    }
+
+    /** Marks the time the current screen is drawn. Forge posts these events around GuiScreen.drawScreen. */
+    public static class ScreenDrawTracker {
+
+        @SubscribeEvent(priority = EventPriority.HIGHEST)
+        public void onDrawScreenPre(GuiScreenEvent.DrawScreenEvent.Pre event) {
+            inScreenDraw = true;
+        }
+
+        @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+        public void onDrawScreenPost(GuiScreenEvent.DrawScreenEvent.Post event) {
+            inScreenDraw = false;
+        }
     }
 }
