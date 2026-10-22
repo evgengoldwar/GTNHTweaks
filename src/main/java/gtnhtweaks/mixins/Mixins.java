@@ -2,6 +2,7 @@ package gtnhtweaks.mixins;
 
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
+import gtnhtweaks.modules.gregtech.GregTechModule;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.mainmenu.MainMenuModule;
 import gtnhtweaks.modules.menus.MenusModule;
@@ -44,6 +45,13 @@ public enum Mixins implements IMixins {
             "menus.MixinGuiSlot_Menus",
             "menus.MixinGuiScrollingList_Menus",
             "menus.MixinFontRenderer_Menus")),
+
+    // GregTech module
+    GREGTECH_HIDE_CABLE_INSULATION(new MixinBuilder("Draw placed insulated GregTech cables without insulation")
+        .setPhase(Phase.LATE)
+        .setApplyIf(() -> GregTechModule.INSTANCE.isEnabled() && GregTechModule.hideCableInsulation)
+        .addRequiredMod(TargetMods.GREGTECH)
+        .addClientMixins("gregtech.MixinMTECable_GregTech")),
 
     // Shared by the modules that draw GTNH style buttons
     GUI_BUTTON_ACCESSOR(new MixinBuilder("GuiButton size accessor")
