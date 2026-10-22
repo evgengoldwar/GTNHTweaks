@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -27,13 +28,17 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.WeakHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import net.minecraft.launchwrapper.Launch;
 
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.core.ModuleManager;
 
 /**
  * Files of the current session in {@code GTNHTweaksLogs}: the full log, errors, warnings and crashes. Every message of
@@ -46,8 +51,14 @@ final class LogFiles {
     static final String KIND_WARNINGS = "Warnings";
     static final String KIND_CRASH = "Crash";
     static final String KIND_ALL_CRASH = "All crash";
+    static final String KIND_LOADING = "Loading";
+    static final String KIND_MODS = "Mods";
+    private static final String[] KINDS = { KIND_ALL, KIND_ERRORS, KIND_WARNINGS, KIND_CRASH, KIND_ALL_CRASH,
+        KIND_LOADING, KIND_MODS };
 
-    private static final Pattern SESSION_FILE = Pattern.compile("^(All crash|All|Errors|Warnings|Crash) (.+)\\.log$");
+    private static final Pattern SESSION_FILE = Pattern
+        .compile("^(All crash|All|Errors|Warnings|Crash|Loading|Mods) (.+)\\.log$");
+    private static final Pattern BACKUP_FILE = Pattern.compile("^Backup .+\\.zip$");
     /** A line of the FML log: {@code [12:00:00] [Client thread/INFO] [logger/mod]: message}. */
     private static final Pattern LOG_LINE = Pattern.compile(
         "^\\[(\\d{2}:\\d{2}:\\d{2})\\] \\[([^\\]]*)/(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\\] \\[([^\\]]*)\\]: ?(.*)$");
@@ -81,6 +92,7 @@ final class LogFiles {
     private static final IssueLog WARNINGS = new IssueLog(
         "GTNHTweaks - WARNINGS",
         "Warnings of the game. Everything else is in the All log.");
+    private static LoadingReport loading;
     private static long lastIssueWrite;
     private static final Map<String, StderrBlock> STDERR = new HashMap<>();
     private static final Set<Object> SAVED_CRASHES = Collections.newSetFromMap(new WeakHashMap<>());
@@ -115,8 +127,15 @@ final class LogFiles {
                 .atZone(ZoneId.systemDefault());
             sessionDate = start.toLocalDate();
             sessionText = SESSION_TEXT.format(start);
-            deleteOldSessions();
+            // Logs of earlier launches are packed into backups in the background, the new files have other names
+            Map<String, List<File>> earlier = earlierSessions();
             session = uniqueSessionName(start);
+            if (!earlier.isEmpty()) {
+                Thread backup = new Thread(() -> backUp(earlier), "GTNHTweaks log backup");
+                backup.setDaemon(true);
+                backup.start();
+            }
+            loading = new LoadingReport(jvmStart, loadingStatsFile());
 
             if (LogsModule.writeAll) {
                 allWriter = new BufferedWriter(
@@ -160,35 +179,89 @@ final class LogFiles {
     }
 
     private static boolean sessionExists(String name) {
-        for (String kind : new String[] { KIND_ALL, KIND_ERRORS, KIND_WARNINGS, KIND_CRASH, KIND_ALL_CRASH }) {
+        for (String kind : KINDS) {
             if (new File(dir, kind + " " + name + ".log").exists()) return true;
         }
-        return false;
+        return new File(dir, "Backup " + name + ".zip").exists();
     }
 
-    /** Keeps the files of the newest sessions, so the folder does not grow forever. */
-    private static void deleteOldSessions() {
-        int keep = LogsModule.keepSessions;
+    /** Files of earlier launches still in the folder, by session name. */
+    private static Map<String, List<File>> earlierSessions() {
+        Map<String, List<File>> sessions = new TreeMap<>();
         File[] files = dir.listFiles();
-        if (keep <= 0 || files == null) return;
-        Map<String, List<File>> sessions = new HashMap<>();
-        Map<String, Long> newest = new HashMap<>();
+        if (files == null) return sessions;
         for (File f : files) {
             Matcher m = SESSION_FILE.matcher(f.getName());
-            if (!f.isFile() || !m.matches()) continue;
-            String name = m.group(2);
-            sessions.computeIfAbsent(name, k -> new ArrayList<>())
-                .add(f);
-            newest.merge(name, f.lastModified(), Math::max);
+            if (f.isFile() && m.matches()) {
+                sessions.computeIfAbsent(m.group(2), k -> new ArrayList<>())
+                    .add(f);
+            }
         }
-        List<String> names = new ArrayList<>(sessions.keySet());
-        names.sort((a, b) -> Long.compare(newest.get(b), newest.get(a)));
-        // The session starting now counts as one
-        for (int i = keep - 1; i < names.size(); i++) {
-            for (File f : sessions.get(names.get(i))) {
+        return sessions;
+    }
+
+    /**
+     * Packs the logs of every earlier launch into {@code Backup <launch>.zip} and removes them from the folder, then
+     * keeps only the newest backups.
+     */
+    private static void backUp(Map<String, List<File>> sessions) {
+        int maxBackups = LogsModule.maxBackups;
+        for (Map.Entry<String, List<File>> entry : sessions.entrySet()) {
+            List<File> files = entry.getValue();
+            if (maxBackups > 0 && !zip(entry.getKey(), files)) continue;
+            for (File f : files) {
                 if (!f.delete()) GTNHTweaks.LOG.debug("Cannot delete old log {}", f);
             }
         }
+
+        File[] files = dir.listFiles();
+        if (files == null) return;
+        List<File> backups = new ArrayList<>();
+        for (File f : files) {
+            if (f.isFile() && BACKUP_FILE.matcher(f.getName())
+                .matches()) backups.add(f);
+        }
+        backups.sort((a, b) -> Long.compare(b.lastModified(), a.lastModified()));
+        for (int i = Math.max(0, maxBackups); i < backups.size(); i++) {
+            if (!backups.get(i)
+                .delete()) GTNHTweaks.LOG.debug("Cannot delete old backup {}", backups.get(i));
+        }
+    }
+
+    private static boolean zip(String name, List<File> files) {
+        File target = new File(dir, "Backup " + name + ".zip");
+        for (int i = 2; target.exists(); i++) {
+            target = new File(dir, "Backup " + name + " (" + i + ").zip");
+        }
+        File temp = new File(target.getPath() + ".tmp");
+        long newest = 0;
+        byte[] buffer = new byte[1 << 16];
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(temp))) {
+            for (File f : files) {
+                ZipEntry entry = new ZipEntry(f.getName());
+                entry.setTime(f.lastModified());
+                zip.putNextEntry(entry);
+                try (InputStream in = new FileInputStream(f)) {
+                    int read;
+                    while ((read = in.read(buffer)) > 0) zip.write(buffer, 0, read);
+                }
+                zip.closeEntry();
+                newest = Math.max(newest, f.lastModified());
+            }
+        } catch (IOException e) {
+            GTNHTweaks.LOG.warn("Cannot back up the logs of {}", name, e);
+            if (!temp.delete()) temp.deleteOnExit();
+            return false;
+        }
+        try {
+            Files.move(temp.toPath(), target.toPath());
+        } catch (IOException e) {
+            GTNHTweaks.LOG.warn("Cannot back up the logs of {}", name, e);
+            return false;
+        }
+        // Backups are kept by the time of their launch
+        if (newest > 0 && !target.setLastModified(newest)) GTNHTweaks.LOG.debug("Cannot date {}", target);
+        return true;
     }
 
     /**
@@ -328,6 +401,7 @@ final class LogFiles {
 
     /** Puts a message into the errors or warnings. Holds {@link #LOCK}. */
     private static void classify(LogRecord record) {
+        if (loading != null && LogsModule.writeLoading && loading.add(record)) loading.save(loadingStatsFile());
         if ("STDERR".equals(record.logger)) {
             if (LogsModule.stderrAsErrors) addStderrLine(record);
             return;
@@ -423,6 +497,7 @@ final class LogFiles {
     static void flush(boolean now) {
         String errors = null;
         String warnings = null;
+        String loadingText = null;
         BUSY.set(Boolean.TRUE);
         try {
             synchronized (LOCK) {
@@ -447,11 +522,13 @@ final class LogFiles {
                     String updated = time(time);
                     if (ERRORS.isDirty()) errors = ERRORS.render(sessionText, updated);
                     if (WARNINGS.isDirty()) warnings = WARNINGS.render(sessionText, updated);
+                    if (loading != null && loading.isDirty()) loadingText = loading.render(sessionText, updated);
                     lastIssueWrite = time;
                 }
             }
             if (errors != null) writeWhole(file(KIND_ERRORS), errors);
             if (warnings != null) writeWhole(file(KIND_WARNINGS), warnings);
+            if (loadingText != null) writeWhole(file(KIND_LOADING), loadingText);
         } finally {
             BUSY.remove();
         }
@@ -466,6 +543,20 @@ final class LogFiles {
         } catch (IOException e) {
             System.err.println("GTNHTweaks: cannot write " + target + ": " + e);
         }
+    }
+
+    private static File loadingStatsFile() {
+        return new File(ModuleManager.getConfigDir(), "logs-loading-stats.properties");
+    }
+
+    /** Writes a whole report file of the session, such as the mod list. */
+    static void writeReport(String kind, String text) {
+        if (!started || dir == null || session == null) return;
+        writeWhole(file(kind), text);
+    }
+
+    static String sessionText() {
+        return sessionText;
     }
 
     private static void close() {

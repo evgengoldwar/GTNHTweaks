@@ -6,7 +6,11 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
+
+import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.core.TweakModule;
@@ -24,13 +28,15 @@ public final class LogsModule extends TweakModule {
     private static final String CATEGORY_DETAILS = "details";
 
     static String folder = "GTNHTweaksLogs";
-    static int keepSessions = 30;
+    static int maxBackups = 5;
 
     static boolean writeAll = true;
     static boolean writeErrors = true;
     static boolean writeWarnings = true;
     static boolean writeCrash = true;
     static boolean writeFullCrash = true;
+    static boolean writeLoading = true;
+    static boolean writeMods = true;
 
     static int maxStackFrames = 12;
     static int maxCrashStackFrames = 30;
@@ -49,13 +55,14 @@ public final class LogsModule extends TweakModule {
             CATEGORY_GENERAL,
             folder,
             "Folder in the Minecraft directory for the logs. Changes require a game restart");
-        keepSessions = config.getInt(
-            "keepSessions",
+        maxBackups = config.getInt(
+            "maxBackups",
             CATEGORY_GENERAL,
-            keepSessions,
+            maxBackups,
             0,
-            10000,
-            "How many game launches to keep the logs of, older ones are deleted. 0 keeps all");
+            1000,
+            "On start, the logs of the previous launch are packed into \"Backup <launch>.zip\" in the same folder.\n"
+                + "How many backups to keep, older ones are deleted. 0 deletes the old logs without a backup");
 
         config.addCustomCategoryComment(
             CATEGORY_FILES,
@@ -79,6 +86,17 @@ public final class LogsModule extends TweakModule {
             "Crash: what crashed, the exception with a short stack trace and the mods in it");
         writeFullCrash = config
             .getBoolean("writeFullCrash", CATEGORY_FILES, writeFullCrash, "All crash: the whole crash report");
+        writeLoading = config.getBoolean(
+            "writeLoading",
+            CATEGORY_FILES,
+            writeLoading,
+            "Loading: loading time by stage, the slowest mods and steps, compared with the previous launch");
+        writeMods = config.getBoolean(
+            "writeMods",
+            CATEGORY_FILES,
+            writeMods,
+            "Mods: versions of Java, Minecraft and Forge, memory, graphics card and the mod list with the changes "
+                + "since the previous launch");
 
         config.addCustomCategoryComment(CATEGORY_DETAILS, "Content of the Errors, Warnings and Crash files");
         maxStackFrames = config.getInt(
@@ -133,6 +151,23 @@ public final class LogsModule extends TweakModule {
     @Override
     public void coremodInit() {
         LogFiles.start();
+    }
+
+    @Override
+    public void init(FMLInitializationEvent event) {
+        if (writeMods && event.getSide()
+            .isClient()) MinecraftForge.EVENT_BUS.register(new GraphicsInfo());
+    }
+
+    @Override
+    public void postInit(FMLPostInitializationEvent event) {
+        if (!writeMods) return;
+        try {
+            ModsReport.collectMods();
+            ModsReport.write();
+        } catch (RuntimeException e) {
+            GTNHTweaks.LOG.error("Failed to write the mod list", e);
+        }
     }
 
     /** Called from the crash report mixin after Minecraft saved a crash report. */
