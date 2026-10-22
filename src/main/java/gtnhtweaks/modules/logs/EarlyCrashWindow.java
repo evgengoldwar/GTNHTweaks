@@ -9,6 +9,8 @@ import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -35,7 +37,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.plaf.metal.MetalLookAndFeel;
 
 import net.minecraft.launchwrapper.Launch;
 
@@ -53,6 +57,16 @@ public final class EarlyCrashWindow {
 
     private static final Color RED = new Color(0xE5534B);
     private static final Color ORANGE = new Color(0xF2A33A);
+    // the SHADOW theme of the mod
+    private static final Color BACKGROUND = new Color(0x2F2E2D);
+    private static final Color PANEL = new Color(0x4A4948);
+    private static final Color FIELD = new Color(0x1F1F1F);
+    private static final Color BORDER = new Color(0x1C1C1D);
+    private static final Color BUTTON = new Color(0x434241);
+    private static final Color BUTTON_HOVER = new Color(0x555452);
+    private static final Color LIGHT_EDGE = new Color(0x595857);
+    private static final Color TEXT = new Color(0xE0E0E0);
+    private static final Color TEXT_DIM = new Color(0xA09F9E);
 
     private static volatile boolean shown;
 
@@ -110,7 +124,57 @@ public final class EarlyCrashWindow {
         }
     }
 
+    /** Dark Metal look: the colors of the parts Swing draws itself, set before they are made. */
+    private static void darkLook() {
+        try {
+            UIManager.setLookAndFeel(new MetalLookAndFeel());
+        } catch (Throwable ignored) {}
+        Object[] colors = { "Panel.background", BACKGROUND, "Label.foreground", TEXT, "TabbedPane.background",
+            BACKGROUND, "TabbedPane.foreground", TEXT, "TabbedPane.selected", PANEL, "TabbedPane.unselectedBackground",
+            BUTTON, "TabbedPane.contentAreaColor", PANEL, "TabbedPane.light", LIGHT_EDGE, "TabbedPane.highlight",
+            LIGHT_EDGE, "TabbedPane.shadow", BORDER, "TabbedPane.darkShadow", BORDER, "TabbedPane.focus", PANEL,
+            "TabbedPane.borderHightlightColor", BORDER, "TabbedPane.tabAreaBackground", BACKGROUND,
+            "ScrollBar.background", FIELD, "ScrollBar.track", FIELD, "ScrollBar.thumb", BUTTON,
+            "ScrollBar.thumbHighlight", LIGHT_EDGE, "ScrollBar.thumbShadow", BORDER, "ScrollBar.thumbDarkShadow",
+            BORDER, "ScrollBar.shadow", BORDER, "ScrollBar.highlight", FIELD, "ScrollBar.darkShadow", BORDER,
+            "ScrollPane.background", FIELD, "Viewport.background", FIELD, "Button.background", BUTTON,
+            "Button.foreground", TEXT, "Button.select", BUTTON_HOVER, "Button.focus", BUTTON };
+        for (int i = 0; i < colors.length; i += 2) UIManager.put(colors[i], colors[i + 1]);
+        // no Metal gradient on buttons and scroll bars
+        UIManager.put("Button.gradient", null);
+        UIManager.put("ScrollBar.gradient", null);
+    }
+
+    private static JButton button(String label) {
+        JButton button = new JButton(label);
+        button.setBackground(BUTTON);
+        button.setForeground(TEXT);
+        button.setFocusPainted(false);
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setBorder(
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 1, 0, 0, LIGHT_EDGE),
+                    BorderFactory.createEmptyBorder(5, 14, 5, 14))));
+        button.addMouseListener(new MouseAdapter() {
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(BUTTON_HOVER);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(BUTTON);
+            }
+        });
+        return button;
+    }
+
     private static void open(String headline, String problem, String report, File file, CountDownLatch closed) {
+        darkLook();
         JFrame frame = new JFrame("GTNHTweaks - the game could not start");
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
@@ -124,6 +188,7 @@ public final class EarlyCrashWindow {
         JPanel header = new JPanel();
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
         header.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
+        header.setBackground(BACKGROUND);
         JLabel title = new JLabel("The game could not start");
         title.setFont(
             title.getFont()
@@ -136,6 +201,7 @@ public final class EarlyCrashWindow {
         problemLabel.setForeground(ORANGE);
         JLabel hint = new JLabel(
             "The game crashed before its window opened. Copy the report for a bug report, then close this window.");
+        hint.setForeground(TEXT_DIM);
         header.add(title);
         header.add(Box.createVerticalStrut(4));
         header.add(problemLabel);
@@ -143,11 +209,15 @@ public final class EarlyCrashWindow {
         header.add(hint);
 
         JTabbedPane tabs = new JTabbedPane();
+        tabs.setBackground(BACKGROUND);
+        tabs.setForeground(TEXT);
+        tabs.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         tabs.addTab("Problem", textPane(problem));
         tabs.addTab("Crash report", textPane(report));
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton copy = new JButton("Copy report");
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 8));
+        buttons.setBackground(BACKGROUND);
+        JButton copy = button("Copy report");
         copy.addActionListener(e -> {
             Toolkit.getDefaultToolkit()
                 .getSystemClipboard()
@@ -155,18 +225,20 @@ public final class EarlyCrashWindow {
             copy.setText("Copied!");
         });
         buttons.add(copy);
-        JButton folder = new JButton("Open log folder");
+        JButton folder = button("Open log folder");
         folder.addActionListener(e -> openFile(LogFiles.folder()));
         buttons.add(folder);
         if (file != null) {
-            JButton openReport = new JButton("Open report");
+            JButton openReport = button("Open report");
             openReport.addActionListener(e -> openFile(file));
             buttons.add(openReport);
         }
-        JButton close = new JButton("Close");
+        JButton close = button("Close");
         close.addActionListener(e -> frame.dispose());
         buttons.add(close);
 
+        frame.getContentPane()
+            .setBackground(BACKGROUND);
         frame.getContentPane()
             .setLayout(new BorderLayout());
         frame.getContentPane()
@@ -187,7 +259,17 @@ public final class EarlyCrashWindow {
         area.setEditable(false);
         area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         area.setCaretPosition(0);
-        return new JScrollPane(area);
+        area.setBackground(FIELD);
+        area.setForeground(TEXT);
+        area.setCaretColor(TEXT);
+        area.setSelectionColor(BUTTON_HOVER);
+        area.setSelectedTextColor(Color.WHITE);
+        area.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
+        JScrollPane scroll = new JScrollPane(area);
+        scroll.setBorder(BorderFactory.createLineBorder(BORDER));
+        scroll.getViewport()
+            .setBackground(FIELD);
+        return scroll;
     }
 
     private static void openFile(File file) {
