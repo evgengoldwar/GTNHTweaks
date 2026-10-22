@@ -319,13 +319,10 @@ public class SettingsScreen extends GuiScreen {
         if (!UI.inside(mouseX, mouseY, contentX, contentY, contentW, contentH)) {
             for (int i = 0; i < pages.size(); i++) {
                 int y = listY + 2 + i * MODULE_ROW;
-                if (UI.inside(mouseX, mouseY, listX + 2, y, listW - 4, MODULE_ROW)
-                    && mouseY < listY + listH) {
+                if (UI.inside(mouseX, mouseY, listX + 2, y, listW - 4, MODULE_ROW) && mouseY < listY + listH) {
                     List<String> lines = new ArrayList<>();
                     lines.add("§e" + pages.get(i).name);
-                    lines.addAll(
-                        Rows.wrap(
-                            pages.get(i).module.getDescription()));
+                    lines.addAll(Rows.wrap(pages.get(i).module.getDescription()));
                     lines.add("§6Turning a module on or off needs a game restart");
                     return lines;
                 }
@@ -347,13 +344,7 @@ public class SettingsScreen extends GuiScreen {
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int button) {
         search.mouseClicked(mouseX, mouseY, button);
-        if (button == 1 && UI.inside(
-            mouseX,
-            mouseY,
-            search.xPosition - 4,
-            search.yPosition - 4,
-            searchW + 8,
-            16)) {
+        if (button == 1 && UI.inside(mouseX, mouseY, search.xPosition - 4, search.yPosition - 4, searchW + 8, 16)) {
             search.setText("");
             showRows();
         }
@@ -366,8 +357,7 @@ public class SettingsScreen extends GuiScreen {
             close();
             return;
         }
-        if (button == 0
-            && UI.inside(mouseX, mouseY, windowX + windowW - GAP * 2 - doneW - folderW, y, folderW, 18)) {
+        if (button == 0 && UI.inside(mouseX, mouseY, windowX + windowW - GAP * 2 - doneW - folderW, y, folderW, 18)) {
             UI.playClick();
             UI.open(ModuleManager.getConfigDir());
             return;

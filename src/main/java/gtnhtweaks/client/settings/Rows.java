@@ -93,8 +93,9 @@ final class Rows {
         void draw(int x, int y, int w, int mouseX, int mouseY, float dtMs) {
             GTNHTheme theme = UI.theme();
             UI.text(title.toUpperCase(Locale.ROOT), x + 6, y + 7, theme.textDim);
-            int lineX = x + 12 + UI.font()
-                .getStringWidth(title.toUpperCase(Locale.ROOT));
+            int lineX = x + 12
+                + UI.font()
+                    .getStringWidth(title.toUpperCase(Locale.ROOT));
             UI.rect(lineX, y + 11, x + w - 6 - lineX, 1, theme.isBeveled() ? theme.inset.topLeft : theme.barBorder);
         }
 
@@ -285,8 +286,9 @@ final class Rows {
             String state = on ? "On" : "Off";
             UI.text(
                 state,
-                switchX(x) - 6 - UI.font()
-                    .getStringWidth(state),
+                switchX(x) - 6
+                    - UI.font()
+                        .getStringWidth(state),
                 y + (h - 8) / 2,
                 on ? theme.text : theme.textDim);
             UI.toggle(switchX(x), y + (h - 10) / 2, position, hovered);

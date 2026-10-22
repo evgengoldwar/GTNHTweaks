@@ -119,8 +119,11 @@ public class CrashScreen extends GuiScreen {
     }
 
     private int maxScroll(int i) {
-        return Math.max(0, wrapped.get(i)
-            .size() * LINE + 8 - textH);
+        return Math.max(
+            0,
+            wrapped.get(i)
+                .size() * LINE + 8
+                - textH);
     }
 
     private void clampScroll(int i) {

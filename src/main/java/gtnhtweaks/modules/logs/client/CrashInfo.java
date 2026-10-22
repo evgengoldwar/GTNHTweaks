@@ -155,8 +155,9 @@ public final class CrashInfo {
             Matcher config = MIXIN_CONFIG.matcher(message);
             if (name.find()) d.lines.add("Mixin  : " + name.group(1));
             if (config.find()) d.lines.add("Config : " + config.group(1) + "  (its mod is the one to update)");
-            d.lines.add("Error  : " + mixin.getClass()
-                .getSimpleName() + ": " + message);
+            d.lines.add(
+                "Error  : " + mixin.getClass()
+                    .getSimpleName() + ": " + message);
             return d;
         }
         for (Throwable t : chain) {
@@ -225,7 +226,10 @@ public final class CrashInfo {
             Object mod = field(problem, "mod");
             if (mod != null) {
                 d.lines.add(
-                    "  - " + call(mod, "getName") + " (" + call(mod, "getModId") + ") needs Minecraft "
+                    "  - " + call(mod, "getName")
+                        + " ("
+                        + call(mod, "getModId")
+                        + ") needs Minecraft "
                         + call(mod, "acceptableMinecraftVersionRange"));
             }
         } else if (type.contains("DuplicateMods") || type.contains("Dupes")) {
