@@ -23,6 +23,7 @@ import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.logs.LogsModule;
 import gtnhtweaks.modules.mainmenu.MainMenuModule;
 import gtnhtweaks.modules.menus.MenusModule;
+import gtnhtweaks.modules.nei.NEIModule;
 
 public final class ModuleManager {
 
@@ -35,6 +36,7 @@ public final class ModuleManager {
             MainMenuModule.INSTANCE,
             MenusModule.INSTANCE,
             GregTechModule.INSTANCE,
+            NEIModule.INSTANCE,
             LogsModule.INSTANCE,
             BackupsModule.INSTANCE,
             DebugModule.INSTANCE));

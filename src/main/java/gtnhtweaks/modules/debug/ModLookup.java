@@ -39,22 +39,28 @@ final class ModLookup {
     }
 
     /**
-     * The mod whose source holds the class. When a jar holds several mods, the one whose main class shares the
-     * longest package with the class wins; without a source only the package is compared.
+     * The mod whose jar (or class folder in a development environment) holds the class. When a jar holds several
+     * mods, the one whose classes share the longest package with the class wins. Without a match, for example for
+     * coremods that report no source, a mod sharing at least two package segments is taken.
      */
     private static ModContainer find(String className, File source) {
         ModContainer best = null;
         int bestScore = -1;
         for (ModContainer mod : Loader.instance()
             .getActiveModList()) {
-            if (source != null && !contains(mod.getSource(), source)) continue;
-            Object instance = mod.getMod();
-            int score = instance == null ? 0
-                : commonPackage(
-                    className,
-                    instance.getClass()
-                        .getName());
-            if (source == null && score == 0) continue;
+            if (source == null || !holds(mod.getSource(), source)) continue;
+            int score = packageScore(className, mod);
+            if (score > bestScore) {
+                best = mod;
+                bestScore = score;
+            }
+        }
+        if (best != null) return best;
+
+        bestScore = 1;
+        for (ModContainer mod : Loader.instance()
+            .getActiveModList()) {
+            int score = packageScore(className, mod);
             if (score > bestScore) {
                 best = mod;
                 bestScore = score;
@@ -63,15 +69,31 @@ final class ModLookup {
         return best;
     }
 
-    private static boolean contains(File modSource, File classSource) {
+    /** A jar holds only its own classes; a folder holds every class under it. */
+    private static boolean holds(File modSource, File classSource) {
         if (modSource == null) return false;
         try {
-            String root = modSource.getCanonicalPath();
-            String path = classSource.getPath();
-            return path.equals(root) || path.startsWith(root + File.separator);
+            File root = modSource.getCanonicalFile();
+            if (root.equals(classSource)) return true;
+            return root.isDirectory() && classSource.getPath()
+                .startsWith(root.getPath() + File.separator);
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /** Longest package the class shares with the mod class or, for coremods, the container class of the mod. */
+    private static int packageScore(String className, ModContainer mod) {
+        int score = 0;
+        Object instance = mod.getMod();
+        if (instance != null) score = commonPackage(
+            className,
+            instance.getClass()
+                .getName());
+        String container = mod.getClass()
+            .getName();
+        if (!container.startsWith("cpw.mods.fml.")) score = Math.max(score, commonPackage(className, container));
+        return score;
     }
 
     /** Number of package segments the two class names share. */

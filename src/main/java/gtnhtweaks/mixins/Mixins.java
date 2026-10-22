@@ -10,6 +10,7 @@ import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.logs.LogsModule;
 import gtnhtweaks.modules.mainmenu.MainMenuModule;
 import gtnhtweaks.modules.menus.MenusModule;
+import gtnhtweaks.modules.nei.NEIModule;
 
 public enum Mixins implements IMixins {
 
@@ -52,6 +53,12 @@ public enum Mixins implements IMixins {
             .setApplyIf(() -> GregTechModule.INSTANCE.isEnabled() && GregTechModule.hideCableInsulation)
             .addRequiredMod(TargetMods.GREGTECH)
             .addClientMixins("gregtech.MixinMTECable_GregTech")),
+
+    // NEI module
+    NEI_CRAFTING_TREE_CAMERA(new MixinBuilder("Smooth movement in the NEI crafting tree").setPhase(Phase.LATE)
+        .setApplyIf(() -> NEIModule.INSTANCE.isEnabled() && (NEIModule.preciseDrag || NEIModule.smoothScroll))
+        .addRequiredMod(TargetMods.NEI)
+        .addClientMixins("nei.MixinCamera_NEI")),
 
     // Logs module
     LOGS_CRASH_REPORT(new MixinBuilder("Copy crash reports to the GTNHTweaks logs").setPhase(Phase.EARLY)
