@@ -56,6 +56,9 @@ final class LogFiles {
     /** A level written into an INFO message, as MCPatcher does: {@code [CTM/ERROR]: ...}. */
     private static final Pattern INNER_LEVEL = Pattern.compile("^\\[[^\\]]+/(ERROR|SEVERE|FATAL|WARN|WARNING)\\]");
 
+    /** Something to read: banner lines such as {@code +=+=+=} or {@code =====} have nothing. */
+    private static final Pattern READABLE = Pattern.compile("[\\p{L}\\p{N}]");
+
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter SESSION_TEXT = DateTimeFormatter
         .ofPattern("d MMMM yyyy HH:mm:ss", Locale.ENGLISH);
@@ -360,6 +363,8 @@ final class LogFiles {
         if (log == ERRORS && !LogsModule.writeErrors) return;
         if (log == WARNINGS && !LogsModule.writeWarnings) return;
         if (LogsModule.isIgnored(record)) return;
+        if (record.trace == null && !READABLE.matcher(record.message)
+            .find()) return;
         log.add(record);
     }
 
