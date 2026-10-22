@@ -9,7 +9,9 @@ import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import gtnhtweaks.core.ModuleManager;
 
-@Mod(modid = GTNHTweaks.MODID, version = Tags.VERSION, name = "GTNHTweaks", acceptedMinecraftVersions = "[1.7.10]")
+@Mod(modid = GTNHTweaks.MODID, version = Tags.VERSION, name = "GTNHTweaks",
+    acceptedMinecraftVersions = "[1.7.10]",
+    guiFactory = "gtnhtweaks.client.GuiFactory")
 public class GTNHTweaks {
 
     public static final String MODID = "gtnhtweaks";

@@ -7,7 +7,6 @@ import javax.annotation.Nonnull;
 
 public enum TargetMods implements ITargetMod {
 
-    BETTER_LOADING_SCREEN("alexiil.mods.load.coremod.LoadingScreenLoadPlugin", "betterloadingscreen"),
     GREGTECH(null, "gregtech");
 
     private final TargetModBuilder builder;

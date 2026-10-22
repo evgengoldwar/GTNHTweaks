@@ -38,6 +38,7 @@ public final class LoadingTimer {
     }
 
     static synchronized void init(File file) {
+        if (statsFile != null) return; // the config was reloaded from the config screen
         statsFile = file;
         if (!file.isFile()) return;
         Properties stats = new Properties();

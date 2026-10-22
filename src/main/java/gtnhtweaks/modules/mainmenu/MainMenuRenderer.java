@@ -11,7 +11,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
 
-
+import cpw.mods.fml.common.Loader;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.common.ResourcePackOverrides;
 import gtnhtweaks.common.render.GLDraw;
@@ -23,8 +23,6 @@ import gtnhtweaks.modules.loadingscreen.LoadingTimer;
 
 /** Draws the main menu in place of the vanilla panorama, logo and buttons. */
 public final class MainMenuRenderer {
-
-    private static final String COPYRIGHT = "Copyright Mojang AB. Do not distribute!";
 
     /** Set after a rendering error, so the vanilla menu is drawn instead from then on. */
     private static boolean broken;
@@ -117,11 +115,30 @@ public final class MainMenuRenderer {
             else button.drawButton(mc, mouseX, mouseY);
         }
 
-        // footer: copyright on the left, load time on the right
-        font.drawString(COPYRIGHT, 4, height - 12, theme.textDim, shadow);
+        // footer: mod count and the settings button on the left, load time on the right
+        if (MainMenuModule.showModCount) {
+            String caption = MainMenuModule.textMods + ": ";
+            font.drawString(caption, 4, height - 12, theme.textDim, shadow);
+            font.drawString(modCount(), 4 + font.getStringWidth(caption), height - 12, theme.logo, shadow);
+        }
         if (MainMenuModule.showLoadTime && LoadingScreenModule.INSTANCE.isEnabled() && LoadingTimer.isFinished()) {
             drawLoadTime(font, width, height, theme, shadow);
         }
+    }
+
+    private static String cachedModCount;
+
+    private static String modCount() {
+        if (cachedModCount == null) cachedModCount = Integer.toString(
+            Loader.instance()
+                .getActiveModList()
+                .size());
+        return cachedModCount;
+    }
+
+    /** "Mods: 312", or empty when the mod count is hidden. */
+    static String modCountText() {
+        return MainMenuModule.showModCount ? MainMenuModule.textMods + ": " + modCount() : "";
     }
 
     /** "Loaded in 8.1 s": dim caption, time in the accent color, and an accent strip like the hovered buttons. */

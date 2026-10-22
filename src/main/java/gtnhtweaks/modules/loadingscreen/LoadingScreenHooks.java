@@ -20,6 +20,7 @@ public final class LoadingScreenHooks {
 
     /** Set after a rendering error, so a broken screen falls back to the original one instead of spamming the log. */
     private static volatile boolean broken;
+    private static boolean loggedBetterLoadingScreen;
 
     private LoadingScreenHooks() {}
 
@@ -89,6 +90,10 @@ public final class LoadingScreenHooks {
     /** Called after BetterLoadingScreen has drawn a frame, before it is presented. */
     public static void onBetterLoadingScreenFrame(String text, float percent, String subText, float subPercent) {
         if (!LoadingScreenModule.drawOverBetterLoadingScreen || broken) return;
+        if (!loggedBetterLoadingScreen) {
+            loggedBetterLoadingScreen = true;
+            GTNHTweaks.LOG.info("Drawing the GTNH loading screen over BetterLoadingScreen");
+        }
         List<ProgressLine> lines = new ArrayList<>(2);
         if (text != null) lines.add(ProgressLine.ofPercent(text, percent));
         if (subText != null && !subText.isEmpty()) lines.add(ProgressLine.ofPercent(subText, subPercent));

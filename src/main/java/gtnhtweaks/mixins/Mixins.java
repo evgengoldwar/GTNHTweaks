@@ -18,10 +18,11 @@ public enum Mixins implements IMixins {
         .addClientMixins(
             "loadingscreen.MixinMinecraft_LoadingScreen",
             "loadingscreen.MixinSplashProgressThread_LoadingScreen")),
+    // Not tied to BetterLoadingScreen being detected: the coremod list can be incomplete when early mixins are
+    // collected, and the mixin is @Pseudo with optional injections, so it does nothing without the mod
     LOADING_SCREEN_BETTER_LOADING_SCREEN(new MixinBuilder("GTNH loading screen over BetterLoadingScreen")
         .setPhase(Phase.EARLY)
         .setApplyIf(LoadingScreenModule.INSTANCE::isEnabled)
-        .addRequiredMod(TargetMods.BETTER_LOADING_SCREEN)
         .addClientMixins("loadingscreen.MixinBetterLoadingScreen_LoadingScreen")),
 
     // Main menu module

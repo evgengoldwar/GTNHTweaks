@@ -3,10 +3,13 @@ package gtnhtweaks.core;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.common.config.Property;
 
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
@@ -32,6 +35,8 @@ public final class ModuleManager {
                 GregTechModule.INSTANCE));
 
     private static boolean configLoaded;
+    private static Configuration modulesConfig;
+    private static final Map<TweakModule, Configuration> CONFIGS = new IdentityHashMap<>();
 
     private ModuleManager() {}
 
@@ -54,6 +59,7 @@ public final class ModuleManager {
 
         File dir = getConfigDir();
         Configuration modules = new Configuration(new File(dir, "modules.cfg"));
+        modulesConfig = modules;
         modules.addCustomCategoryComment(
             CATEGORY_MODULES,
             "Enable or disable GTNHTweaks modules. Every module has its own settings file next to this one.\n"
@@ -62,11 +68,14 @@ public final class ModuleManager {
         boolean client = FMLLaunchHandler.side()
             .isClient();
         for (TweakModule module : MODULES) {
-            boolean enabled = modules
-                .getBoolean(module.getId(), CATEGORY_MODULES, module.isEnabledByDefault(), module.getDescription());
+            Property property = modules
+                .get(CATEGORY_MODULES, module.getId(), module.isEnabledByDefault(), module.getDescription());
+            property.setRequiresMcRestart(true);
+            boolean enabled = property.getBoolean();
             module.setEnabled(enabled && (client || !module.isClientOnly()));
 
             Configuration config = new Configuration(new File(dir, module.getId() + ".cfg"));
+            CONFIGS.put(module, config);
             try {
                 module.loadConfig(config);
             } catch (RuntimeException e) {
@@ -76,6 +85,35 @@ public final class ModuleManager {
         }
 
         if (modules.hasChanged()) modules.save();
+    }
+
+    /** modules.cfg, which switches the modules on and off. */
+    public static Configuration getModulesConfig() {
+        loadConfig();
+        return modulesConfig;
+    }
+
+    /** The settings file of a module. */
+    public static Configuration getConfig(TweakModule module) {
+        loadConfig();
+        return CONFIGS.get(module);
+    }
+
+    /**
+     * Saves the configs after they were edited in the config screen and reads the module settings again. Turning a
+     * module on or off still needs a restart.
+     */
+    public static synchronized void saveAndReload() {
+        if (modulesConfig.hasChanged()) modulesConfig.save();
+        for (TweakModule module : MODULES) {
+            Configuration config = CONFIGS.get(module);
+            try {
+                module.loadConfig(config);
+            } catch (RuntimeException e) {
+                GTNHTweaks.LOG.error("Failed to read the config of module " + module.getId(), e);
+            }
+            if (config.hasChanged()) config.save();
+        }
     }
 
     public static void preInit(FMLPreInitializationEvent event) {
