@@ -18,6 +18,7 @@ import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.modules.gregtech.GregTechModule;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
+import gtnhtweaks.modules.logs.LogsModule;
 import gtnhtweaks.modules.mainmenu.MainMenuModule;
 import gtnhtweaks.modules.menus.MenusModule;
 
@@ -32,7 +33,8 @@ public final class ModuleManager {
                 LoadingScreenModule.INSTANCE,
                 MainMenuModule.INSTANCE,
                 MenusModule.INSTANCE,
-                GregTechModule.INSTANCE));
+                GregTechModule.INSTANCE,
+                LogsModule.INSTANCE));
 
     private static boolean configLoaded;
     private static Configuration modulesConfig;
@@ -113,6 +115,20 @@ public final class ModuleManager {
                 GTNHTweaks.LOG.error("Failed to read the config of module " + module.getId(), e);
             }
             if (config.hasChanged()) config.save();
+        }
+    }
+
+    /** Called once by the early mixin loader, before mods are constructed. */
+    public static void coremodInit() {
+        loadConfig();
+        for (TweakModule module : MODULES) {
+            if (module.isEnabled()) {
+                try {
+                    module.coremodInit();
+                } catch (RuntimeException e) {
+                    GTNHTweaks.LOG.error("Failed to start module " + module.getId(), e);
+                }
+            }
         }
     }
 

@@ -3,6 +3,7 @@ package gtnhtweaks.mixins;
 import com.gtnewhorizon.gtnhmixins.IEarlyMixinLoader;
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
+import gtnhtweaks.core.ModuleManager;
 
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ public class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLoader {
 
     @Override
     public List<String> getMixins(Set<String> loadedCoreMods) {
+        ModuleManager.coremodInit();
         return IMixins.getEarlyMixins(Mixins.class, loadedCoreMods);
     }
 }

@@ -4,6 +4,7 @@ import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 import gtnhtweaks.modules.gregtech.GregTechModule;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
+import gtnhtweaks.modules.logs.LogsModule;
 import gtnhtweaks.modules.mainmenu.MainMenuModule;
 import gtnhtweaks.modules.menus.MenusModule;
 
@@ -53,6 +54,12 @@ public enum Mixins implements IMixins {
         .setApplyIf(() -> GregTechModule.INSTANCE.isEnabled() && GregTechModule.hideCableInsulation)
         .addRequiredMod(TargetMods.GREGTECH)
         .addClientMixins("gregtech.MixinMTECable_GregTech")),
+
+    // Logs module
+    LOGS_CRASH_REPORT(new MixinBuilder("Copy crash reports to the GTNHTweaks logs")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(LogsModule.INSTANCE::isEnabled)
+        .addCommonMixins("logs.MixinCrashReport_Logs")),
 
     // Shared by the modules that draw GTNH style buttons
     GUI_BUTTON_ACCESSOR(new MixinBuilder("GuiButton size accessor")

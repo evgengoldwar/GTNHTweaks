@@ -57,6 +57,12 @@ public abstract class TweakModule {
     /** Reads the module's own settings. Called once, even when the module is disabled, so the file is generated. */
     protected abstract void loadConfig(Configuration config);
 
+    /**
+     * Called during the coremod phase, right after the configs are read and before any mod is constructed. Like
+     * {@link #loadConfig}, it must not touch Minecraft classes.
+     */
+    public void coremodInit() {}
+
     public void preInit(FMLPreInitializationEvent event) {}
 
     public void init(FMLInitializationEvent event) {}
