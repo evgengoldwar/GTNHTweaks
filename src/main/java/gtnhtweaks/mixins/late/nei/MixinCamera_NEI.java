@@ -17,8 +17,9 @@ import gtnhtweaks.modules.nei.NEIModule;
 /**
  * Smooth movement in the crafting tree of the NEI bookmarks.
  * <p>
- * Dragging: NEI gets the mouse in whole GUI pixels, so the tree follows the mouse in steps of the GUI scale. The
- * exact mouse position is read from the mouse instead.
+ * Dragging: Minecraft 1.7.10 handles the input of a screen in the game tick, so NEI moves the tree only 20 times a
+ * second whatever the frame rate, and by the mouse in whole GUI pixels, in steps of the GUI scale. While the button is
+ * held, the camera follows the exact mouse position on every frame instead, like vanilla sliders do.
  * <p>
  * Wheel: NEI moves the camera at once. The new position becomes a target and the drawn camera slides to it, one step
  * per frame from {@code clampToBounds}, which NEI calls before drawing the tree. The point under the mouse stays in
@@ -77,12 +78,7 @@ public class MixinCamera_NEI {
     @Inject(method = "drag", at = @At("HEAD"), cancellable = true)
     private void gtnhtweaks$drag(int mouseX, int mouseY, CallbackInfo ci) {
         if (!NEIModule.preciseDrag || !dragging) return;
-        float[] mouse = gtnhtweaks$preciseMouse();
-        if (mouse == null) return;
-        scrollX -= (mouse[0] - lastDragX) / zoomLevel;
-        scrollY -= (mouse[1] - lastDragY) / zoomLevel;
-        lastDragX = mouse[0];
-        lastDragY = mouse[1];
+        gtnhtweaks$followMouse();
         ci.cancel();
     }
 
@@ -125,9 +121,25 @@ public class MixinCamera_NEI {
         gtnhtweaks$remember();
     }
 
+    /** Called once per frame, before the tree is drawn. */
     @Inject(method = "clampToBounds", at = @At("HEAD"))
-    private void gtnhtweaks$slide(int treeWidth, int treeHeight, CallbackInfo ci) {
-        if (!gtnhtweaks$sliding) return;
+    private void gtnhtweaks$frame(int treeWidth, int treeHeight, CallbackInfo ci) {
+        if (NEIModule.preciseDrag && dragging && Mouse.isButtonDown(0)) gtnhtweaks$followMouse();
+        if (gtnhtweaks$sliding) gtnhtweaks$slide(treeWidth, treeHeight);
+    }
+
+    @Unique
+    private void gtnhtweaks$followMouse() {
+        float[] mouse = gtnhtweaks$preciseMouse();
+        if (mouse == null) return;
+        scrollX -= (mouse[0] - lastDragX) / zoomLevel;
+        scrollY -= (mouse[1] - lastDragY) / zoomLevel;
+        lastDragX = mouse[0];
+        lastDragY = mouse[1];
+    }
+
+    @Unique
+    private void gtnhtweaks$slide(int treeWidth, int treeHeight) {
         if (dragging || !gtnhtweaks$isShown()) {
             gtnhtweaks$sliding = false;
             return;
