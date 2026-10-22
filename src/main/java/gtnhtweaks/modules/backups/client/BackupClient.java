@@ -108,7 +108,8 @@ public class BackupClient {
         // The server times out its own backups, only chat backups can get lost here
         if (phase == Phase.RUNNING && !fromServer
             && now - lastActivity > BackupsModule.timeoutMinutes * 60_000L) hide(now);
-        if (phase != Phase.HIDDEN && now > hideAt + SLIDE_MS) phase = Phase.HIDDEN;
+        // Subtracted, not added: hideAt + SLIDE_MS overflows while hideAt is Long.MAX_VALUE
+        if (phase != Phase.HIDDEN && now - hideAt > SLIDE_MS) phase = Phase.HIDDEN;
     }
 
     @SubscribeEvent
