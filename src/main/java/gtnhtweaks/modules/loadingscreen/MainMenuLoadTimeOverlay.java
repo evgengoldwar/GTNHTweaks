@@ -14,11 +14,7 @@ public class MainMenuLoadTimeOverlay {
     public void onDrawScreen(GuiScreenEvent.DrawScreenEvent.Post event) {
         if (!(event.gui instanceof GuiMainMenu) || !LoadingTimer.isFinished()) return;
         if (MainMenuModule.INSTANCE.isEnabled()) return;
-        String text = LoadingScreenModule.textLoadedIn + " " + LoadingTimer.format(LoadingTimer.getElapsedMs());
-        long previous = LoadingTimer.getPreviousMs();
-        if (previous > 0) {
-            text += " (" + LoadingScreenModule.textPreviousLaunch + ": " + LoadingTimer.format(previous) + ")";
-        }
+        String text = LoadingScreenModule.textLoadedIn + " " + LoadingTimer.formatHuman(LoadingTimer.getElapsedMs());
         Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(text, 2, 2, 0xFFFFFF);
     }
 }

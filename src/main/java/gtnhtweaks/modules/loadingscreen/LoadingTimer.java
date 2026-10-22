@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
+import java.util.Locale;
 import java.util.Properties;
 
 import gtnhtweaks.GTNHTweaks;
@@ -81,6 +82,20 @@ public final class LoadingTimer {
         } catch (IOException e) {
             GTNHTweaks.LOG.warn("Could not write " + statsFile, e);
         }
+    }
+
+    /** Readable duration: {@code 8.1 s}, {@code 2 min 05 s}, {@code 1 h 05 min}. Units come from the config. */
+    public static String formatHuman(long ms) {
+        if (ms < 0) ms = 0;
+        String h = LoadingScreenModule.unitHours, m = LoadingScreenModule.unitMinutes,
+            s = LoadingScreenModule.unitSeconds;
+        if (ms < 60_000) return String.format(Locale.ROOT, "%.1f %s", ms / 1000.0, s);
+        long totalSeconds = ms / 1000;
+        long hours = totalSeconds / 3600;
+        long minutes = totalSeconds / 60 % 60;
+        long seconds = totalSeconds % 60;
+        if (hours > 0) return String.format(Locale.ROOT, "%d %s %02d %s", hours, h, minutes, m);
+        return String.format(Locale.ROOT, "%d %s %02d %s", minutes, m, seconds, s);
     }
 
     /** Formats a duration as {@code m:ss.t}, or {@code h:mm:ss} for an hour and more. */

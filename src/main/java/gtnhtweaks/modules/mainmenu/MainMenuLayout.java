@@ -45,8 +45,8 @@ public class MainMenuLayout {
         int width = event.gui.width;
         int height = event.gui.height;
         int total = rows.size() * ROW_STEP - GAP;
-        // leave room for the three branding lines in the bottom left corner
-        int top = Math.max(0, Math.min(height / 4 + 48, height - 36 - total));
+        // leave room for the footer line
+        int top = Math.max(0, Math.min(height / 4 + 48, height - 24 - total));
         buttonsTop = top;
 
         for (int row = 0; row < rows.size(); row++) {

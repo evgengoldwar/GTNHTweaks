@@ -52,6 +52,7 @@
 | `integration/replaceForgeSplash` | `true` | рисовать поверх сплэша Forge |
 | `integration/drawOverBetterLoadingScreen` | `true` | рисовать поверх BetterLoadingScreen |
 | `text/*` | английский | подписи на экране, поддерживается кириллица |
+| `text/unitHours`, `unitMinutes`, `unitSeconds` | `h`, `min`, `s` | единицы времени запуска в главном меню (например `ч`, `мин`, `с`) |
 
 Время последней загрузки хранится в `config/GTNHTweaks/loadingscreen-stats.properties`.
 
@@ -62,7 +63,8 @@
 - фон и логотип **GTNH** вместо панорамы и логотипа Minecraft;
 - подпись под логотипом и пульсирующий жёлтый сплэш-текст в цвете темы;
 - плоские кнопки в цветах темы с подсветкой при наведении;
-- внизу строки Forge, копирайт и время загрузки сборки (нужен модуль `loadingscreen`).
+- внизу слева копирайт Mojang, справа время запуска сборки, например «Loaded in 8.1 s»
+  (нужен модуль `loadingscreen`). Строки версий Minecraft/MCP/FML/Forge не показываются.
 
 Ванильное меню остаётся на месте: все кнопки работают как раньше, кнопки других модов сохраняются.
 Обычные кнопки других модов рисуются в стиле GTNH, кнопки со своим классом рисуются сами.
@@ -74,7 +76,6 @@
 | `general/style` | `DARK` | стиль: `DARK` или `LIGHT` |
 | `general/showSplashText` | `true` | сплэш-текст под логотипом |
 | `general/showLoadTime` | `true` | время загрузки сборки |
-| `general/showBranding` | `true` | строки Minecraft/Forge/модов слева внизу |
 | `general/respectResourcePacks` | `true` | если включённый ресурс-пак заменяет логотип Minecraft, панораму или кнопки — показывать ванильное меню с ресурс-паком |
 | `text/subtitle` | `GT: New Horizons` | подпись под логотипом, пусто чтобы скрыть |
 

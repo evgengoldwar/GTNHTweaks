@@ -21,7 +21,6 @@ public final class MainMenuModule extends TweakModule {
     public static GTNHTheme style = GTNHTheme.DARK;
     public static boolean showSplashText = true;
     public static boolean showLoadTime = true;
-    public static boolean showBranding = true;
     public static boolean respectResourcePacks = true;
 
     public static String subtitle = "GT: New Horizons";
@@ -47,11 +46,6 @@ public final class MainMenuModule extends TweakModule {
             CATEGORY_GENERAL,
             showLoadTime,
             "Show how long the game took to load. Needs the loadingscreen module");
-        showBranding = config.getBoolean(
-            "showBranding",
-            CATEGORY_GENERAL,
-            showBranding,
-            "Show the Minecraft, Forge and mod count lines in the bottom left corner");
         respectResourcePacks = config.getBoolean(
             "respectResourcePacks",
             CATEGORY_GENERAL,

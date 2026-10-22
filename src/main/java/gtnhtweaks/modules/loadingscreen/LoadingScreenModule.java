@@ -38,6 +38,9 @@ public final class LoadingScreenModule extends TweakModule {
     public static String textFirstLaunch = "No previous launch recorded";
     public static String textMemory = "Memory";
     public static String textLoadedIn = "Loaded in";
+    public static String unitHours = "h";
+    public static String unitMinutes = "min";
+    public static String unitSeconds = "s";
 
     private LoadingScreenModule() {
         super("loadingscreen", "GTNH loading screen with a loading timer and the previous launch time", true);
@@ -98,6 +101,11 @@ public final class LoadingScreenModule extends TweakModule {
             "Shown instead of the previous launch time when there is none");
         textMemory = config.getString("memory", CATEGORY_TEXT, textMemory, "Caption of the memory usage");
         textLoadedIn = config.getString("loadedIn", CATEGORY_TEXT, textLoadedIn, "Caption used in the main menu");
+        unitHours = config.getString("unitHours", CATEGORY_TEXT, unitHours, "Hours unit of the main menu load time");
+        unitMinutes = config
+            .getString("unitMinutes", CATEGORY_TEXT, unitMinutes, "Minutes unit of the main menu load time");
+        unitSeconds = config
+            .getString("unitSeconds", CATEGORY_TEXT, unitSeconds, "Seconds unit of the main menu load time");
 
         if (isEnabled()) {
             LoadingTimer.init(new File(ModuleManager.getConfigDir(), "loadingscreen-stats.properties"));

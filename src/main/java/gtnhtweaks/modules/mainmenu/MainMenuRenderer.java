@@ -11,9 +11,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
 
-import com.google.common.collect.Lists;
 
-import cpw.mods.fml.common.FMLCommonHandler;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.common.ResourcePackOverrides;
 import gtnhtweaks.common.render.GLDraw;
@@ -119,32 +117,26 @@ public final class MainMenuRenderer {
             else button.drawButton(mc, mouseX, mouseY);
         }
 
-        // footer
-        if (MainMenuModule.showBranding) {
-            List<String> brandings = Lists.reverse(
-                FMLCommonHandler.instance()
-                    .getBrandings(true));
-            for (int i = 0; i < brandings.size(); i++) {
-                String branding = brandings.get(i);
-                if (branding == null || branding.isEmpty()) continue;
-                font.drawString(branding, 2, height - (10 + i * (font.FONT_HEIGHT + 1)), theme.textDim, shadow);
-            }
-        }
-        font.drawString(COPYRIGHT, width - font.getStringWidth(COPYRIGHT) - 2, height - 10, theme.textDim, shadow);
+        // footer: copyright on the left, load time on the right
+        font.drawString(COPYRIGHT, 4, height - 12, theme.textDim, shadow);
         if (MainMenuModule.showLoadTime && LoadingScreenModule.INSTANCE.isEnabled() && LoadingTimer.isFinished()) {
-            String loadTime = LoadingScreenModule.textLoadedIn + " "
-                + LoadingTimer.format(LoadingTimer.getElapsedMs());
-            long previous = LoadingTimer.getPreviousMs();
-            if (previous > 0) {
-                loadTime += " (" + LoadingScreenModule.textPreviousLaunch + ": " + LoadingTimer.format(previous) + ")";
-            }
-            font.drawString(
-                loadTime,
-                width - font.getStringWidth(loadTime) - 2,
-                height - 20,
-                theme.textDim,
-                shadow);
+            drawLoadTime(font, width, height, theme, shadow);
         }
+    }
+
+    /** "Loaded in 8.1 s": dim caption, time in the accent color, and an accent strip like the hovered buttons. */
+    private static void drawLoadTime(FontRenderer font, int width, int height, GTNHTheme theme, boolean shadow) {
+        String caption = LoadingScreenModule.textLoadedIn + " ";
+        String time = LoadingTimer.formatHuman(LoadingTimer.getElapsedMs());
+        int x = width - 4 - font.getStringWidth(caption + time);
+        int y = height - 12;
+
+        beginShapes();
+        GLDraw.rect(x - 6, y - 2, 2, font.FONT_HEIGHT + 3, theme.barFill);
+        endShapes();
+
+        font.drawString(caption, x, y, theme.textDim, shadow);
+        font.drawString(time, x + font.getStringWidth(caption), y, theme.logo, shadow);
     }
 
     /** Vanilla buttons and plain buttons of other mods are drawn in the GTNH style; custom button classes are not. */
