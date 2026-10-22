@@ -54,17 +54,19 @@ public final class BackupMessages {
     }
 
     /**
-     * @param text      message without color codes
-     * @param fromMod   the line comes from the ServerUtilities logger, so a bare percentage is backup progress
-     * @param running   a backup is running, so a bare "Done!" ends it
+     * @param text    message without color codes
+     * @param fromMod the line comes from the ServerUtilities logger, so a bare percentage is backup progress
+     * @param running a backup is running, so a bare "Done!" ends it
      */
     public static Kind classify(String text, boolean fromMod, boolean running) {
         if (text == null || text.isEmpty()) return Kind.NONE;
         if (!keywords.matcher(text)
             .matches()) {
             if (fromMod && progress(text) >= 0) return Kind.PROGRESS;
-            if (running && !fromMod && finished.matcher(text)
-                .matches()) return Kind.FINISHED;
+            if (running && !fromMod
+                && finished.matcher(text)
+                    .matches())
+                return Kind.FINISHED;
             return Kind.NONE;
         }
         if (failed.matcher(text)
@@ -85,12 +87,10 @@ public final class BackupMessages {
         String lower = key.toLowerCase();
         if (!lower.contains("backup")) return Kind.NONE;
         if (lower.contains("fail") || lower.contains("error")) return Kind.FAILED;
-        if (lower.contains("end") || lower.contains("done")
-            || lower.contains("finish")
-            || lower.contains("complete")) return Kind.FINISHED;
-        if (lower.contains("start") || lower.contains("begin")
-            || lower.contains("launch")
-            || lower.contains("manual")) return Kind.STARTED;
+        if (lower.contains("end") || lower.contains("done") || lower.contains("finish") || lower.contains("complete"))
+            return Kind.FINISHED;
+        if (lower.contains("start") || lower.contains("begin") || lower.contains("launch") || lower.contains("manual"))
+            return Kind.STARTED;
         if (lower.contains("progress")) return Kind.PROGRESS;
         return Kind.OTHER;
     }

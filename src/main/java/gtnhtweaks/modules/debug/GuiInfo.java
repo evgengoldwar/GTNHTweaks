@@ -91,7 +91,9 @@ public class GuiInfo {
         rows.add(new String[] { "FPS", fps(mc) });
         rows.add(
             new String[] { "Size",
-                screen.width + " x " + screen.height + ", GUI scale "
+                screen.width + " x "
+                    + screen.height
+                    + ", GUI scale "
                     + new ScaledResolution(mc, mc.displayWidth, mc.displayHeight).getScaleFactor() });
 
         StringBuilder text = new StringBuilder("GUI info");

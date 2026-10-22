@@ -207,12 +207,16 @@ class BackupToast {
         drawClipped(mid, from + band, x, x + w, y, h, 0x55FFFFFF, 0x00FFFFFF);
     }
 
-    private static void drawClipped(float from, float to, float min, float max, float y, float h, int left,
-        int right) {
+    private static void drawClipped(float from, float to, float min, float max, float y, float h, int left, int right) {
         float a = Math.max(from, min);
         float b = Math.min(to, max);
         if (b <= a) return;
-        GLDraw.horizontalGradient(a, y, b - a, h, lerp(left, right, (a - from) / (to - from)),
+        GLDraw.horizontalGradient(
+            a,
+            y,
+            b - a,
+            h,
+            lerp(left, right, (a - from) / (to - from)),
             lerp(left, right, (b - from) / (to - from)));
     }
 

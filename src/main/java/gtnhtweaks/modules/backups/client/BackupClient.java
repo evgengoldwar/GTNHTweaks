@@ -106,8 +106,8 @@ public class BackupClient {
         while ((packet = INBOX.poll()) != null) apply(packet, now);
 
         // The server times out its own backups, only chat backups can get lost here
-        if (phase == Phase.RUNNING && !fromServer
-            && now - lastActivity > BackupsModule.timeoutMinutes * 60_000L) hide(now);
+        if (phase == Phase.RUNNING && !fromServer && now - lastActivity > BackupsModule.timeoutMinutes * 60_000L)
+            hide(now);
         // Subtracted, not added: hideAt + SLIDE_MS overflows while hideAt is Long.MAX_VALUE
         if (phase != Phase.HIDDEN && now - hideAt > SLIDE_MS) phase = Phase.HIDDEN;
     }

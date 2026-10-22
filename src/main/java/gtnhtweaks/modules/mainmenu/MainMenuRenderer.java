@@ -50,8 +50,8 @@ public final class MainMenuRenderer {
         if (broken) return "the GTNH main menu failed to draw, see the error above";
         if (!MainMenuModule.respectResourcePacks) return null;
         for (ResourceLocation texture : PACK_TEXTURES) {
-            if (ResourcePackOverrides.isOverridden(texture)) return "a selected resource pack replaces " + texture
-                + " (respectResourcePacks)";
+            if (ResourcePackOverrides.isOverridden(texture))
+                return "a selected resource pack replaces " + texture + " (respectResourcePacks)";
         }
         return null;
     }

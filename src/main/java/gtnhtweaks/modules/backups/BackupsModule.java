@@ -138,9 +138,8 @@ public final class BackupsModule extends TweakModule {
                 "A backup message matching this means a backup started"),
             BackupMessages.DEFAULT_STARTED);
 
-        config.addCustomCategoryComment(
-            CATEGORY_TEXT,
-            "Texts of the toast. Latin and Cyrillic characters are supported");
+        config
+            .addCustomCategoryComment(CATEGORY_TEXT, "Texts of the toast. Latin and Cyrillic characters are supported");
         textTitle = config.getString("title", CATEGORY_TEXT, textTitle, "Title while the backup runs");
         textTitleDone = config.getString("titleDone", CATEGORY_TEXT, textTitleDone, "Title after a backup");
         textTitleFailed = config
