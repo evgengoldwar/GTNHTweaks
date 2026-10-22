@@ -169,13 +169,25 @@ public abstract class MixinMinecraft_CrashHandler {
         long now = System.currentTimeMillis();
         gtnhtweaks$crashesInARow = now - gtnhtweaks$lastCrash < 3000 ? gtnhtweaks$crashesInARow + 1 : 1;
         gtnhtweaks$lastCrash = now;
-        // the crash screen itself crashes, or the game crashes over and over: crash as vanilla does
-        if (currentScreen instanceof CrashScreen || gtnhtweaks$crashesInARow > 3) throw new ReportedException(report);
+        boolean repeated = currentScreen instanceof CrashScreen || gtnhtweaks$crashesInARow > 3;
 
         try {
             addGraphicsAndWorldToCrashReport(report);
         } catch (Throwable ignored) {}
         CrashInfo.save(report);
+
+        if (repeated) {
+            // the game crashes again with the crash screen open, e.g. in every tick: the game cannot go on. The screen
+            // is drawn in a loop of its own, without game ticks, until it is left; then the game closes as vanilla
+            GTNHTweaks.LOG
+                .fatal("The game keeps crashing, it will close after the crash screen", report.getCrashCause());
+            try {
+                gtnhtweaks$runScreen(new CrashScreen(CrashInfo.fromReport(report, CrashInfo.Kind.REPEATED)));
+            } catch (Throwable t) {
+                GTNHTweaks.LOG.error("Could not show the crash screen", t);
+            }
+            throw new ReportedException(report);
+        }
         GTNHTweaks.LOG.fatal(
             "The game crashed, the crash screen is shown. Report: " + report.getFile()
                 + "\n"

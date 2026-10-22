@@ -32,7 +32,9 @@ public final class CrashInfo {
         /** The game crashed while starting; it closes when the screen is left. */
         STARTUP,
         /** Forge found a problem with the installed mods and cannot go on. */
-        MODS
+        MODS,
+        /** The game crashed again and again, even with the crash screen open; it closes when the screen is left. */
+        REPEATED
     }
 
     private static final Pattern MIXIN_NAME = Pattern.compile("Mixin \\[([^\\]]+)\\]");
@@ -52,7 +54,8 @@ public final class CrashInfo {
         this.kind = kind;
         this.title = kind == Kind.STARTUP ? "The game could not start"
             : kind == Kind.MODS ? "The game cannot start with these mods"
-                : kind == Kind.SERVER ? "The world crashed" : "The game crashed";
+                : kind == Kind.REPEATED ? "The game keeps crashing"
+                    : kind == Kind.SERVER ? "The world crashed" : "The game crashed";
         this.description = description;
         this.headline = headline;
         this.likelyCause = likelyCause;

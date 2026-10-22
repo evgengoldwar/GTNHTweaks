@@ -6,8 +6,8 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 
-/** Crashes the game on purpose with a mixin error, to test the crash screen. */
-final class CrashTest {
+/** Crashes the game on purpose with a mixin error, to test the crash screen. Public for the FML event bus. */
+public final class CrashTest {
 
     /** Ticks in a world before the crash, so the world is shown first. */
     private static final int DELAY_TICKS = 60;
