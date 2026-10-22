@@ -206,9 +206,9 @@ public class CrashScreen extends GuiScreen {
 
         // buttons
         for (Button button : buttons) {
-            String label = button.label;
-            if (label.startsWith("Copy") && System.currentTimeMillis() - copiedAt < COPIED_MS) label = "Copied!";
-            UI.button(button.x, button.y, button.w, BUTTON_H, label, mouseX, mouseY, true);
+            String text = button.label;
+            if (text.startsWith("Copy") && System.currentTimeMillis() - copiedAt < COPIED_MS) text = "Copied!";
+            UI.button(button.x, button.y, button.w, BUTTON_H, text, mouseX, mouseY, true);
         }
     }
 
