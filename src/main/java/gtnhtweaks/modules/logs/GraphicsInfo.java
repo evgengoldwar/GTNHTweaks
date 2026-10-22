@@ -12,7 +12,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
  * Reads the graphics card and driver when the main menu opens for the first time: then the OpenGL context surely
  * belongs to the client thread, while during loading a splash screen thread may hold it.
  */
-final class GraphicsInfo {
+public final class GraphicsInfo {
 
     private boolean done;
 
