@@ -13,8 +13,8 @@ import gtnhtweaks.core.TweakModule;
 
 /**
  * Restyles every vanilla, Forge and FML screen like the GTNH loading screen: themed background and lists, flat buttons,
- * sliders and text fields, theme text colors. In game the menus get a translucent themed background, and vanilla
- * inventories get a dark tint in the DARK and SHADOW themes.
+ * sliders and text fields, theme text colors. In game the world stays behind the menus under the vanilla dark
+ * gradient, and vanilla inventories get a dark tint in the DARK and SHADOW themes.
  */
 public final class MenusModule extends TweakModule {
 
@@ -76,8 +76,8 @@ public final class MenusModule extends TweakModule {
             "themeInventories",
             CATEGORY_SCREENS,
             themeInventories,
-            "Themed background behind every inventory, and a dark tint of the vanilla inventory textures in the "
-                + "DARK and SHADOW themes. Mod inventories keep their own textures");
+            "Dark tint of the vanilla inventory textures in the DARK and SHADOW themes. Mod inventories keep their "
+                + "own textures");
         extraScreens = trimmed(
             config.getStringList(
                 "extraScreens",

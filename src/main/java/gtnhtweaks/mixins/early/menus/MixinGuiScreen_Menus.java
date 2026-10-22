@@ -1,6 +1,5 @@
 package gtnhtweaks.mixins.early.menus;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,16 +12,10 @@ import gtnhtweaks.modules.menus.MenuStyle;
 @Mixin(GuiScreen.class)
 public class MixinGuiScreen_Menus {
 
-    /** In game: the dark gradient over the world, behind menus and inventories. */
-    @Inject(method = "drawWorldBackground", at = @At("HEAD"), cancellable = true)
-    private void gtnhtweaks$drawWorldBackground(int tint, CallbackInfo ci) {
-        if (Minecraft.getMinecraft().theWorld == null || !MenuStyle.themesWorldBackground()) return;
-        GuiScreen self = (GuiScreen) (Object) this;
-        MenuStyle.drawWorldBackground(self.width, self.height);
-        ci.cancel();
-    }
-
-    /** Outside of a world: the dirt background. */
+    /**
+     * Outside of a world: the dirt background. In game the vanilla dark gradient over the world stays: a lighter
+     * themed one washed the world out behind menus and inventories.
+     */
     @Inject(method = "drawBackground", at = @At("HEAD"), cancellable = true)
     private void gtnhtweaks$drawBackground(int tint, CallbackInfo ci) {
         if (!MenuStyle.themesBackground()) return;

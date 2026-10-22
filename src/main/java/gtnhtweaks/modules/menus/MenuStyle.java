@@ -296,27 +296,6 @@ public final class MenuStyle {
         }
     }
 
-    /** True if the in-game background of the current screen is themed. */
-    public static boolean themesWorldBackground() {
-        return isActive() || activeInventory() != null;
-    }
-
-    /** Translucent background over the world, in place of the vanilla dark gradient. */
-    public static void drawWorldBackground(int width, int height) {
-        begin();
-        try {
-            GLDraw.verticalGradient(
-                0,
-                0,
-                width,
-                height,
-                withAlpha(theme().backgroundTop, 0xC0),
-                withAlpha(theme().backgroundBottom, 0xD8));
-        } finally {
-            end();
-        }
-    }
-
     /** The part of the screen background between y0 and y1, used for the strips above and below lists. */
     public static void drawBackgroundSlice(int x0, int y0, int x1, int y1) {
         if (y1 < y0) {
@@ -384,10 +363,6 @@ public final class MenuStyle {
     private static void end() {
         glPopAttrib();
         glColor4f(1, 1, 1, 1);
-    }
-
-    private static int withAlpha(int color, int alpha) {
-        return alpha << 24 | color & 0xFFFFFF;
     }
 
     private static int lerp(int from, int to, float t) {
