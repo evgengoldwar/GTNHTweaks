@@ -20,12 +20,12 @@ public final class MainMenuModule extends TweakModule {
     private static final String CATEGORY_GENERAL = "general";
     private static final String CATEGORY_TEXT = "text";
 
-    public static GTNHTheme style = GTNHTheme.DARK;
+    public static GTNHTheme style = GTNHTheme.SHADOW;
     public static boolean showSplashText = true;
     public static boolean showLoadTime = true;
     public static boolean showModCount = true;
     public static boolean showSettingsButton = true;
-    public static boolean respectResourcePacks = true;
+    public static boolean respectResourcePacks = false;
     public static boolean replaceCustomMainMenu = true;
 
     public static String subtitle = "GT: New Horizons";
@@ -39,13 +39,7 @@ public final class MainMenuModule extends TweakModule {
     @Override
     protected void loadConfig(Configuration config) {
         config.addCustomCategoryComment(CATEGORY_GENERAL, "Look of the main menu");
-        style = GTNHTheme.parse(
-            config.getString(
-                "style",
-                CATEGORY_GENERAL,
-                style.name(),
-                "Color style of the main menu: DARK or LIGHT",
-                GTNHTheme.names()));
+        style = readTheme(config, CATEGORY_GENERAL, "the main menu");
         showSplashText = config
             .getBoolean("showSplashText", CATEGORY_GENERAL, showSplashText, "Show the yellow vanilla splash text");
         showLoadTime = config.getBoolean(
@@ -60,10 +54,12 @@ public final class MainMenuModule extends TweakModule {
             CATEGORY_GENERAL,
             showSettingsButton,
             "Show a button in the bottom left corner that opens the GTNHTweaks settings");
+        // replaces respectResourcePacks, which was on by default and hid the menu behind every GUI resource pack
+        removeKey(config, CATEGORY_GENERAL, "respectResourcePacks");
         respectResourcePacks = config.getBoolean(
-            "respectResourcePacks",
+            "yieldToResourcePacks",
             CATEGORY_GENERAL,
-            respectResourcePacks,
+            false,
             "If an enabled resource pack replaces the Minecraft logo (title/minecraft.png), the panorama or the "
                 + "buttons (widgets.png), show the vanilla main menu with the resource pack instead of the GTNH one.\n"
                 + "false: the GTNH main menu is always shown");

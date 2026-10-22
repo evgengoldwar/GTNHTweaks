@@ -26,7 +26,7 @@ public final class BackupsModule extends TweakModule {
     private static final String CATEGORY_DETECTION = "detection";
     private static final String CATEGORY_TEXT = "text";
 
-    public static GTNHTheme style = GTNHTheme.DARK;
+    public static GTNHTheme style = GTNHTheme.SHADOW;
     public static boolean playSound = true;
     public static boolean hideChatMessages = true;
     public static int finishedToastSeconds = 6;
@@ -51,13 +51,7 @@ public final class BackupsModule extends TweakModule {
     @Override
     protected void loadConfig(Configuration config) {
         config.addCustomCategoryComment(CATEGORY_GENERAL, "Look and behavior of the backup toast");
-        style = GTNHTheme.parse(
-            config.getString(
-                "style",
-                CATEGORY_GENERAL,
-                style.name(),
-                "Color style of the toast: DARK or LIGHT",
-                GTNHTheme.names()));
+        style = readTheme(config, CATEGORY_GENERAL, "the toast");
         playSound = config.getBoolean("playSound", CATEGORY_GENERAL, playSound, "Play a sound when a backup ends");
         hideChatMessages = config.getBoolean(
             "hideChatMessages",

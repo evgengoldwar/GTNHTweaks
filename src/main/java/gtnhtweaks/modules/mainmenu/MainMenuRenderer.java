@@ -17,6 +17,7 @@ import gtnhtweaks.common.ResourcePackOverrides;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHLogo;
 import gtnhtweaks.common.render.GTNHTheme;
+import gtnhtweaks.common.render.ThemeShapes;
 import gtnhtweaks.common.render.ThemedButton;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.loadingscreen.LoadingTimer;
@@ -51,7 +52,7 @@ public final class MainMenuRenderer {
         if (!MainMenuModule.respectResourcePacks) return null;
         for (ResourceLocation texture : PACK_TEXTURES) {
             if (ResourcePackOverrides.isOverridden(texture))
-                return "a selected resource pack replaces " + texture + " (respectResourcePacks)";
+                return "a selected resource pack replaces " + texture + " (yieldToResourcePacks)";
         }
         return null;
     }
@@ -78,7 +79,7 @@ public final class MainMenuRenderer {
         String splashText, GTNHTheme theme) {
         int width = gui.width;
         int height = gui.height;
-        boolean shadow = theme == GTNHTheme.DARK;
+        boolean shadow = theme.textShadow;
 
         beginShapes();
         GLDraw.verticalGradient(0, 0, width, height, theme.backgroundTop, theme.backgroundBottom);
@@ -97,6 +98,7 @@ public final class MainMenuRenderer {
         GTNHLogo.draw((width - GTNHLogo.width(cell)) / 2, y, cell, theme);
         y += logoHeight + 6;
 
+        if (theme.isBeveled()) drawButtonPanel(buttons, theme);
         endShapes();
 
         if (hasSubtitle) {
@@ -135,6 +137,27 @@ public final class MainMenuRenderer {
         if (MainMenuModule.showLoadTime && LoadingScreenModule.INSTANCE.isEnabled() && LoadingTimer.isFinished()) {
             drawLoadTime(font, width, height, theme, shadow);
         }
+    }
+
+    /** Beveled panel behind the column of menu buttons, like a Shadow UI window. */
+    private static void drawButtonPanel(List<?> buttons, GTNHTheme theme) {
+        int left = Integer.MAX_VALUE, top = Integer.MAX_VALUE, right = Integer.MIN_VALUE, bottom = Integer.MIN_VALUE;
+        for (Object element : buttons) {
+            GuiButton button = (GuiButton) element;
+            if (!button.visible || button.id == MainMenuLayout.SETTINGS || !MainMenuLayout.isKnown(button.id)) continue;
+            left = Math.min(left, button.xPosition);
+            top = Math.min(top, button.yPosition);
+            right = Math.max(right, button.xPosition + ThemedButton.width(button));
+            bottom = Math.max(bottom, button.yPosition + ThemedButton.height(button));
+        }
+        if (left > right) return;
+        int padding = 6;
+        ThemeShapes.panel(
+            left - padding,
+            top - padding,
+            right - left + padding * 2,
+            bottom - top + padding * 2,
+            theme);
     }
 
     private static String cachedModCount;

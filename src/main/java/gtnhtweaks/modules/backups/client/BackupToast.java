@@ -25,6 +25,7 @@ import net.minecraft.client.gui.ScaledResolution;
 
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHTheme;
+import gtnhtweaks.common.render.ThemeShapes;
 import gtnhtweaks.modules.backups.BackupsModule;
 
 /**
@@ -83,7 +84,7 @@ class BackupToast {
             if (target >= 0) percent = (int) (shownProgress * 100) + "%";
             accent = theme.barFill;
             accentLight = theme.logoLight;
-            titleColor = theme == GTNHTheme.DARK ? theme.logoLight : theme.logo;
+            titleColor = theme == GTNHTheme.LIGHT ? theme.logo : theme.logoLight;
         } else {
             boolean ok = phase == BackupClient.Phase.FINISHED;
             title = ok ? BackupsModule.textTitleDone : BackupsModule.textTitleFailed;
@@ -117,18 +118,27 @@ class BackupToast {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glShadeModel(GL_SMOOTH);
 
-        // Panel with a soft shadow and a 1 px rounded border
+        // Panel with a soft shadow: beveled like a Shadow UI panel, or with a 1 px rounded border
         roundedRect(x - 1, y + 1, w + 2, HEIGHT + 2, 0x30000000);
         roundedRect(x, y + 2, w, HEIGHT, 0x40000000);
-        roundedRect(x, y, w, HEIGHT, theme.barBorder);
-        GLDraw.verticalGradient(x + 1, y + 1, w - 2, HEIGHT - 2, theme.buttonHover, theme.buttonBackground);
-        GLDraw.verticalGradient(x + 1, y + 1, 2, HEIGHT - 2, accentLight, accent);
+        int edge = 1;
+        if (theme.isBeveled()) {
+            ThemeShapes.panel(x, y, w, HEIGHT, theme);
+            edge = theme.panel.edge + 1;
+        } else {
+            roundedRect(x, y, w, HEIGHT, theme.barBorder);
+            GLDraw.verticalGradient(x + 1, y + 1, w - 2, HEIGHT - 2, theme.buttonHover, theme.buttonBackground);
+        }
+        GLDraw.verticalGradient(x + edge, y + edge, 2, HEIGHT - edge * 2, accentLight, accent);
 
         // Icon
         float boxX = x + 7;
         float boxY = y + 7;
-        roundedRect(boxX, boxY, 26, 26, theme.barBorder);
-        GLDraw.rect(boxX + 1, boxY + 1, 24, 24, theme.barBackground);
+        if (theme.isBeveled()) ThemeShapes.inset(boxX, boxY, 26, 26, theme);
+        else {
+            roundedRect(boxX, boxY, 26, 26, theme.barBorder);
+            GLDraw.rect(boxX + 1, boxY + 1, 24, 24, theme.barBackground);
+        }
         glPushMatrix();
         glTranslatef(boxX + 1, boxY + 1, 0);
         glScalef(1.5F, 1.5F, 1);
@@ -140,8 +150,7 @@ class BackupToast {
         float barY = y + 30;
         float barW = w - TEXT_X - 9;
         float barH = 4;
-        GLDraw.rect(barX - 1, barY - 1, barW + 2, barH + 2, theme.barBorder);
-        GLDraw.rect(barX, barY, barW, barH, theme.barBackground);
+        ThemeShapes.inset(barX - 1, barY - 1, barW + 2, barH + 2, theme);
         if (target >= 0 || !running) {
             float fill = barW * Math.max(0, Math.min(1, running ? shownProgress : 1));
             GLDraw.verticalGradient(barX, barY, fill, barH, accentLight, accent);
@@ -161,7 +170,7 @@ class BackupToast {
         glEnable(GL_ALPHA_TEST);
 
         // Texts
-        boolean shadow = theme == GTNHTheme.DARK;
+        boolean shadow = theme.textShadow;
         int textX = (int) (x + TEXT_X);
         String shownTitle = font.trimStringToWidth(title, w - TEXT_X - 8);
         font.drawString(shownTitle, textX, (int) y + 7, titleColor, shadow);

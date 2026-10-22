@@ -22,7 +22,7 @@ public final class LoadingScreenModule extends TweakModule {
     private static final String CATEGORY_INTEGRATION = "integration";
     private static final String CATEGORY_TEXT = "text";
 
-    public static GTNHTheme style = GTNHTheme.DARK;
+    public static GTNHTheme style = GTNHTheme.SHADOW;
     public static boolean showTimer = true;
     public static boolean showPreviousLaunch = true;
     public static boolean showMemory = true;
@@ -49,13 +49,7 @@ public final class LoadingScreenModule extends TweakModule {
     @Override
     protected void loadConfig(Configuration config) {
         config.addCustomCategoryComment(CATEGORY_GENERAL, "Look of the loading screen");
-        String styleName = config.getString(
-            "style",
-            CATEGORY_GENERAL,
-            style.name(),
-            "Color style of the loading screen: DARK or LIGHT",
-            GTNHTheme.names());
-        style = GTNHTheme.parse(styleName);
+        style = readTheme(config, CATEGORY_GENERAL, "the loading screen");
         showTimer = config.getBoolean("showTimer", CATEGORY_GENERAL, showTimer, "Show the loading timer");
         showPreviousLaunch = config.getBoolean(
             "showPreviousLaunch",

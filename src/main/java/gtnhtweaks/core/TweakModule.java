@@ -1,10 +1,12 @@
 package gtnhtweaks.core;
 
+import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
 
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import gtnhtweaks.common.render.GTNHTheme;
 
 /**
  * Base class of every GTNHTweaks module.
@@ -52,6 +54,29 @@ public abstract class TweakModule {
 
     public boolean isEnabledByDefault() {
         return true;
+    }
+
+    /**
+     * Reads the color theme of the module from the "theme" key, SHADOW by default. The old "style" key is dropped, so
+     * configs written before the SHADOW theme existed switch to it.
+     */
+    protected static GTNHTheme readTheme(Configuration config, String category, String what) {
+        removeKey(config, category, "style");
+        return GTNHTheme.parse(
+            config.getString(
+                "theme",
+                category,
+                GTNHTheme.SHADOW.name(),
+                "Color theme of " + what
+                    + ": SHADOW (the gray beveled look of the Shadow UI resource pack), DARK or LIGHT",
+                GTNHTheme.names()));
+    }
+
+    /** Removes a key that is no longer read, so it does not linger in the config file. */
+    protected static void removeKey(Configuration config, String category, String key) {
+        if (!config.hasCategory(category)) return;
+        ConfigCategory entries = config.getCategory(category);
+        if (entries.containsKey(key)) entries.remove(key);
     }
 
     /** Reads the module's own settings. Called once, even when the module is disabled, so the file is generated. */

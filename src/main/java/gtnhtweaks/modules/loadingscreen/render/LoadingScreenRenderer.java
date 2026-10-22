@@ -10,6 +10,7 @@ import org.lwjgl.opengl.Display;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHLogo;
 import gtnhtweaks.common.render.GTNHTheme;
+import gtnhtweaks.common.render.ThemeShapes;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.loadingscreen.LoadingTimer;
 
@@ -168,9 +169,9 @@ public final class LoadingScreenRenderer {
         float x = gap * 3;
         float y = gap * 3;
 
-        rect(x, y, panelWidth, panelHeight, theme.barBorder);
-        rect(x + 1, y + 1, panelWidth - 2, panelHeight - 2, theme.buttonBackground);
-        rect(x + 1, y + 1, Math.max(1, gap / 2), panelHeight - 2, memoryColor(usage, theme));
+        ThemeShapes.panel(x, y, panelWidth, panelHeight, theme);
+        int edge = theme.isBeveled() ? theme.panel.edge + 1 : 1;
+        rect(x + edge, y + edge, Math.max(1, gap / 2), panelHeight - edge * 2, memoryColor(usage, theme));
 
         float left = x + padding;
         float top = y + padding;
@@ -183,8 +184,12 @@ public final class LoadingScreenRenderer {
             memoryColor(usage, theme));
         top += lineHeight + gap * 2;
 
-        rect(left, top, contentWidth, barHeight, theme.barBackground);
-        rect(left, top, contentWidth * usage, barHeight, memoryColor(usage, theme));
+        if (theme.isBeveled()) {
+            ThemeShapes.bar(left, top, contentWidth, barHeight, usage, memoryColor(usage, theme), theme);
+        } else {
+            rect(left, top, contentWidth, barHeight, theme.barBackground);
+            rect(left, top, contentWidth * usage, barHeight, memoryColor(usage, theme));
+        }
         top += barHeight + gap * 2;
 
         SplashFont.draw(amount, left, top, textScale, theme.text);
@@ -214,9 +219,7 @@ public final class LoadingScreenRenderer {
     }
 
     private static void drawBar(int x, int y, int width, int height, float progress, GTNHTheme theme) {
-        rect(x, y, width, height, theme.barBorder);
-        rect(x + 1, y + 1, width - 2, height - 2, theme.barBackground);
-        rect(x + 1, y + 1, (width - 2) * progress, height - 2, theme.barFill);
+        ThemeShapes.bar(x, y, width, height, progress, theme.barFill, theme);
     }
 
     private static void drawCentered(String text, float centerX, float y, int scale, int color) {

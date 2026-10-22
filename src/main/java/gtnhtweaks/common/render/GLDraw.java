@@ -47,4 +47,19 @@ public final class GLDraw {
         glVertex2f(x + w, y);
         glEnd();
     }
+
+    /** A beveled box, see {@link GTNHTheme.Bevel}. */
+    public static void bevel(float x, float y, float w, float h, GTNHTheme.Bevel bevel) {
+        if (bevel.border != 0) {
+            rect(x, y, w, h, bevel.border);
+            x += 1;
+            y += 1;
+            w -= 2;
+            h -= 2;
+        }
+        int e = Math.max(0, Math.min(bevel.edge, (int) Math.min(w, h) / 2));
+        rect(x, y, w, h, bevel.bottomRight);
+        rect(x, y, w - e, h - e, bevel.topLeft);
+        rect(x + e, y + e, w - e * 2, h - e * 2, bevel.fill);
+    }
 }

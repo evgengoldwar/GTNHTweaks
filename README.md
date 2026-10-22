@@ -9,7 +9,7 @@
 Миксины модуля лежат в `src/main/java/gtnhtweaks/mixins/early/<модуль>` (для классов других модов —
 в `src/main/java/gtnhtweaks/mixins/late/<модуль>`, пакет миксинов общий для мода)
 и подключаются в `gtnhtweaks.mixins.Mixins` только когда модуль включён.
-Общий стиль (темы `DARK`/`LIGHT`, логотип GTNH, кнопка) лежит в `src/main/java/gtnhtweaks/common/render`,
+Общий стиль (темы `SHADOW`/`DARK`/`LIGHT`, логотип GTNH, кнопки, панели) лежит в `src/main/java/gtnhtweaks/common/render`,
 общие миксины — в `src/main/java/gtnhtweaks/mixins/early/common`.
 
 Конфиги (`config/GTNHTweaks/`):
@@ -44,7 +44,7 @@
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `general/style` | `DARK` | стиль: `DARK` (тёмный) или `LIGHT` (светлый) |
+| `general/theme` | `SHADOW` | тема: `SHADOW` (серый объёмный стиль Shadow UI), `DARK` (тёмный) или `LIGHT` (светлый) |
 | `general/showTimer` | `true` | таймер загрузки |
 | `general/showPreviousLaunch` | `true` | время предыдущего запуска |
 | `general/showMemory` | `true` | использование памяти |
@@ -74,10 +74,10 @@
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `general/style` | `DARK` | стиль: `DARK` или `LIGHT` |
+| `general/theme` | `SHADOW` | тема: `SHADOW`, `DARK` или `LIGHT` |
 | `general/showSplashText` | `true` | сплэш-текст под логотипом |
 | `general/showLoadTime` | `true` | время загрузки сборки |
-| `general/respectResourcePacks` | `true` | если включённый ресурс-пак заменяет логотип Minecraft, панораму или кнопки — показывать ванильное меню с ресурс-паком |
+| `general/yieldToResourcePacks` | `false` | если включённый ресурс-пак заменяет логотип Minecraft, панораму или кнопки — показывать ванильное меню с ресурс-паком |
 | `text/subtitle` | `GT: New Horizons` | подпись под логотипом, пусто чтобы скрыть |
 
 ### menus: все меню и инвентари
@@ -106,9 +106,9 @@
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `general/style` | `DARK` | стиль: `DARK` или `LIGHT` |
+| `general/theme` | `SHADOW` | тема: `SHADOW`, `DARK` или `LIGHT` |
 | `general/recolorText` | `true` | перекрашивать белый и серый текст в цвета темы |
-| `general/respectResourcePacks` | `true` | текстуры включённых ресурс-паков важнее темы, см. ниже |
+| `general/yieldToResourcePacks` | `false` | текстуры включённых ресурс-паков важнее темы, см. ниже |
 | `screens/themeVanillaScreens` | `true` | все экраны Minecraft/Forge/FML и экраны модов, наследующие их |
 | `screens/themeInGame` | `true` | также меню в игре |
 | `screens/themeInventories` | `true` | фон темы за инвентарями и затемнение ванильных инвентарей |
@@ -117,17 +117,18 @@
 
 #### Ресурс-паки
 
-Если `respectResourcePacks = true` и включённый ресурс-пак заменяет ванильную текстуру,
+Если `yieldToResourcePacks = true` и включённый ресурс-пак заменяет ванильную текстуру,
 которую меняет мод, вместо темы показывается ресурс-пак:
 
 | Текстура в ресурс-паке | Что тогда не меняется модом |
 | --- | --- |
 | `textures/gui/options_background.png` | фон экранов, списки, поля ввода и цвета текста |
 | `textures/gui/widgets.png` | кнопки и ползунки |
-| текстура конкретного инвентаря (`textures/gui/container/...`) | затемнение этого инвентаря |
 | `textures/gui/title/minecraft.png`, панорама, `widgets.png` | главное меню целиком (модуль `mainmenu`) |
 
-С `respectResourcePacks = false` тема рисуется всегда, и ресурс-паки на эти экраны не влияют.
+С `yieldToResourcePacks = false` (по умолчанию) тема рисуется всегда, и ресурс-паки на эти экраны не влияют.
+Текстуру инвентаря, заменённую ресурс-паком (`textures/gui/container/...`), мод не затемняет никогда:
+у пака уже свои цвета.
 Учитываются только паки, включённые в меню ресурс-паков; ресурсы модов не считаются.
 Экран загрузки не зависит от ресурс-паков: они загружаются уже после него.
 
@@ -259,7 +260,7 @@
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `general/style` | `DARK` | стиль: `DARK` или `LIGHT` |
+| `general/theme` | `SHADOW` | тема: `SHADOW`, `DARK` или `LIGHT` |
 | `general/playSound` | `true` | звук в конце бэкапа |
 | `general/hideChatMessages` | `true` | скрывать сообщения о бэкапе в чате |
 | `general/finishedToastSeconds` | `6` | сколько секунд плашка висит после бэкапа |
@@ -268,3 +269,11 @@
 | `detection/detectFromChat` | `true` | клиентская часть: распознавать бэкап по чату |
 | `detection/loggers`, `keywords`, `ignored`, `failed`, `finished`, `started` | см. файл | регулярные выражения, по которым распознаются сообщения о бэкапе; можно подстроить под свой язык или версию ServerUtilities |
 | `text/*` | английский | подписи на плашке, поддерживается кириллица |
+
+## Благодарности
+
+Тема `SHADOW` повторяет цвета и форму кнопок, панелей и слотов ресурс-пака
+[GTNH Shadow UI](https://github.com/Ranzuu/Shadow-UI) от Ranzuu (основан на
+[Charcoal.UI](https://github.com/Jimbno/Charcoal.UI) от Jimbno), лицензия
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Текстуры пака в мод не входят:
+мод рисует те же цвета сам.

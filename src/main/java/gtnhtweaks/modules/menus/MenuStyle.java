@@ -21,6 +21,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import gtnhtweaks.common.ResourcePackOverrides;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHTheme;
+import gtnhtweaks.common.render.ThemeShapes;
 import gtnhtweaks.common.render.ThemedButton;
 import gtnhtweaks.mixins.early.common.AccessorGuiButton;
 import gtnhtweaks.modules.mainmenu.MainMenuModule;
@@ -110,9 +111,9 @@ public final class MenuStyle {
         return isExcluded(screen.getClass()) ? null : (GuiContainer) screen;
     }
 
-    /** Vanilla inventory textures are tinted only in the DARK style: a multiplied tint can only darken. */
+    /** Vanilla inventory textures are not tinted in the LIGHT style: a multiplied tint can only darken. */
     public static boolean tintsInventory(GuiContainer gui) {
-        return gui == activeInventory() && theme() == GTNHTheme.DARK
+        return gui == activeInventory() && theme() != GTNHTheme.LIGHT
             && isVanilla(
                 gui.getClass()
                     .getName());
@@ -124,10 +125,12 @@ public final class MenuStyle {
         recordingInventoryTextures = true;
     }
 
-    /** @return true if a resource pack replaces one of the textures the inventory background used */
+    /**
+     * @return true if a resource pack replaces one of the textures the inventory background used. Such textures are
+     *         never tinted, whatever yieldToResourcePacks says: the pack already gives them its own colors.
+     */
     public static boolean endInventoryBackground() {
         recordingInventoryTextures = false;
-        if (!MenusModule.respectResourcePacks) return false;
         for (ResourceLocation texture : INVENTORY_TEXTURES) {
             if (ResourcePackOverrides.isOverridden(texture)) return true;
         }
@@ -262,21 +265,21 @@ public final class MenuStyle {
 
     /** Text shadows look dirty on the light style. */
     public static boolean suppressShadow() {
-        return MenusModule.recolorText && !inTooltip && theme() == GTNHTheme.LIGHT && themesBackground();
+        return MenusModule.recolorText && !inTooltip && !theme().textShadow && themesBackground();
     }
 
     // ---- lists and text fields
 
     public static int selectionColor(int color) {
         if (!themesBackground()) return color;
-        if (color == VANILLA_SELECTION_BORDER) return theme().barFill & 0xFFFFFF;
-        if (color == VANILLA_SELECTION_FILL) return theme().buttonHover & 0xFFFFFF;
+        if (color == VANILLA_SELECTION_BORDER) return theme().selectionBorder & 0xFFFFFF;
+        if (color == VANILLA_SELECTION_FILL) return theme().selectionFill & 0xFFFFFF;
         return color;
     }
 
     public static int textFieldColor(int color) {
         if (!themesBackground()) return color;
-        if (color == VANILLA_FIELD_BORDER) return theme().barBorder;
+        if (color == VANILLA_FIELD_BORDER) return theme().isBeveled() ? theme().inset.bottomRight : theme().barBorder;
         if (color == VANILLA_FIELD_FILL) return theme().barBackground;
         return color;
     }
@@ -342,7 +345,8 @@ public final class MenuStyle {
     public static void drawListPanel(int left, int top, int right, int bottom) {
         begin();
         try {
-            GLDraw.rect(left, top, right - left, bottom - top, theme().barBackground);
+            if (theme().isBeveled()) ThemeShapes.inset(left, top, right - left, bottom - top, theme());
+            else GLDraw.rect(left, top, right - left, bottom - top, theme().barBackground);
         } finally {
             end();
         }
@@ -353,7 +357,7 @@ public final class MenuStyle {
      * panel color, slots and borders keep their relative shading.
      */
     public static void tintInventory(int x, int y, int width, int height) {
-        int target = theme().buttonBackground;
+        int target = theme().panelFill();
         int r = Math.min(255, (target >> 16 & 0xFF) * 255 / VANILLA_INVENTORY_GRAY);
         int g = Math.min(255, (target >> 8 & 0xFF) * 255 / VANILLA_INVENTORY_GRAY);
         int b = Math.min(255, (target & 0xFF) * 255 / VANILLA_INVENTORY_GRAY);

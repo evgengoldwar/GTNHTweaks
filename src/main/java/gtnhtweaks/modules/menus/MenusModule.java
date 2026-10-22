@@ -14,7 +14,7 @@ import gtnhtweaks.core.TweakModule;
 /**
  * Restyles every vanilla, Forge and FML screen like the GTNH loading screen: themed background and lists, flat buttons,
  * sliders and text fields, theme text colors. In game the menus get a translucent themed background, and vanilla
- * inventories get a dark tint in the DARK style.
+ * inventories get a dark tint in the DARK and SHADOW themes.
  */
 public final class MenusModule extends TweakModule {
 
@@ -28,9 +28,9 @@ public final class MenusModule extends TweakModule {
         "net.minecraft.client.gui.inventory.GuiContainerCreative", //
     };
 
-    public static GTNHTheme style = GTNHTheme.DARK;
+    public static GTNHTheme style = GTNHTheme.SHADOW;
     public static boolean recolorText = true;
-    public static boolean respectResourcePacks = true;
+    public static boolean respectResourcePacks = false;
     public static boolean themeVanillaScreens = true;
     public static boolean themeInGame = true;
     public static boolean themeInventories = true;
@@ -44,26 +44,21 @@ public final class MenusModule extends TweakModule {
     @Override
     protected void loadConfig(Configuration config) {
         config.addCustomCategoryComment(CATEGORY_GENERAL, "Look of the menu screens");
-        style = GTNHTheme.parse(
-            config.getString(
-                "style",
-                CATEGORY_GENERAL,
-                style.name(),
-                "Color style of the menus: DARK or LIGHT",
-                GTNHTheme.names()));
+        style = readTheme(config, CATEGORY_GENERAL, "the menus");
         recolorText = config.getBoolean(
             "recolorText",
             CATEGORY_GENERAL,
             recolorText,
             "Replace the white and gray text of the screens with the theme colors. Needed for the LIGHT style");
+        // replaces respectResourcePacks, which was on by default and hid the theme behind every GUI resource pack
+        removeKey(config, CATEGORY_GENERAL, "respectResourcePacks");
         respectResourcePacks = config.getBoolean(
-            "respectResourcePacks",
+            "yieldToResourcePacks",
             CATEGORY_GENERAL,
-            respectResourcePacks,
+            false,
             "If an enabled resource pack replaces a vanilla GUI texture, show the resource pack instead of the theme:\n"
-                + "options_background.png - backgrounds and lists, widgets.png - buttons and sliders,\n"
-                + "inventory textures - the dark tint of that inventory.\n"
-                + "false: the theme is always drawn, resource packs do not change these GUIs");
+                + "options_background.png - backgrounds and lists, widgets.png - buttons and sliders.\n"
+                + "false: the theme is always drawn. Inventory textures replaced by a pack are never tinted");
 
         config.addCustomCategoryComment(CATEGORY_SCREENS, "Which screens are restyled. Changes require a restart");
         themeVanillaScreens = config.getBoolean(
@@ -82,7 +77,7 @@ public final class MenusModule extends TweakModule {
             CATEGORY_SCREENS,
             themeInventories,
             "Themed background behind every inventory, and a dark tint of the vanilla inventory textures in the "
-                + "DARK style. Mod inventories keep their own textures");
+                + "DARK and SHADOW themes. Mod inventories keep their own textures");
         extraScreens = trimmed(
             config.getStringList(
                 "extraScreens",

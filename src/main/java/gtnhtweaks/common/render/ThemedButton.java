@@ -8,7 +8,10 @@ import net.minecraft.client.gui.GuiButton;
 
 import gtnhtweaks.mixins.early.common.AccessorGuiButton;
 
-/** Flat GTNH style button: themed frame, accent strip and label color on hover. */
+/**
+ * GTNH style button. Flat themes: themed frame, accent strip and label color on hover. Beveled themes: the gray
+ * beveled buttons of Shadow UI, lighter on hover and darker when disabled.
+ */
 public final class ThemedButton {
 
     private ThemedButton() {}
@@ -50,9 +53,18 @@ public final class ThemedButton {
             glDisable(GL_ALPHA_TEST);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            rect(x, y, width, height, hovered ? theme.barFill : theme.barBorder);
-            rect(x + 1, y + 1, width - 2, height - 2, hovered ? theme.buttonHover : theme.buttonBackground);
-            if (hovered) rect(x + 1, y + 1, 2, height - 2, theme.barFill);
+            if (theme.isBeveled()) {
+                GLDraw.bevel(
+                    x,
+                    y,
+                    width,
+                    height,
+                    !button.enabled ? theme.buttonDisabled : hovered ? theme.buttonHovered : theme.button);
+            } else {
+                rect(x, y, width, height, hovered ? theme.barFill : theme.barBorder);
+                rect(x + 1, y + 1, width - 2, height - 2, hovered ? theme.buttonHover : theme.buttonBackground);
+                if (hovered) rect(x + 1, y + 1, 2, height - 2, theme.barFill);
+            }
         } finally {
             glPopAttrib();
             glColor4f(1, 1, 1, 1);
@@ -65,7 +77,7 @@ public final class ThemedButton {
         int color;
         if (button.packedFGColour != 0) color = button.packedFGColour;
         else if (!button.enabled) color = theme.textDisabled;
-        else color = isHovered(button, mouseX, mouseY) ? theme.logo : theme.text;
+        else color = isHovered(button, mouseX, mouseY) ? theme.hoverText : theme.text;
         int width = width(button);
         glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
         try {
@@ -77,22 +89,35 @@ public final class ThemedButton {
                 button.xPosition + width / 2 - font.getStringWidth(label) / 2,
                 button.yPosition + (height(button) - 8) / 2,
                 color,
-                theme == GTNHTheme.DARK);
+                theme.textShadow);
         } finally {
             glPopAttrib();
             glColor4f(1, 1, 1, 1);
         }
     }
 
+    /** Last knob part drawn, to join the two halves vanilla sliders draw their knob from. */
+    private static int knobX, knobY, knobRight, knobHeight;
+
     /** Slider knob part, in place of the vanilla knob texture. */
     public static void drawKnob(int x, int y, int width, int height, GTNHTheme theme) {
+        // a beveled knob drawn per half would show two boxes: the right half redraws the whole knob over the left one
+        if (theme.isBeveled() && x == knobRight && y == knobY && height == knobHeight) {
+            width += x - knobX;
+            x = knobX;
+        }
+        knobX = x;
+        knobY = y;
+        knobRight = x + width;
+        knobHeight = height;
         glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
         try {
             glDisable(GL_TEXTURE_2D);
             glDisable(GL_ALPHA_TEST);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            rect(x, y, width, height, theme.barFill);
+            if (theme.isBeveled()) GLDraw.bevel(x, y, width, height, theme.button);
+            else rect(x, y, width, height, theme.barFill);
         } finally {
             glPopAttrib();
             glColor4f(1, 1, 1, 1);
