@@ -11,7 +11,7 @@ import net.minecraftforge.client.event.GuiScreenEvent;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import gtnhtweaks.client.ConfigScreen;
+import gtnhtweaks.client.settings.SettingsScreen;
 import gtnhtweaks.mixins.early.common.AccessorGuiButton;
 
 /**
@@ -88,7 +88,7 @@ public class MainMenuLayout {
     public void onActionPerformed(GuiScreenEvent.ActionPerformedEvent.Pre event) {
         if (!(event.gui instanceof GuiMainMenu) || event.button.id != SETTINGS) return;
         Minecraft.getMinecraft()
-            .displayGuiScreen(new ConfigScreen(event.gui));
+            .displayGuiScreen(new SettingsScreen(event.gui));
         event.setCanceled(true);
     }
 

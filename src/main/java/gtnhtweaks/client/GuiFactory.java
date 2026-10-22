@@ -10,6 +10,7 @@ import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.client.settings.SettingsScreen;
 import gtnhtweaks.core.ModuleManager;
 
 /** Adds the "Config" button of GTNHTweaks in the mod list and applies the settings saved there. */
@@ -24,7 +25,7 @@ public class GuiFactory implements IModGuiFactory {
 
     @Override
     public Class<? extends GuiScreen> mainConfigGuiClass() {
-        return ConfigScreen.class;
+        return SettingsScreen.class;
     }
 
     @Override
