@@ -2,7 +2,7 @@ package gtnhtweaks.modules.mainmenu;
 
 import java.lang.reflect.Field;
 
-import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.client.event.GuiOpenEvent;
 
@@ -24,6 +24,8 @@ public class CustomMainMenuReplacer {
     private Field nameField;
     private boolean failed;
     private String loggedReason;
+    private long windowStart;
+    private int replacedInWindow;
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onOpenGui(GuiOpenEvent event) {
@@ -36,7 +38,23 @@ public class CustomMainMenuReplacer {
             }
             return;
         }
-        event.gui = new GuiMainMenu();
+        if (isLooping()) return;
+        event.gui = new GTNHMainMenu();
+    }
+
+    /** Stops replacing for good when another mod keeps swapping the menu back, instead of overflowing the stack. */
+    private boolean isLooping() {
+        long now = Minecraft.getSystemTime();
+        if (now - windowStart > 1000) {
+            windowStart = now;
+            replacedInWindow = 0;
+        }
+        if (++replacedInWindow <= 10) return false;
+        failed = true;
+        GTNHTweaks.LOG.error(
+            "Another mod keeps replacing the main menu, the main menu of Custom Main Menu is kept",
+            new Throwable("Stack of the last replacement"));
+        return true;
     }
 
     private boolean isCustomMainMenu(GuiScreen gui) {
