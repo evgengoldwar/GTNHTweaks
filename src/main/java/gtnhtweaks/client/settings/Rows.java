@@ -160,7 +160,7 @@ final class Rows {
                 property.setToDefault();
                 control.refresh();
                 screen.afterChange(property);
-                SettingsScreen.playClick();
+                UI.playClick();
                 return true;
             }
             return control.click(controlX(x, w), y, HEIGHT, mouseX, mouseY, button);
@@ -296,7 +296,7 @@ final class Rows {
         boolean click(int x, int y, int h, int mouseX, int mouseY, int button) {
             if (!UI.inside(mouseX, mouseY, x, y, width, h)) return false;
             set(() -> property.set(!property.getBoolean(false)));
-            SettingsScreen.playClick();
+            UI.playClick();
             return true;
         }
     }
@@ -338,7 +338,7 @@ final class Rows {
             boolean back = button == 1 || mouseX < x + width / 4;
             int next = ((index < 0 ? 0 : index) + (back ? values.length - 1 : 1)) % values.length;
             set(() -> property.set(values[next]));
-            SettingsScreen.playClick();
+            UI.playClick();
             return true;
         }
     }
@@ -456,7 +456,7 @@ final class Rows {
         @Override
         boolean click(int x, int y, int h, int mouseX, int mouseY, int button) {
             if (!UI.inside(mouseX, mouseY, x, y + (h - 16) / 2, width, 16)) return false;
-            SettingsScreen.playClick();
+            UI.playClick();
             screen.openList(property);
             return true;
         }

@@ -25,6 +25,7 @@ public final class LogsModule extends TweakModule {
     private static final String CATEGORY_GENERAL = "general";
     private static final String CATEGORY_FILES = "files";
     private static final String CATEGORY_DETAILS = "details";
+    private static final String CATEGORY_CRASH_SCREEN = "crashScreen";
 
     static String folder = "GTNHTweaksLogs";
     static int maxBackups = 5;
@@ -37,6 +38,7 @@ public final class LogsModule extends TweakModule {
     static boolean writeLoading = true;
     static boolean writeMods = true;
 
+    public static boolean replaceCrashScreen = true;
     static int maxStackFrames = 12;
     static int maxCrashStackFrames = 30;
     static boolean stderrAsErrors = true;
@@ -96,6 +98,15 @@ public final class LogsModule extends TweakModule {
             writeMods,
             "Mods: versions of Java, Minecraft and Forge, memory, graphics card and the mod list with the changes "
                 + "since the previous launch");
+
+        config.addCustomCategoryComment(CATEGORY_CRASH_SCREEN, "The screen shown after a crash");
+        replaceCrashScreen = config.getBoolean(
+            "replaceCrashScreen",
+            CATEGORY_CRASH_SCREEN,
+            replaceCrashScreen,
+            "Show the GTNHTweaks crash screen in place of the one of BetterCrashes: the problem, the whole crash "
+                + "report to scroll through, buttons to copy it and to open the log folder. BetterCrashes still "
+                + "recovers the game. Changes require a game restart");
 
         config.addCustomCategoryComment(CATEGORY_DETAILS, "Content of the Errors, Warnings and Crash files");
         maxStackFrames = config.getInt(
@@ -167,6 +178,16 @@ public final class LogsModule extends TweakModule {
         } catch (RuntimeException e) {
             GTNHTweaks.LOG.error("Failed to write the mod list", e);
         }
+    }
+
+    /** Short description of a crash report: what crashed, the exception, the mods in the stack trace. */
+    public static String summarizeCrash(String completeReport) {
+        return CrashSummary.summarize(completeReport, maxCrashStackFrames);
+    }
+
+    /** The folder the logs are written to. */
+    public static File logFolder() {
+        return LogFiles.folder();
     }
 
     /** Called from the crash report mixin after Minecraft saved a crash report. */

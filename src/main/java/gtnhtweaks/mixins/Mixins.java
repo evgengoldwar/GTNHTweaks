@@ -65,6 +65,9 @@ public enum Mixins implements IMixins {
     LOGS_CRASH_REPORT(new MixinBuilder("Copy crash reports to the GTNHTweaks logs").setPhase(Phase.EARLY)
         .setApplyIf(LogsModule.INSTANCE::isEnabled)
         .addCommonMixins("logs.MixinCrashReport_Logs")),
+    LOGS_CRASH_SCREEN(new MixinBuilder("Crash screen in place of the BetterCrashes one").setPhase(Phase.EARLY)
+        .setApplyIf(() -> LogsModule.INSTANCE.isEnabled() && LogsModule.replaceCrashScreen)
+        .addClientMixins("logs.MixinMinecraft_CrashScreen")),
 
     // Shared by the modules that draw GTNH style buttons
     GUI_BUTTON_ACCESSOR(new MixinBuilder("GuiButton size accessor").setPhase(Phase.EARLY)

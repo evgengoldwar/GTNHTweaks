@@ -102,6 +102,13 @@ final class LogFiles {
 
     private LogFiles() {}
 
+    /** The log folder, also before the logs are started. */
+    static File folder() {
+        if (dir != null) return dir;
+        File home = Launch.minecraftHome != null ? Launch.minecraftHome : new File(".");
+        return new File(home, LogsModule.folder);
+    }
+
     static String time(long millis) {
         return TIME.format(
             Instant.ofEpochMilli(millis)

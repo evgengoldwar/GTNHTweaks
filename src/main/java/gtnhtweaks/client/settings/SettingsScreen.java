@@ -1,7 +1,5 @@
 package gtnhtweaks.client.settings;
 
-import java.awt.Desktop;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,20 +7,15 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 
-import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
-import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.Tags;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHTheme;
@@ -369,14 +362,14 @@ public class SettingsScreen extends GuiScreen {
         int y = windowY + windowH - FOOTER_HEIGHT + 6;
         int doneW = 80, folderW = 90;
         if (button == 0 && UI.inside(mouseX, mouseY, windowX + windowW - GAP - doneW, y, doneW, 18)) {
-            playClick();
+            UI.playClick();
             close();
             return;
         }
         if (button == 0
             && UI.inside(mouseX, mouseY, windowX + windowW - GAP * 2 - doneW - folderW, y, folderW, 18)) {
-            playClick();
-            openFolder(ModuleManager.getConfigDir());
+            UI.playClick();
+            UI.open(ModuleManager.getConfigDir());
             return;
         }
 
@@ -396,7 +389,7 @@ public class SettingsScreen extends GuiScreen {
                 scroll = scrollTarget = 0;
                 showRows();
             }
-            playClick();
+            UI.playClick();
             return;
         }
 
@@ -511,31 +504,5 @@ public class SettingsScreen extends GuiScreen {
     @Override
     public boolean doesGuiPauseGame() {
         return false;
-    }
-
-    static void playClick() {
-        Minecraft.getMinecraft()
-            .getSoundHandler()
-            .playSound(PositionedSoundRecord.func_147674_a(new ResourceLocation("gui.button.press"), 1.0F));
-    }
-
-    private static void openFolder(File dir) {
-        try {
-            if (Desktop.isDesktopSupported() && Desktop.getDesktop()
-                .isSupported(Desktop.Action.OPEN)) {
-                Desktop.getDesktop()
-                    .open(dir);
-                return;
-            }
-        } catch (Exception e) {
-            GTNHTweaks.LOG.debug("Desktop could not open " + dir, e);
-        }
-        try {
-            Sys.openURL(
-                dir.toURI()
-                    .toString());
-        } catch (Throwable t) {
-            GTNHTweaks.LOG.warn("Could not open " + dir, t);
-        }
     }
 }

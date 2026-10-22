@@ -118,17 +118,17 @@ class ListEditScreen extends GuiScreen {
     protected void mouseClicked(int mouseX, int mouseY, int button) {
         int by = windowY + windowH - 24;
         if (UI.inside(mouseX, mouseY, windowX + windowW - GAP - 80, by, 80, 18)) {
-            SettingsScreen.playClick();
+            UI.playClick();
             save();
             return;
         }
         if (UI.inside(mouseX, mouseY, windowX + windowW - GAP * 2 - 160, by, 80, 18)) {
-            SettingsScreen.playClick();
+            UI.playClick();
             mc.displayGuiScreen(parent);
             return;
         }
         if (UI.inside(mouseX, mouseY, windowX + GAP, by, 80, 18)) {
-            SettingsScreen.playClick();
+            UI.playClick();
             fields.clear();
             for (String value : property.getDefaults()) addField(value);
             return;
@@ -139,7 +139,7 @@ class ListEditScreen extends GuiScreen {
         for (int i = 0; i < fields.size(); i++) {
             GuiTextField field = fields.get(i);
             if (inList && UI.inside(mouseX, mouseY, windowX + windowW - GAP - 22, y + 2, 18, 16)) {
-                SettingsScreen.playClick();
+                UI.playClick();
                 fields.remove(i);
                 return;
             }
@@ -150,7 +150,7 @@ class ListEditScreen extends GuiScreen {
             y += ROW;
         }
         if (inList && UI.inside(mouseX, mouseY, windowX + GAP + 3, y + 2, 80, 16)) {
-            SettingsScreen.playClick();
+            UI.playClick();
             for (GuiTextField field : fields) field.setFocused(false);
             addField("");
             fields.get(fields.size() - 1)
