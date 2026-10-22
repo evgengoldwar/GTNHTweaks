@@ -17,6 +17,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.modules.backups.BackupsModule;
+import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.logs.LogsModule;
@@ -36,7 +37,8 @@ public final class ModuleManager {
                 MenusModule.INSTANCE,
                 GregTechModule.INSTANCE,
                 LogsModule.INSTANCE,
-                BackupsModule.INSTANCE));
+                BackupsModule.INSTANCE,
+                DebugModule.INSTANCE));
 
     private static boolean configLoaded;
     private static Configuration modulesConfig;
