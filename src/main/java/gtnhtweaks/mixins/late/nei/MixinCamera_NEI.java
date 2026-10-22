@@ -137,14 +137,8 @@ public class MixinCamera_NEI {
         gtnhtweaks$lastFrame = now;
 
         // the target obeys the same bounds as the camera
-        gtnhtweaks$targetX = gtnhtweaks$clamp(
-            gtnhtweaks$targetX,
-            -widgetW / gtnhtweaks$targetZoom + 4,
-            treeWidth - 4);
-        gtnhtweaks$targetY = gtnhtweaks$clamp(
-            gtnhtweaks$targetY,
-            -widgetH / gtnhtweaks$targetZoom + 4,
-            treeHeight - 4);
+        gtnhtweaks$targetX = gtnhtweaks$clamp(gtnhtweaks$targetX, -widgetW / gtnhtweaks$targetZoom + 4, treeWidth - 4);
+        gtnhtweaks$targetY = gtnhtweaks$clamp(gtnhtweaks$targetY, -widgetH / gtnhtweaks$targetZoom + 4, treeHeight - 4);
 
         // covers about 95% of the way in the configured time, whatever the frame rate
         float t = 1F - (float) Math.exp(-3F * dt / Math.max(1, NEIModule.scrollTimeMs));
