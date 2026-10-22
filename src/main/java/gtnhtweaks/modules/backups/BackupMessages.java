@@ -27,6 +27,8 @@ public final class BackupMessages {
     static final String DEFAULT_STARTED = "(?iu).*(start|begin|backing up|launch|compressing|начина|начат|запуск|создаётся|создается).*";
 
     private static final Pattern PERCENT = Pattern.compile("(\\d{1,3}(?:[.,]\\d+)?)\\s*%");
+    /** Size of the archive, like {@code 2.0GB} in "Backup done in 00:41 seconds (2.0GB)!". */
+    private static final Pattern SIZE = Pattern.compile("(?i)(\\d+(?:[.,]\\d+)?)\\s*([KMGT]i?B)\\b");
 
     static volatile Pattern loggers = Pattern.compile(DEFAULT_LOGGERS);
     static volatile Pattern keywords = Pattern.compile(DEFAULT_KEYWORDS);
@@ -86,9 +88,21 @@ public final class BackupMessages {
         if (lower.contains("end") || lower.contains("done")
             || lower.contains("finish")
             || lower.contains("complete")) return Kind.FINISHED;
-        if (lower.contains("start") || lower.contains("begin")) return Kind.STARTED;
+        if (lower.contains("start") || lower.contains("begin")
+            || lower.contains("launch")
+            || lower.contains("manual")) return Kind.STARTED;
         if (lower.contains("progress")) return Kind.PROGRESS;
         return Kind.OTHER;
+    }
+
+    /** Size of the backup named in the text, like "2.0 GB", or an empty string. */
+    public static String size(String text) {
+        Matcher matcher = SIZE.matcher(text);
+        if (!matcher.find()) return "";
+        return matcher.group(1) + " "
+            + matcher.group(2)
+                .toUpperCase()
+                .replace("IB", "iB");
     }
 
     /** The percentage in the text from 0 to 1, or -1 if there is none. */

@@ -1,5 +1,6 @@
 package gtnhtweaks.modules.backups;
 
+import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
@@ -19,13 +20,21 @@ public class BackupPacket implements IMessage {
     /** From 0 to 1, or -1 when the server knows no progress. */
     public float progress;
     public long elapsedMs;
+    /** Size of the finished backup, like "2.0 GB", empty if unknown. */
+    public String size = "";
+    /**
+     * Handed over directly inside the singleplayer game instead of through the network. The integrated server can be
+     * paused while the backup thread works, so its packets would only arrive at the end.
+     */
+    public transient boolean local;
 
     public BackupPacket() {}
 
-    public BackupPacket(byte state, float progress, long elapsedMs) {
+    public BackupPacket(byte state, float progress, long elapsedMs, String size) {
         this.state = state;
         this.progress = progress;
         this.elapsedMs = elapsedMs;
+        this.size = size;
     }
 
     @Override
@@ -33,6 +42,7 @@ public class BackupPacket implements IMessage {
         state = buf.readByte();
         progress = buf.readFloat();
         elapsedMs = buf.readLong();
+        size = ByteBufUtils.readUTF8String(buf);
     }
 
     @Override
@@ -40,6 +50,7 @@ public class BackupPacket implements IMessage {
         buf.writeByte(state);
         buf.writeFloat(progress);
         buf.writeLong(elapsedMs);
+        ByteBufUtils.writeUTF8String(buf, size);
     }
 
     public static class Handler implements IMessageHandler<BackupPacket, IMessage> {

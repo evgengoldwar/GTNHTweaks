@@ -3,6 +3,7 @@ package gtnhtweaks.modules.backups;
 import java.util.regex.Pattern;
 
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -12,10 +13,12 @@ import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.modules.backups.client.BackupClient;
 
 /**
  * Server side: follows the backups of ServerUtilities through its log and sends their state to the players. Log lines
@@ -30,6 +33,7 @@ public class ServerBackupWatcher {
     private static final Object LOCK = new Object();
     private static byte state = IDLE;
     private static float progress = -1;
+    private static String size = "";
     private static long startedAt;
     private static long lastActivity;
     private static boolean dirty;
@@ -58,11 +62,17 @@ public class ServerBackupWatcher {
     }
 
     static void onLine(String logger, String text) {
+        // A client connected to another server sees backup messages only in the chat, BackupClient handles them
+        MinecraftServer server = MinecraftServer.getServer();
+        if (server == null || !server.isServerRunning()) return;
         boolean fromMod = BackupMessages.isBackupLogger(logger);
         if (!fromMod && PLAYER_CHAT.matcher(text)
             .matches()) return;
         long now = System.currentTimeMillis();
+        BackupPacket local = null;
         synchronized (LOCK) {
+            byte stateBefore = state;
+            float progressBefore = progress;
             boolean running = state == BackupPacket.RUNNING;
             BackupMessages.Kind kind = BackupMessages.classify(text, fromMod, false);
             switch (kind) {
@@ -81,6 +91,7 @@ public class ServerBackupWatcher {
                     if (running) {
                         state = BackupPacket.FINISHED;
                         progress = 1;
+                        size = BackupMessages.size(text);
                         dirty = true;
                     }
                     break;
@@ -94,12 +105,21 @@ public class ServerBackupWatcher {
                     break;
             }
             if (kind != BackupMessages.Kind.NONE) lastActivity = now;
+            if (state != stateBefore || progress != progressBefore) {
+                local = new BackupPacket(state, progress, now - startedAt, size);
+                local.local = true;
+            }
         }
+        // In singleplayer the player sees the change right away, even while the integrated server is paused
+        if (local != null && FMLCommonHandler.instance()
+            .getSide()
+            .isClient()) BackupClient.receive(local);
     }
 
     private static void start(long now) {
         state = BackupPacket.RUNNING;
         progress = -1;
+        size = "";
         startedAt = now;
         dirty = true;
     }
@@ -111,11 +131,11 @@ public class ServerBackupWatcher {
         long now = System.currentTimeMillis();
         synchronized (LOCK) {
             if (state == BackupPacket.RUNNING && now - lastActivity > BackupsModule.timeoutMinutes * 60_000L) {
-                packet = new BackupPacket(BackupPacket.CANCELLED, -1, now - startedAt);
+                packet = new BackupPacket(BackupPacket.CANCELLED, -1, now - startedAt, "");
                 state = IDLE;
                 dirty = false;
             } else if (dirty && state != IDLE) {
-                packet = new BackupPacket(state, progress, now - startedAt);
+                packet = new BackupPacket(state, progress, now - startedAt, size);
                 if (state != BackupPacket.RUNNING) state = IDLE;
                 dirty = false;
             }
@@ -129,7 +149,7 @@ public class ServerBackupWatcher {
         BackupPacket packet;
         synchronized (LOCK) {
             if (state != BackupPacket.RUNNING) return;
-            packet = new BackupPacket(state, progress, System.currentTimeMillis() - startedAt);
+            packet = new BackupPacket(state, progress, System.currentTimeMillis() - startedAt, size);
         }
         BackupsModule.network.sendTo(packet, (EntityPlayerMP) event.player);
     }

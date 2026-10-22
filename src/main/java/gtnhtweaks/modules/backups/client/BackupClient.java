@@ -50,6 +50,8 @@ public class BackupClient {
     static Phase phase = Phase.HIDDEN;
     static long startedAt;
     static long durationMs;
+    /** Size of the finished backup, like "2.0 GB", empty if unknown. */
+    static String size = "";
     static long shownAt;
     /** When the toast starts sliding out, Long.MAX_VALUE while it stays. */
     static long hideAt = Long.MAX_VALUE;
@@ -126,7 +128,11 @@ public class BackupClient {
         if (isPlayerChat(event.message)) return;
         String text = EnumChatFormatting.getTextWithoutFormattingCodes(event.message.getUnformattedText());
         BackupMessages.Kind kind = keyKind(event.message);
-        if (kind == BackupMessages.Kind.NONE) kind = BackupMessages.classify(text, false, phase == Phase.RUNNING);
+        if (kind == BackupMessages.Kind.NONE || kind == BackupMessages.Kind.OTHER) {
+            // A key like "...backup..." that tells nothing: the text may still say it, like "launched a manual backup!"
+            BackupMessages.Kind byText = BackupMessages.classify(text, false, phase == Phase.RUNNING);
+            if (byText != BackupMessages.Kind.NONE) kind = byText;
+        }
         if (kind == BackupMessages.Kind.NONE) return;
 
         long now = System.currentTimeMillis();
@@ -140,10 +146,11 @@ public class BackupClient {
                 if (value >= 0) knownProgress = value;
                 break;
             case FINISHED:
-                if (phase == Phase.RUNNING) finish(Phase.FINISHED, now, now - startedAt);
+                if (phase == Phase.RUNNING) finish(Phase.FINISHED, now, now - startedAt, BackupMessages.size(text));
+                else if (phase == Phase.FINISHED && size.isEmpty()) size = BackupMessages.size(text);
                 break;
             case FAILED:
-                if (phase == Phase.RUNNING) finish(Phase.FAILED, now, now - startedAt);
+                if (phase == Phase.RUNNING) finish(Phase.FAILED, now, now - startedAt, "");
                 break;
             default:
                 break;
@@ -153,12 +160,16 @@ public class BackupClient {
     }
 
     private static void apply(BackupPacket packet, long now) {
+        // In singleplayer the watcher in this game hands the state over directly, the packets of the integrated
+        // server would repeat it late
+        if (!packet.local && Minecraft.getMinecraft()
+            .isIntegratedServerRunning()) return;
         switch (packet.state) {
             case BackupPacket.RUNNING:
                 if (phase != Phase.RUNNING) begin(now);
                 startedAt = now - packet.elapsedMs;
                 if (packet.progress >= 0) knownProgress = packet.progress;
-                fromServer = true;
+                fromServer = !packet.local;
                 lastActivity = now;
                 break;
             case BackupPacket.FINISHED:
@@ -171,7 +182,8 @@ public class BackupClient {
                 finish(
                     packet.state == BackupPacket.FINISHED ? Phase.FINISHED : Phase.FAILED,
                     now,
-                    packet.elapsedMs);
+                    packet.elapsedMs,
+                    packet.size);
                 break;
             case BackupPacket.CANCELLED:
                 if (phase == Phase.RUNNING) hide(now);
@@ -186,14 +198,16 @@ public class BackupClient {
         phase = Phase.RUNNING;
         startedAt = now;
         knownProgress = -1;
+        size = "";
         fromServer = false;
         lastActivity = now;
         hideAt = Long.MAX_VALUE;
     }
 
-    private static void finish(Phase result, long now, long duration) {
+    private static void finish(Phase result, long now, long duration, String backupSize) {
         phase = result;
         durationMs = Math.max(0, duration);
+        size = backupSize == null ? "" : backupSize;
         hideAt = now + BackupsModule.finishedToastSeconds * 1000L;
         if (result == Phase.FINISHED) {
             knownProgress = 1;

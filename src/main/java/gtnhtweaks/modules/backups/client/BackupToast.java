@@ -88,7 +88,7 @@ class BackupToast {
             boolean ok = phase == BackupClient.Phase.FINISHED;
             title = ok ? BackupsModule.textTitleDone : BackupsModule.textTitleFailed;
             details = BackupsModule.textTook + " " + formatTime(BackupClient.durationMs);
-            if (ok) percent = "100%";
+            if (ok) percent = BackupClient.size.isEmpty() ? "100%" : BackupClient.size;
             accent = ok ? GREEN : RED;
             accentLight = ok ? GREEN_LIGHT : RED_LIGHT;
             titleColor = accent;
