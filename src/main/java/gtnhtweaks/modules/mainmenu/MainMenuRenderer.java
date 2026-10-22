@@ -152,12 +152,7 @@ public final class MainMenuRenderer {
         }
         if (left > right) return;
         int padding = 6;
-        ThemeShapes.panel(
-            left - padding,
-            top - padding,
-            right - left + padding * 2,
-            bottom - top + padding * 2,
-            theme);
+        ThemeShapes.panel(left - padding, top - padding, right - left + padding * 2, bottom - top + padding * 2, theme);
     }
 
     private static String cachedModCount;
