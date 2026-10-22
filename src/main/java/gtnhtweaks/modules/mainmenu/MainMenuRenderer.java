@@ -45,6 +45,11 @@ public final class MainMenuRenderer {
         return MainMenuModule.respectResourcePacks && ResourcePackOverrides.isAnyOverridden(PACK_TEXTURES);
     }
 
+    /** True while the GTNH main menu is drawn in place of the vanilla one. */
+    public static boolean isActive() {
+        return !broken && !replacedByPack();
+    }
+
     /** @return true if the menu was drawn and the vanilla drawing must be skipped */
     public static boolean draw(GuiScreen gui, FontRenderer font, List<?> buttons, int mouseX, int mouseY,
         String splashText) {

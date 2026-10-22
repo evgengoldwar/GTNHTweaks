@@ -7,6 +7,7 @@ import com.gtnewhorizon.gtnhmixins.builders.TargetModBuilder;
 
 public enum TargetMods implements ITargetMod {
 
+    CUSTOM_MAIN_MENU(null, "custommainmenu"),
     GREGTECH(null, "gregtech");
 
     private final TargetModBuilder builder;
