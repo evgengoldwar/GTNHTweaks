@@ -16,8 +16,7 @@ import gtnhtweaks.core.TweakModule;
 
 /**
  * Sorts the game log into separate files in {@code GTNHTweaksLogs}: errors, warnings and crashes without the noise,
- * plus
- * the full log and the full crash report.
+ * plus the full log and the full crash report.
  */
 public final class LogsModule extends TweakModule {
 
