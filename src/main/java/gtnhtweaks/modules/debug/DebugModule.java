@@ -2,6 +2,7 @@ package gtnhtweaks.modules.debug;
 
 import net.minecraftforge.common.config.Configuration;
 
+import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import gtnhtweaks.core.TweakModule;
 
@@ -14,7 +15,8 @@ public final class DebugModule extends TweakModule {
     private static final String CATEGORY_CRASH_TEST = "crashTest";
 
     public static boolean guiInfo = true;
-    public static boolean crashTestMixin = false;
+    /** OFF, STARTUP or IN_GAME. */
+    public static String mixinCrash = "OFF";
 
     private DebugModule() {
         super("debug", "Tools for mod and pack developers", true);
@@ -31,16 +33,29 @@ public final class DebugModule extends TweakModule {
                 + "class and FPS, and copies the same text to the clipboard");
 
         config.addCustomCategoryComment(CATEGORY_CRASH_TEST, "Crashes on purpose, to test the crash screen");
-        crashTestMixin = config.getBoolean(
-            "mixin",
+        removeKey(config, CATEGORY_CRASH_TEST, "mixin");
+        mixinCrash = config.getString(
+            "mixinCrash",
             CATEGORY_CRASH_TEST,
-            crashTestMixin,
-            "Apply a mixin that cannot be applied: the game crashes with a mixin error when the main menu class is "
-                + "loaded, at the end of the start. Turn it off again after the test. Changes require a game restart");
+            "OFF",
+            "Crash with a mixin that cannot be applied:\n"
+                + "STARTUP - while the mods are loaded, the game window already open;\n"
+                + "IN_GAME - 3 seconds after a world is entered, every time;\n"
+                + "OFF - no test crash. Set it back to OFF after the test. Changes require a game restart",
+            new String[] { "OFF", "STARTUP", "IN_GAME" });
+    }
+
+    public static boolean crashTestEnabled() {
+        return "STARTUP".equals(mixinCrash) || "IN_GAME".equals(mixinCrash);
     }
 
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         GuiInfo.register();
+    }
+
+    @Override
+    public void init(FMLInitializationEvent event) {
+        if (crashTestEnabled()) CrashTest.start(mixinCrash);
     }
 }

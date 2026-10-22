@@ -65,8 +65,8 @@ public enum Mixins implements IMixins {
     // Debug module
     DEBUG_CRASH_TEST_MIXIN(new MixinBuilder("Mixin that cannot be applied, to test the crash screen")
         .setPhase(Phase.EARLY)
-        .setApplyIf(() -> DebugModule.INSTANCE.isEnabled() && DebugModule.crashTestMixin)
-        .addClientMixins("debug.MixinGuiMainMenu_CrashTest")),
+        .setApplyIf(() -> DebugModule.INSTANCE.isEnabled() && DebugModule.crashTestEnabled())
+        .addClientMixins("debug.MixinCrashTestTarget")),
 
     // Logs module
     LOGS_CRASH_REPORT(new MixinBuilder("Copy crash reports to the GTNHTweaks logs").setPhase(Phase.EARLY)
