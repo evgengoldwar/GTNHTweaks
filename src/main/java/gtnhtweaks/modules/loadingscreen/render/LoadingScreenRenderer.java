@@ -140,14 +140,76 @@ public final class LoadingScreenRenderer {
         }
 
         // memory
-        if (LoadingScreenModule.showMemory) {
-            Runtime runtime = Runtime.getRuntime();
-            long mb = 1024 * 1024;
-            long used = (runtime.totalMemory() - runtime.freeMemory()) / mb;
-            long max = runtime.maxMemory() / mb;
-            String memory = LoadingScreenModule.textMemory + ": " + used + " / " + max + " MB";
-            SplashFont.draw(memory, gap * 2, height - gap * 2 - SplashFont.HEIGHT * textScale, textScale, theme.textDim);
+        if (LoadingScreenModule.showMemory) drawMemory(height, textScale, gap, ui, theme);
+    }
+
+    /** Bottom left panel: caption and percentage, a usage bar and the used / max amount. */
+    private static void drawMemory(int height, int textScale, int gap, float ui, GTNHTheme theme) {
+        Runtime runtime = Runtime.getRuntime();
+        long mb = 1024 * 1024;
+        long used = (runtime.totalMemory() - runtime.freeMemory()) / mb;
+        long max = runtime.maxMemory() / mb;
+        float usage = max > 0 ? Math.min(1F, (float) used / max) : 0F;
+
+        String caption = LoadingScreenModule.textMemory;
+        String percent = Math.round(usage * 100) + "%";
+        String amount = groupDigits(used) + " / " + groupDigits(max) + " MB";
+
+        int padding = gap * 2;
+        int lineHeight = SplashFont.HEIGHT * textScale;
+        int barHeight = Math.max(3, Math.round(6 * ui));
+        float contentWidth = Math.max(
+            SplashFont.width(amount) * textScale,
+            (SplashFont.width(caption) + SplashFont.width(percent)) * textScale + gap * 4);
+        contentWidth = Math.max(contentWidth, Math.round(140 * ui));
+        float panelWidth = contentWidth + padding * 2;
+        float panelHeight = padding * 2 + lineHeight * 2 + barHeight + gap * 4;
+        float x = gap * 3;
+        float y = height - gap * 3 - panelHeight;
+
+        rect(x, y, panelWidth, panelHeight, theme.barBorder);
+        rect(x + 1, y + 1, panelWidth - 2, panelHeight - 2, theme.buttonBackground);
+        rect(x + 1, y + 1, Math.max(1, gap / 2), panelHeight - 2, memoryColor(usage, theme));
+
+        float left = x + padding;
+        float top = y + padding;
+        SplashFont.draw(caption, left, top, textScale, theme.textDim);
+        SplashFont.draw(
+            percent,
+            left + contentWidth - SplashFont.width(percent) * textScale,
+            top,
+            textScale,
+            memoryColor(usage, theme));
+        top += lineHeight + gap * 2;
+
+        rect(left, top, contentWidth, barHeight, theme.barBackground);
+        rect(left, top, contentWidth * usage, barHeight, memoryColor(usage, theme));
+        top += barHeight + gap * 2;
+
+        SplashFont.draw(amount, left, top, textScale, theme.text);
+    }
+
+    /** Theme accent while there is plenty of memory, shifting to red as the heap fills up. */
+    private static int memoryColor(float usage, GTNHTheme theme) {
+        float t = Math.max(0F, Math.min(1F, (usage - 0.7F) / 0.2F));
+        return lerpColor(theme.barFill, 0xFFE0453A, t);
+    }
+
+    private static int lerpColor(int from, int to, float t) {
+        int result = 0;
+        for (int shift = 0; shift < 32; shift += 8) {
+            int a = from >>> shift & 0xFF;
+            int b = to >>> shift & 0xFF;
+            result |= Math.round(a + (b - a) * t) << shift;
         }
+        return result;
+    }
+
+    /** 10000 -> "10 000". */
+    private static String groupDigits(long value) {
+        StringBuilder digits = new StringBuilder(Long.toString(value));
+        for (int i = digits.length() - 3; i > 0; i -= 3) digits.insert(i, ' ');
+        return digits.toString();
     }
 
     private static void drawBar(int x, int y, int width, int height, float progress, GTNHTheme theme) {
