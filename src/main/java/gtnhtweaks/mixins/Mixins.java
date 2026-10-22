@@ -5,6 +5,7 @@ import javax.annotation.Nonnull;
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 
+import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.logs.LogsModule;
@@ -60,6 +61,12 @@ public enum Mixins implements IMixins {
         .setApplyIf(() -> NEIModule.INSTANCE.isEnabled() && (NEIModule.preciseDrag || NEIModule.smoothScroll))
         .addRequiredMod(TargetMods.NEI)
         .addClientMixins("nei.MixinCamera_NEI")),
+
+    // Debug module
+    DEBUG_CRASH_TEST_MIXIN(new MixinBuilder("Mixin that cannot be applied, to test the crash screen")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> DebugModule.INSTANCE.isEnabled() && DebugModule.crashTestMixin)
+        .addClientMixins("debug.MixinGuiMainMenu_CrashTest")),
 
     // Logs module
     LOGS_CRASH_REPORT(new MixinBuilder("Copy crash reports to the GTNHTweaks logs").setPhase(Phase.EARLY)
