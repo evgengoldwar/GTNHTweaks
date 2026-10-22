@@ -92,7 +92,33 @@ public final class LoadingScreenHooks {
         List<ProgressLine> lines = new ArrayList<>(2);
         if (text != null) lines.add(ProgressLine.ofPercent(text, percent));
         if (subText != null && !subText.isEmpty()) lines.add(ProgressLine.ofPercent(subText, subPercent));
+        else {
+            // BetterLoadingScreen often gives no sub-progress; the mods of the current phase come from Forge then
+            ProgressLine mods = innermostForgeBar();
+            if (mods != null) lines.add(mods);
+        }
         render(lines);
+    }
+
+    /** The innermost Forge progress bar, such as "PreInitialization - The Twilight Forest 42/180", or null. */
+    private static ProgressLine innermostForgeBar() {
+        try {
+            ProgressBar inner = null;
+            Iterator<ProgressBar> bars = ProgressManager.barIterator();
+            boolean first = true;
+            while (bars.hasNext()) {
+                ProgressBar bar = bars.next();
+                // The first bar is the overall "Loading" one, which the main line already covers
+                if (!first && bar.getSteps() > 1) inner = bar;
+                first = false;
+            }
+            if (inner == null) return null;
+            String message = inner.getMessage();
+            String text = message == null || message.isEmpty() ? inner.getTitle() : inner.getTitle() + " - " + message;
+            return ProgressLine.ofSteps(text, inner.getStep(), inner.getSteps());
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     /** Called at the end of {@code Minecraft.startGame}, when every loading screen is gone. */

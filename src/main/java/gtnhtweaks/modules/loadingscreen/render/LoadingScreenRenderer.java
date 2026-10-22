@@ -140,11 +140,11 @@ public final class LoadingScreenRenderer {
         }
 
         // memory
-        if (LoadingScreenModule.showMemory) drawMemory(height, textScale, gap, ui, theme);
+        if (LoadingScreenModule.showMemory) drawMemory(textScale, gap, ui, theme);
     }
 
-    /** Bottom left panel: caption and percentage, a usage bar and the used / max amount. */
-    private static void drawMemory(int height, int textScale, int gap, float ui, GTNHTheme theme) {
+    /** Top left panel: caption and percentage, a usage bar and the used / max amount. */
+    private static void drawMemory(int textScale, int gap, float ui, GTNHTheme theme) {
         Runtime runtime = Runtime.getRuntime();
         long mb = 1024 * 1024;
         long used = (runtime.totalMemory() - runtime.freeMemory()) / mb;
@@ -165,7 +165,7 @@ public final class LoadingScreenRenderer {
         float panelWidth = contentWidth + padding * 2;
         float panelHeight = padding * 2 + lineHeight * 2 + barHeight + gap * 4;
         float x = gap * 3;
-        float y = height - gap * 3 - panelHeight;
+        float y = gap * 3;
 
         rect(x, y, panelWidth, panelHeight, theme.barBorder);
         rect(x + 1, y + 1, panelWidth - 2, panelHeight - 2, theme.buttonBackground);
