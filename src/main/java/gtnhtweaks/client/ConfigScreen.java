@@ -38,6 +38,9 @@ public class ConfigScreen extends GuiConfig {
             ConfigCategory category = config.getCategory(categoryName);
             if (!category.isChild()) categories.add(new ConfigElement(category));
         }
+        // a file with a single category, like modules.cfg, shows its settings directly instead of one more level
+        if (categories.size() == 1) categories = categories.get(0)
+            .getChildElements();
         return new DummyCategoryElement(name, name, categories);
     }
 }
