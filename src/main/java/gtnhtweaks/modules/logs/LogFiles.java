@@ -20,8 +20,10 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -418,6 +420,7 @@ final class LogFiles {
         switch (record.level) {
             case "ERROR":
             case "FATAL":
+                rememberError(record);
                 addIssue(ERRORS, record);
                 break;
             case "WARN":
@@ -437,6 +440,35 @@ final class LogFiles {
             default:
                 // DEBUG and TRACE, exceptions included, are only for the All log
                 break;
+        }
+    }
+
+    private static final int RECENT_ERRORS = 20;
+    /** The last errors of the log, for the crash screen. Guarded by {@link #LOCK}. */
+    private static final Deque<String> RECENT = new ArrayDeque<>();
+
+    private static void rememberError(LogRecord record) {
+        StringBuilder line = new StringBuilder();
+        line.append('[')
+            .append(time(record.time))
+            .append("] ")
+            .append(record.source())
+            .append(": ")
+            .append(record.message);
+        if (record.trace != null && !record.trace.isEmpty()) {
+            line.append("\n    ")
+                .append(
+                    record.trace.get(0)
+                        .trim());
+        }
+        if (RECENT.size() >= RECENT_ERRORS) RECENT.removeFirst();
+        RECENT.addLast(line.toString());
+    }
+
+    /** The last errors of the log, oldest first. */
+    static List<String> recentErrors() {
+        synchronized (LOCK) {
+            return new ArrayList<>(RECENT);
         }
     }
 

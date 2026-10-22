@@ -104,9 +104,13 @@ public final class LogsModule extends TweakModule {
             "replaceCrashScreen",
             CATEGORY_CRASH_SCREEN,
             replaceCrashScreen,
-            "Show the GTNHTweaks crash screen in place of the one of BetterCrashes: the problem, the whole crash "
-                + "report to scroll through, buttons to copy it and to open the log folder. BetterCrashes still "
-                + "recovers the game. Changes require a game restart");
+            "After a crash, keep the game open and show the GTNHTweaks crash screen: the problem in plain words, "
+                + "the whole crash report to scroll through, buttons to copy it and to open the log folder.\n"
+                + "Crash while starting: the screen is shown before the game closes. Crash in game or of the "
+                + "integrated server: the world is closed and the game goes on in the main menu.\n"
+                + "Also replaces the Forge screens of missing, duplicate or wrong mods. With BetterCrashes "
+                + "installed, it keeps catching the crashes and only its screen is replaced.\n"
+                + "Changes require a game restart");
 
         config.addCustomCategoryComment(CATEGORY_DETAILS, "Content of the Errors, Warnings and Crash files");
         maxStackFrames = config.getInt(
@@ -183,6 +187,17 @@ public final class LogsModule extends TweakModule {
     /** Short description of a crash report: what crashed, the exception, the mods in the stack trace. */
     public static String summarizeCrash(String completeReport) {
         return CrashSummary.summarize(completeReport, maxCrashStackFrames);
+    }
+
+    /** The last errors of the log, oldest first, empty when the logs are off. */
+    public static List<String> recentErrors() {
+        return INSTANCE.isEnabled() ? LogFiles.recentErrors() : new ArrayList<>();
+    }
+
+    /** True if BetterCrashes is installed: it then catches the crashes, and only its screen is replaced. */
+    public static boolean betterCrashesInstalled() {
+        ClassLoader loader = LogsModule.class.getClassLoader();
+        return loader != null && loader.getResource("vfyjxf/bettercrashes/mixins/MixinPlugin.class") != null;
     }
 
     /** The folder the logs are written to. */

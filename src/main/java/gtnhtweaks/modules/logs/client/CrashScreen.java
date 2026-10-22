@@ -3,10 +3,10 @@ package gtnhtweaks.modules.logs.client;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.crash.CrashReport;
 
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
@@ -17,9 +17,9 @@ import gtnhtweaks.common.render.GTNHTheme;
 import gtnhtweaks.modules.logs.LogsModule;
 
 /**
- * Shown after a crash in place of the BetterCrashes screen: what went wrong, the short problem and the whole crash
- * report to scroll through, and buttons to copy the report, open the log folder or the report, go back to the main
- * menu or quit.
+ * Shown after a crash or a mod loading problem: what went wrong, the problem in plain words and the whole crash report
+ * to scroll through, and buttons to copy the report, open the log folder or the report, go back to the main menu
+ * when the game can go on, or quit.
  */
 public class CrashScreen extends GuiScreen {
 
@@ -31,11 +31,7 @@ public class CrashScreen extends GuiScreen {
     private static final int BUTTON_H = 18;
     private static final long COPIED_MS = 2000;
 
-    private final CrashReport report;
-    private final boolean initError;
-    private final String fullReport;
-    private final String summary;
-    private final String likelyCause;
+    private final CrashInfo info;
 
     /** Problem and crash report. */
     private final String[] tabNames = { "Problem", "Crash report" };
@@ -62,38 +58,8 @@ public class CrashScreen extends GuiScreen {
         }
     }
 
-    public CrashScreen(CrashReport report, boolean initError) {
-        this.report = report;
-        this.initError = initError;
-        String text;
-        try {
-            text = report.getCompleteReport();
-        } catch (Throwable t) {
-            text = String.valueOf(report.getCrashCause());
-        }
-        this.fullReport = text;
-        String problem;
-        try {
-            problem = LogsModule.summarizeCrash(text);
-        } catch (Throwable t) {
-            problem = text;
-        }
-        this.summary = problem;
-        this.likelyCause = likelyCause(problem);
-    }
-
-    /** First mod of the "Mods in trace" line of the summary, or null. */
-    private static String likelyCause(String summary) {
-        for (String line : summary.split("\n")) {
-            if (!line.startsWith("Mods in trace")) continue;
-            String value = line.substring(line.indexOf(':') + 1)
-                .trim();
-            if (value.startsWith("none")) return null;
-            int end = value.indexOf(',');
-            if (end < 0) end = value.indexOf("  ");
-            return (end < 0 ? value : value.substring(0, end)).trim();
-        }
-        return null;
+    public CrashScreen(CrashInfo info) {
+        this.info = info;
     }
 
     // ---- layout
@@ -105,29 +71,30 @@ public class CrashScreen extends GuiScreen {
         windowH = height - 16;
         windowX = 8;
         windowY = 8;
-        int header = likelyCause != null ? 46 : 36;
+        int header = 46 + (info.likelyCause != null ? 11 : 0);
         textX = windowX + GAP;
         textY = windowY + header + BUTTON_H + 2;
         textW = windowW - GAP * 2;
         textH = windowH - header - BUTTON_H - 2 - BUTTON_H - GAP * 2;
 
         wrapped.clear();
-        wrapped.add(wrap(summary));
-        wrapped.add(wrap(fullReport));
+        wrapped.add(wrap(info.problem));
+        wrapped.add(wrap(info.fullReport));
         for (int i = 0; i < 2; i++) clampScroll(i);
 
         buttons.clear();
-        if (!initError) buttons.add(new Button("Main menu", () -> mc.displayGuiScreen(new GuiMainMenu())));
+        boolean menu = info.canReturnToMenu();
+        if (menu) buttons.add(new Button("Main menu", () -> mc.displayGuiScreen(new GuiMainMenu())));
         buttons.add(new Button("Copy report", this::copy));
         buttons.add(new Button("Open log folder", () -> UI.open(logFolder())));
-        if (report.getFile() != null) buttons.add(new Button("Open report", () -> UI.open(report.getFile())));
+        if (info.file != null) buttons.add(new Button("Open report", () -> UI.open(info.file)));
         buttons.add(new Button("Quit game", () -> mc.shutdown()));
         int x = windowX + windowW - GAP;
         int y = windowY + windowH - GAP - BUTTON_H;
         for (int i = buttons.size() - 1; i >= 0; i--) {
             Button button = buttons.get(i);
             button.w = Math.max(70, fontRendererObj.getStringWidth(button.label) + 16);
-            if (i == 0 && !initError) {
+            if (i == 0 && menu) {
                 button.x = windowX + GAP;
             } else {
                 x -= button.w;
@@ -170,7 +137,7 @@ public class CrashScreen extends GuiScreen {
     }
 
     private void copy() {
-        setClipboardString(fullReport);
+        setClipboardString(info.fullReport);
         copiedAt = System.currentTimeMillis();
     }
 
@@ -195,28 +162,22 @@ public class CrashScreen extends GuiScreen {
         UI.rect(windowX + 3, windowY + 3, windowW - 6, 2, RED);
 
         // header
-        String title = initError ? "The game could not start" : "The game crashed";
-        UI.text(title, windowX + GAP + 2, windowY + 10, RED);
-        String description = "";
-        try {
-            description = report.getDescription();
-        } catch (Throwable ignored) {}
-        String cause = "";
-        try {
-            cause = String.valueOf(report.getCrashCause());
-        } catch (Throwable ignored) {}
+        UI.text(info.title, windowX + GAP + 2, windowY + 10, RED);
         UI.text(
-            fontRendererObj.trimStringToWidth(description + (cause.isEmpty() ? "" : ": " + cause), windowW - GAP * 3),
+            fontRendererObj.trimStringToWidth(info.description, windowW - GAP * 3),
             windowX + GAP + 2,
             windowY + 22,
             theme.text);
-        if (likelyCause != null) {
-            String label = "Most likely cause: ";
-            UI.text(label, windowX + GAP + 2, windowY + 33, theme.textDim);
-            UI.text(likelyCause, windowX + GAP + 2 + fontRendererObj.getStringWidth(label), windowY + 33, ORANGE);
+        String label = "Problem: ";
+        UI.text(label, windowX + GAP + 2, windowY + 33, theme.textDim);
+        UI.text(info.headline, windowX + GAP + 2 + fontRendererObj.getStringWidth(label), windowY + 33, ORANGE);
+        if (info.likelyCause != null) {
+            label = "Most likely cause: ";
+            UI.text(label, windowX + GAP + 2, windowY + 44, theme.textDim);
+            UI.text(info.likelyCause, windowX + GAP + 2 + fontRendererObj.getStringWidth(label), windowY + 44, ORANGE);
         }
-        String hint = initError ? "BetterCrashes kept the game open so the report can be read"
-            : "The world was closed, you can go back to the main menu";
+        String hint = info.canReturnToMenu() ? "The world was closed, you can go back to the main menu"
+            : "The game stays open so the problem can be read";
         UI.text(
             hint,
             windowX + windowW - GAP - 2 - fontRendererObj.getStringWidth(hint),
@@ -282,8 +243,10 @@ public class CrashScreen extends GuiScreen {
         String trimmed = line.trim();
         if (trimmed.startsWith("at ") || trimmed.startsWith("...")) return theme.textDim;
         if (trimmed.startsWith("Caused by")) return ORANGE;
-        // "-- Head --" in the report, "STACK TRACE (...)" and "DETAILS" in the problem
+        // "-- Head --" in the report; "A MIXIN COULD NOT BE APPLIED", "STACK TRACE (...)", "DETAILS" in the problem
         if (trimmed.startsWith("--") || trimmed.matches("[A-Z]{4,}( [A-Z]{2,})*( \\(.*)?")) return YELLOW;
+        if (trimmed.length() > 3 && trimmed.equals(trimmed.toUpperCase(Locale.ROOT))
+            && !trimmed.equals(trimmed.toLowerCase(Locale.ROOT))) return YELLOW;
         if (trimmed.contains("Exception") || trimmed.contains("Error:")) return RED;
         if (trimmed.startsWith("Mods in trace") || trimmed.startsWith("Root cause")) return ORANGE;
         return theme.text;
@@ -341,7 +304,7 @@ public class CrashScreen extends GuiScreen {
         switch (code) {
             case Keyboard.KEY_ESCAPE:
                 // only back to the menu after a crash in game; a failed start has nothing to go back to
-                if (!initError) mc.displayGuiScreen(new GuiMainMenu());
+                if (info.canReturnToMenu()) mc.displayGuiScreen(new GuiMainMenu());
                 return;
             case Keyboard.KEY_UP:
                 scrollBy(-LINE);
