@@ -33,6 +33,7 @@ public final class MenusModule extends TweakModule {
     public static boolean respectResourcePacks = false;
     public static boolean themeVanillaScreens = true;
     public static boolean themeInGame = true;
+    public static boolean fullFramerate = true;
     public static boolean themeInventories = true;
     public static Set<String> extraScreens = Collections.emptySet();
     public static Set<String> excludedScreens = Collections.emptySet();
@@ -59,6 +60,13 @@ public final class MenusModule extends TweakModule {
             "If an enabled resource pack replaces a vanilla GUI texture, show the resource pack instead of the theme:\n"
                 + "options_background.png - backgrounds and lists, widgets.png - buttons and sliders.\n"
                 + "false: the theme is always drawn. Inventory textures replaced by a pack are never tinted");
+
+        fullFramerate = config.getBoolean(
+            "fullFramerate",
+            CATEGORY_GENERAL,
+            fullFramerate,
+            "Use the frame rate limit of the video settings in the main menu and the other screens opened outside of "
+                + "a world, instead of the 30 FPS of vanilla");
 
         config.addCustomCategoryComment(CATEGORY_SCREENS, "Which screens are restyled. Changes require a restart");
         themeVanillaScreens = config.getBoolean(

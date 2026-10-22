@@ -45,7 +45,8 @@ public enum Mixins implements IMixins {
             "menus.MixinTextureManager_Menus",
             "menus.MixinGuiSlot_Menus",
             "menus.MixinGuiScrollingList_Menus",
-            "menus.MixinFontRenderer_Menus")),
+            "menus.MixinFontRenderer_Menus",
+            "menus.MixinMinecraft_Menus")),
 
     // GregTech module
     GREGTECH_HIDE_CABLE_INSULATION(

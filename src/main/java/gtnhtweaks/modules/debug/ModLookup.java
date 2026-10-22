@@ -24,24 +24,41 @@ final class ModLookup {
         return source != null ? "unknown, " + source.getName() : "unknown";
     }
 
-    /** The jar or the class folder the class was loaded from. */
+    /**
+     * The jar or the class folder the class was loaded from: its code source, or where its class file is found when
+     * the class loader gives none (RetroFuturaBootstrap in GTNH does not).
+     */
     private static File sourceOf(Class<?> type) {
         try {
             CodeSource code = type.getProtectionDomain()
                 .getCodeSource();
-            if (code == null || code.getLocation() == null) return null;
-            URL location = code.getLocation();
-            if (!"file".equals(location.getProtocol())) return null;
-            return new File(location.toURI()).getCanonicalFile();
-        } catch (Exception e) {
-            return null;
-        }
+            URL location = code != null ? code.getLocation() : null;
+            if (location != null && "file".equals(location.getProtocol())) {
+                return new File(location.toURI()).getCanonicalFile();
+            }
+        } catch (Exception ignored) {}
+        try {
+            ClassLoader loader = type.getClassLoader();
+            URL resource = loader == null ? null
+                : loader.getResource(
+                    type.getName()
+                        .replace('.', '/') + ".class");
+            if (resource == null) return null;
+            String url = resource.toString();
+            if (url.startsWith("jar:")) {
+                String jar = url.substring(4, url.indexOf("!/"));
+                return new File(new URL(jar).toURI()).getCanonicalFile();
+            }
+            if ("file".equals(resource.getProtocol())) return new File(resource.toURI()).getCanonicalFile();
+        } catch (Exception ignored) {}
+        return null;
     }
 
     /**
      * The mod whose jar (or class folder in a development environment) holds the class. When a jar holds several
      * mods, the one whose classes share the longest package with the class wins. Without a match, for example for
-     * coremods that report no source, a mod sharing at least two package segments is taken.
+     * coremods that report no source, the mod whose package holds the class is taken, or one sharing at least two
+     * package segments with it.
      */
     private static ModContainer find(String className, File source) {
         ModContainer best = null;
@@ -57,7 +74,8 @@ final class ModLookup {
         }
         if (best != null) return best;
 
-        bestScore = 1;
+        // inside the package of a mod, or sharing at least two package segments with it
+        bestScore = 2;
         for (ModContainer mod : Loader.instance()
             .getActiveModList()) {
             int score = packageScore(className, mod);
@@ -82,18 +100,30 @@ final class ModLookup {
         }
     }
 
-    /** Longest package the class shares with the mod class or, for coremods, the container class of the mod. */
+    /**
+     * How well the package of the class fits the mod: high when the class lies inside the package of the mod class
+     * (or, for coremods, of the container class), lower for a partly shared package.
+     */
     private static int packageScore(String className, ModContainer mod) {
         int score = 0;
         Object instance = mod.getMod();
-        if (instance != null) score = commonPackage(
+        if (instance != null) score = packageScore(
             className,
             instance.getClass()
                 .getName());
         String container = mod.getClass()
             .getName();
-        if (!container.startsWith("cpw.mods.fml.")) score = Math.max(score, commonPackage(className, container));
+        if (!container.startsWith("cpw.mods.fml.")) score = Math.max(score, packageScore(className, container));
         return score;
+    }
+
+    private static int packageScore(String className, String ownerName) {
+        int dot = ownerName.lastIndexOf('.');
+        if (dot > 0) {
+            String ownerPackage = ownerName.substring(0, dot);
+            if (className.startsWith(ownerPackage + ".")) return ownerPackage.split("\\.").length * 2 + 1;
+        }
+        return commonPackage(className, ownerName) * 2;
     }
 
     /** Number of package segments the two class names share. */

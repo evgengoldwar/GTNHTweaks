@@ -114,6 +114,7 @@
 | `general/theme` | `SHADOW` | тема: `SHADOW`, `DARK` или `LIGHT` |
 | `general/recolorText` | `true` | перекрашивать белый и серый текст в цвета темы |
 | `general/yieldToResourcePacks` | `false` | текстуры включённых ресурс-паков важнее темы, см. ниже |
+| `general/fullFramerate` | `true` | лимит FPS из настроек графики в главном меню и других экранах вне мира вместо ванильных 30 FPS |
 | `screens/themeVanillaScreens` | `true` | все экраны Minecraft/Forge/FML и экраны модов, наследующие их |
 | `screens/themeInGame` | `true` | также меню в игре |
 | `screens/themeInventories` | `true` | затемнение ванильных инвентарей |
