@@ -25,8 +25,9 @@ import java.util.regex.Pattern;
  */
 final class LoadingReport {
 
-    private static final Pattern BAR = Pattern.compile("^Bar (Step|Finished): (.+) took (\\d+(?:\\.\\d+)?)s$");
-    private static final Pattern GAME_LOADED = Pattern.compile("The game loaded in (\\d+(?:\\.\\d+)?) seconds");
+    // FML and the mods format the seconds with the system locale: "3.930" or "3,930"
+    private static final Pattern BAR = Pattern.compile("^Bar (Step|Finished): (.+) took (\\d+(?:[.,]\\d+)?) ?s$");
+    private static final Pattern GAME_LOADED = Pattern.compile("The game loaded in (\\d+(?:[.,]\\d+)?) seconds");
 
     /** Stages FML runs once per mod. Their steps are named after the mod. */
     private static final List<String> MOD_STAGES = Arrays.asList(
@@ -97,14 +98,14 @@ final class LoadingReport {
         String message = record.message;
         Matcher loaded = GAME_LOADED.matcher(message);
         if (loaded.find()) {
-            gameLoaded = Double.parseDouble(loaded.group(1));
+            gameLoaded = seconds(loaded.group(1));
             dirty = true;
             return false;
         }
         if (!message.startsWith("Bar ")) return false;
         Matcher m = BAR.matcher(message);
         if (!m.matches()) return false;
-        double seconds = Double.parseDouble(m.group(3));
+        double seconds = seconds(m.group(3));
         String text = m.group(2);
         dirty = true;
         if ("Finished".equals(m.group(1))) {
@@ -275,6 +276,10 @@ final class LoadingReport {
             .append((int) value[1])
             .append(" times)");
         out.append('\n');
+    }
+
+    private static double seconds(String number) {
+        return Double.parseDouble(number.replace(',', '.'));
     }
 
     private double previousValue(String key) {
