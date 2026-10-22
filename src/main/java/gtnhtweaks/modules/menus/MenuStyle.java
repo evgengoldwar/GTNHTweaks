@@ -112,7 +112,10 @@ public final class MenuStyle {
 
     /** Vanilla inventory textures are tinted only in the DARK style: a multiplied tint can only darken. */
     public static boolean tintsInventory(GuiContainer gui) {
-        return gui == activeInventory() && theme() == GTNHTheme.DARK && isVanilla(gui.getClass().getName());
+        return gui == activeInventory() && theme() == GTNHTheme.DARK
+            && isVanilla(
+                gui.getClass()
+                    .getName());
     }
 
     /** Starts recording the textures the inventory binds for its background. */

@@ -13,10 +13,7 @@ import gtnhtweaks.modules.loadingscreen.LoadingScreenHooks;
 @Mixin(targets = "cpw.mods.fml.client.SplashProgress$3", remap = false)
 public class MixinSplashProgressThread_LoadingScreen {
 
-    @Inject(
-        method = "run",
-        at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/Display;update()V"),
-        require = 0)
+    @Inject(method = "run", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/Display;update()V"), require = 0)
     private void gtnhtweaks$drawLoadingScreen(CallbackInfo ci) {
         LoadingScreenHooks.onForgeSplashFrame();
     }

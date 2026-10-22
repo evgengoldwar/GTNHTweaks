@@ -99,7 +99,8 @@ public final class LoadingScreenRenderer {
             float counterWidth = counter.isEmpty() ? 0 : SplashFont.width(counter) * textScale;
             String text = fit(line.text, (barWidth - counterWidth - gap * 2) / textScale);
             SplashFont.draw(text, barX, y, textScale, theme.text);
-            if (!counter.isEmpty()) SplashFont.draw(counter, barX + barWidth - counterWidth, y, textScale, theme.textDim);
+            if (!counter.isEmpty())
+                SplashFont.draw(counter, barX + barWidth - counterWidth, y, textScale, theme.textDim);
             y += SplashFont.HEIGHT * textScale + gap;
             if (!Float.isNaN(line.progress)) {
                 drawBar(barX, y, barWidth, barHeight, line.progress, theme);

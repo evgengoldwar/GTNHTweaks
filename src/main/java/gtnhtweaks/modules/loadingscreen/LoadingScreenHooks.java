@@ -81,7 +81,8 @@ public final class LoadingScreenHooks {
         List<ProgressLine> lines = new ArrayList<>(3);
         for (ProgressBar bar : new ProgressBar[] { first, penult, last }) {
             if (bar != null) {
-                lines.add(ProgressLine.ofSteps(bar.getTitle() + " - " + bar.getMessage(), bar.getStep(), bar.getSteps()));
+                lines.add(
+                    ProgressLine.ofSteps(bar.getTitle() + " - " + bar.getMessage(), bar.getStep(), bar.getSteps()));
             }
         }
         render(lines);

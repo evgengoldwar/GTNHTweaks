@@ -11,12 +11,12 @@ import net.minecraftforge.common.config.Configuration;
 
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
-
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.core.TweakModule;
 
 /**
- * Sorts the game log into separate files in {@code GTNHTweaksLogs}: errors, warnings and crashes without the noise, plus
+ * Sorts the game log into separate files in {@code GTNHTweaksLogs}: errors, warnings and crashes without the noise,
+ * plus
  * the full log and the full crash report.
  */
 public final class LogsModule extends TweakModule {

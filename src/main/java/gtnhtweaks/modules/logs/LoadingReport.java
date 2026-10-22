@@ -143,9 +143,7 @@ final class LoadingReport {
         Properties stats = new Properties();
         stats.setProperty("total", format(total));
         for (Map.Entry<String, double[]> mod : mods.entrySet()) {
-            stats.setProperty(
-                "mod." + mod.getKey(),
-                format(mod.getValue()[MOD_STAGES.size()]));
+            stats.setProperty("mod." + mod.getKey(), format(mod.getValue()[MOD_STAGES.size()]));
         }
         try (OutputStream out = new FileOutputStream(statsFile)) {
             stats.store(out, "GTNHTweaks: loading time of the previous launch");

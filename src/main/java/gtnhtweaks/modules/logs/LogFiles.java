@@ -139,9 +139,7 @@ final class LogFiles {
 
             if (LogsModule.writeAll) {
                 allWriter = new BufferedWriter(
-                    new OutputStreamWriter(
-                        new FileOutputStream(file(KIND_ALL)),
-                        StandardCharsets.UTF_8),
+                    new OutputStreamWriter(new FileOutputStream(file(KIND_ALL)), StandardCharsets.UTF_8),
                     1 << 16);
             }
             // Capture first, then copy the earlier part of the log, so no message falls in between. Other threads
@@ -424,8 +422,10 @@ final class LogFiles {
                     break;
                 }
                 Matcher m = INNER_LEVEL.matcher(record.message);
-                if (m.find()) addIssue(m.group(1)
-                    .startsWith("WARN") ? WARNINGS : ERRORS, record);
+                if (m.find()) addIssue(
+                    m.group(1)
+                        .startsWith("WARN") ? WARNINGS : ERRORS,
+                    record);
                 break;
             default:
                 // DEBUG and TRACE, exceptions included, are only for the All log

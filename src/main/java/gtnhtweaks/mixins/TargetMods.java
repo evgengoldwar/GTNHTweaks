@@ -1,9 +1,9 @@
 package gtnhtweaks.mixins;
 
+import javax.annotation.Nonnull;
+
 import com.gtnewhorizon.gtnhmixins.builders.ITargetMod;
 import com.gtnewhorizon.gtnhmixins.builders.TargetModBuilder;
-
-import javax.annotation.Nonnull;
 
 public enum TargetMods implements ITargetMod {
 
