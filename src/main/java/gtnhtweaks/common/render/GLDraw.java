@@ -36,4 +36,15 @@ public final class GLDraw {
         glVertex2f(x + w, y);
         glEnd();
     }
+
+    public static void horizontalGradient(float x, float y, float w, float h, int left, int right) {
+        glBegin(GL_QUADS);
+        color(left);
+        glVertex2f(x, y);
+        glVertex2f(x, y + h);
+        color(right);
+        glVertex2f(x + w, y + h);
+        glVertex2f(x + w, y);
+        glEnd();
+    }
 }

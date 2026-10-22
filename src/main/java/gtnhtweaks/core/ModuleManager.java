@@ -27,13 +27,14 @@ public final class ModuleManager {
     private static final String CATEGORY_MODULES = "modules";
 
     /** Every module of the mod. Register new modules here. */
-    private static final List<TweakModule> MODULES = Collections.unmodifiableList(
-        Arrays.<TweakModule>asList(
-            LoadingScreenModule.INSTANCE,
-            MainMenuModule.INSTANCE,
-            MenusModule.INSTANCE,
-            GregTechModule.INSTANCE,
-            LogsModule.INSTANCE));
+    private static final List<TweakModule> MODULES = Collections
+        .unmodifiableList(
+            Arrays.<TweakModule>asList(
+                LoadingScreenModule.INSTANCE,
+                MainMenuModule.INSTANCE,
+                MenusModule.INSTANCE,
+                GregTechModule.INSTANCE,
+                LogsModule.INSTANCE));
 
     private static boolean configLoaded;
     private static Configuration modulesConfig;
