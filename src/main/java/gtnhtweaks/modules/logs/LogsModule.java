@@ -165,6 +165,13 @@ public final class LogsModule extends TweakModule {
     @Override
     public void coremodInit() {
         LogFiles.start();
+        if (replaceCrashScreen) {
+            try {
+                EarlyCrashWindow.install();
+            } catch (Throwable t) {
+                GTNHTweaks.LOG.warn("Could not install the early crash window", t);
+            }
+        }
     }
 
     @Override

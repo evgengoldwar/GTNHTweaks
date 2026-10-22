@@ -10,15 +10,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.crash.CrashReport;
 
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.modules.logs.CrashDiagnosis;
 import gtnhtweaks.modules.logs.LogsModule;
 
 /** Everything the crash screen shows: what happened, the problem in plain words, the whole report. */
@@ -36,9 +34,6 @@ public final class CrashInfo {
         /** The game crashed again and again, even with the crash screen open; it closes when the screen is left. */
         REPEATED
     }
-
-    private static final Pattern MIXIN_NAME = Pattern.compile("Mixin \\[([^\\]]+)\\]");
-    private static final Pattern MIXIN_CONFIG = Pattern.compile("config \\[([^\\]]+)\\]");
 
     final Kind kind;
     final String title;
@@ -78,7 +73,7 @@ public final class CrashInfo {
             full = stackTrace(report.getCrashCause());
         }
         Throwable cause = report.getCrashCause();
-        Diagnosis diagnosis = diagnose(cause);
+        CrashDiagnosis diagnosis = CrashDiagnosis.of(cause);
         String summary;
         try {
             summary = LogsModule.summarizeCrash(full);
@@ -117,81 +112,6 @@ public final class CrashInfo {
         return null;
     }
 
-    /** The problem in plain words, found from the kind of exception anywhere in the chain of causes. */
-    private static final class Diagnosis {
-
-        final String headline;
-        final List<String> lines = new ArrayList<>();
-
-        Diagnosis(String headline) {
-            this.headline = headline;
-        }
-
-        void appendTo(StringBuilder out) {
-            out.append(headline.toUpperCase(Locale.ROOT))
-                .append('\n');
-            for (String line : lines) out.append(line)
-                .append('\n');
-        }
-    }
-
-    private static Diagnosis diagnose(Throwable crash) {
-        List<Throwable> chain = new ArrayList<>();
-        for (Throwable t = crash; t != null && chain.size() < 30 && !chain.contains(t); t = t.getCause()) chain.add(t);
-
-        // the deepest mixin error tells the most
-        Throwable mixin = null;
-        for (Throwable t : chain) {
-            if (t.getClass()
-                .getName()
-                .startsWith("org.spongepowered.asm.mixin")) mixin = t;
-        }
-        if (mixin != null) {
-            Diagnosis d = new Diagnosis("A mixin could not be applied");
-            d.lines.add("A mod changes the code of Minecraft or of another mod with a mixin, and the code it targets");
-            d.lines.add("is not what it expects. Usually two mods have versions that do not fit together.");
-            String message = String.valueOf(mixin.getMessage());
-            Matcher name = MIXIN_NAME.matcher(message);
-            Matcher config = MIXIN_CONFIG.matcher(message);
-            if (name.find()) d.lines.add("Mixin  : " + name.group(1));
-            if (config.find()) d.lines.add("Config : " + config.group(1) + "  (its mod is the one to update)");
-            d.lines.add(
-                "Error  : " + mixin.getClass()
-                    .getSimpleName() + ": " + message);
-            return d;
-        }
-        for (Throwable t : chain) {
-            if (t instanceof NoClassDefFoundError || t instanceof ClassNotFoundException) {
-                Diagnosis d = new Diagnosis("A class could not be found");
-                String missing = String.valueOf(t.getMessage())
-                    .replace('/', '.');
-                d.lines.add("Missing class : " + missing);
-                d.lines.add("A mod uses a class of another mod or library that is not installed, or that has a");
-                d.lines.add("version without this class. The mod that needs it is in the stack trace below.");
-                return d;
-            }
-            if (t instanceof NoSuchMethodError || t instanceof NoSuchFieldError
-                || t instanceof AbstractMethodError
-                || t instanceof IncompatibleClassChangeError) {
-                Diagnosis d = new Diagnosis("Mods of versions that do not fit together");
-                d.lines.add("Missing : " + t.getMessage());
-                d.lines.add("A mod calls code of another mod that does not exist in the installed version.");
-                d.lines.add("Update both mods to versions made for each other.");
-                return d;
-            }
-            if (t instanceof OutOfMemoryError) {
-                Diagnosis d = new Diagnosis("The game ran out of memory");
-                d.lines.add("Give the game more memory (the -Xmx Java argument of the launcher, 6-8 GB for GTNH),");
-                d.lines.add("or lower the render distance and close large bases.");
-                return d;
-            }
-        }
-        Throwable root = chain.isEmpty() ? crash : chain.get(chain.size() - 1);
-        Diagnosis d = new Diagnosis("Unexpected error");
-        d.lines.add("Root cause : " + root);
-        return d;
-    }
-
     private static void appendRecentErrors(StringBuilder out) {
         List<String> errors;
         try {
@@ -213,16 +133,16 @@ public final class CrashInfo {
         String type = problem == null ? screenName
             : problem.getClass()
                 .getSimpleName();
-        Diagnosis d;
+        CrashDiagnosis d;
         if (type.contains("MissingMods")) {
-            d = new Diagnosis("Mods are missing");
+            d = new CrashDiagnosis("Mods are missing");
             d.lines.add("Some installed mods need other mods that are not installed, or need other versions:");
             for (Object version : collection(field(problem, "missingMods"))) {
                 d.lines.add("  - " + call(version, "getLabel") + "  version " + call(version, "getRangeString"));
             }
             d.lines.add("The mods that need them are named in the last errors of the log below.");
         } else if (type.contains("WrongMinecraft")) {
-            d = new Diagnosis("A mod is made for another Minecraft version");
+            d = new CrashDiagnosis("A mod is made for another Minecraft version");
             Object mod = field(problem, "mod");
             if (mod != null) {
                 d.lines.add(
@@ -233,7 +153,7 @@ public final class CrashInfo {
                         + call(mod, "acceptableMinecraftVersionRange"));
             }
         } else if (type.contains("DuplicateMods") || type.contains("Dupes")) {
-            d = new Diagnosis("A mod is installed twice");
+            d = new CrashDiagnosis("A mod is installed twice");
             Object dupes = field(problem, "dupes");
             Object map = dupes == null ? null : call(dupes, "asMap");
             if (map instanceof Map) {
@@ -243,14 +163,14 @@ public final class CrashInfo {
             }
             d.lines.add("Remove all but one copy of each from the mods folder.");
         } else if (type.contains("Sorting")) {
-            d = new Diagnosis("Mods depend on each other in a loop");
+            d = new CrashDiagnosis("Mods depend on each other in a loop");
             Object data = problem == null ? null : call(problem, "getExceptionData");
             if (data != null) {
                 d.lines.add("  First mod : " + call(data, "getFirstBadNode"));
                 d.lines.add("  Loop      : " + call(data, "getVisitedNodes"));
             }
         } else {
-            d = new Diagnosis("Forge cannot load the mods");
+            d = new CrashDiagnosis("Forge cannot load the mods");
         }
         if (exception != null && exception.getMessage() != null) d.lines.add("Forge says : " + exception.getMessage());
 

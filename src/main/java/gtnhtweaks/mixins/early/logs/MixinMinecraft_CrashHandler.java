@@ -39,6 +39,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import cpw.mods.fml.client.SplashProgress;
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.modules.logs.EarlyCrashWindow;
 import gtnhtweaks.modules.logs.client.CrashInfo;
 import gtnhtweaks.modules.logs.client.CrashScreen;
 
@@ -236,7 +237,11 @@ public abstract class MixinMinecraft_CrashHandler {
         gtnhtweaks$showingStartupCrash = true;
         CrashInfo.save(report);
         try {
-            if (!Display.isCreated()) return;
+            if (!Display.isCreated()) {
+                // no game window to draw the screen in: a plain Java window instead
+                EarlyCrashWindow.show(report.getCrashCause(), report.getCompleteReport(), report.getFile());
+                return;
+            }
             gtnhtweaks$prepareStartupScreen();
             gtnhtweaks$runScreen(new CrashScreen(CrashInfo.fromReport(report, CrashInfo.Kind.STARTUP)));
         } catch (Throwable t) {

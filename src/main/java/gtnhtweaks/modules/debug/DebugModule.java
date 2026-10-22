@@ -15,7 +15,7 @@ public final class DebugModule extends TweakModule {
     private static final String CATEGORY_CRASH_TEST = "crashTest";
 
     public static boolean guiInfo = true;
-    /** OFF, STARTUP or IN_GAME. */
+    /** OFF, BEFORE_WINDOW, STARTUP or IN_GAME. */
     public static String mixinCrash = "OFF";
 
     private DebugModule() {
@@ -39,14 +39,15 @@ public final class DebugModule extends TweakModule {
             CATEGORY_CRASH_TEST,
             "OFF",
             "Crash with a mixin that cannot be applied:\n"
+                + "BEFORE_WINDOW - when the game starts, before its window is made (plain Java crash window);\n"
                 + "STARTUP - while the mods are loaded, the game window already open;\n"
                 + "IN_GAME - 3 seconds after a world is entered, every time;\n"
                 + "OFF - no test crash. Set it back to OFF after the test. Changes require a game restart",
-            new String[] { "OFF", "STARTUP", "IN_GAME" });
+            new String[] { "OFF", "BEFORE_WINDOW", "STARTUP", "IN_GAME" });
     }
 
     public static boolean crashTestEnabled() {
-        return "STARTUP".equals(mixinCrash) || "IN_GAME".equals(mixinCrash);
+        return "BEFORE_WINDOW".equals(mixinCrash) || "STARTUP".equals(mixinCrash) || "IN_GAME".equals(mixinCrash);
     }
 
     @Override
