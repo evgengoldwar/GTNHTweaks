@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import net.minecraft.launchwrapper.Launch;
+
 import org.lwjgl.opengl.Display;
 
 import cpw.mods.fml.common.ProgressManager;
@@ -28,9 +30,37 @@ public final class LoadingScreenHooks {
      */
     public static boolean onVanillaLoadScreen() {
         if (!LoadingScreenModule.replaceVanillaScreen || broken) return false;
+        // BetterLoadingScreen renders the loading screen from its own thread, which owns the GL context by now; it
+        // also empties loadScreen itself. Our screen is drawn over its frames instead.
+        if (isBetterLoadingScreenInstalled() || !isContextCurrent()) return false;
         if (!render(Collections.<ProgressLine>emptyList())) return false;
-        Display.update();
+        try {
+            Display.update();
+        } catch (Throwable t) {
+            broken = true;
+            GTNHTweaks.LOG.error("Could not present the GTNH loading screen, falling back to the vanilla one", t);
+            return false;
+        }
         return true;
+    }
+
+    private static boolean isBetterLoadingScreenInstalled() {
+        try {
+            Class.forName("alexiil.mods.load.coremod.LoadingScreenLoadPlugin", false, Launch.classLoader);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** False if another thread (a splash screen) owns the window's GL context, so this thread must not draw. */
+    private static boolean isContextCurrent() {
+        try {
+            return Display.getDrawable()
+                .isCurrent();
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     /** Called by the Forge splash thread right before it presents a frame. */
