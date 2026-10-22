@@ -3,6 +3,8 @@ package gtnhtweaks.modules.mainmenu;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
 
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import gtnhtweaks.common.render.GTNHTheme;
 import gtnhtweaks.core.TweakModule;
@@ -70,7 +72,7 @@ public final class MainMenuModule extends TweakModule {
             CATEGORY_GENERAL,
             replaceCustomMainMenu,
             "Show the GTNH main menu instead of the one of the Custom Main Menu mod, the default menu of the GTNH "
-                + "pack.\nfalse: Custom Main Menu keeps its menu. Needs a restart");
+                + "pack.\nfalse: Custom Main Menu keeps its menu");
 
         config.addCustomCategoryComment(CATEGORY_TEXT, "Texts of the main menu. Latin and Cyrillic are supported");
         subtitle = config.getString("subtitle", CATEGORY_TEXT, subtitle, "Line under the GTNH logo, empty to hide");
@@ -81,5 +83,13 @@ public final class MainMenuModule extends TweakModule {
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(new MainMenuLayout());
+    }
+
+    @Override
+    public void postInit(FMLPostInitializationEvent event) {
+        // registered after every pre-initialization, so it runs after the handler of Custom Main Menu
+        if (Loader.isModLoaded(CustomMainMenuReplacer.MOD_ID)) {
+            MinecraftForge.EVENT_BUS.register(new CustomMainMenuReplacer());
+        }
     }
 }

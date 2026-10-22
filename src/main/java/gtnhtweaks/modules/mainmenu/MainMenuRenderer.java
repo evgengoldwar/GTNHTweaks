@@ -45,9 +45,15 @@ public final class MainMenuRenderer {
         return MainMenuModule.respectResourcePacks && ResourcePackOverrides.isAnyOverridden(PACK_TEXTURES);
     }
 
-    /** True while the GTNH main menu is drawn in place of the vanilla one. */
-    public static boolean isActive() {
-        return !broken && !replacedByPack();
+    /** Why the vanilla main menu is shown instead of the GTNH one, null while the GTNH menu is shown. */
+    static String inactiveReason() {
+        if (broken) return "the GTNH main menu failed to draw, see the error above";
+        if (!MainMenuModule.respectResourcePacks) return null;
+        for (ResourceLocation texture : PACK_TEXTURES) {
+            if (ResourcePackOverrides.isOverridden(texture)) return "a selected resource pack replaces " + texture
+                + " (respectResourcePacks)";
+        }
+        return null;
     }
 
     /** @return true if the menu was drawn and the vanilla drawing must be skipped */

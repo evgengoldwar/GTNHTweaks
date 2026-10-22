@@ -30,10 +30,6 @@ public enum Mixins implements IMixins {
     MAIN_MENU(new MixinBuilder("GTNH main menu").setPhase(Phase.EARLY)
         .setApplyIf(MainMenuModule.INSTANCE::isEnabled)
         .addClientMixins("mainmenu.MixinGuiMainMenu_MainMenu")),
-    MAIN_MENU_CUSTOM_MAIN_MENU(new MixinBuilder("GTNH main menu instead of Custom Main Menu").setPhase(Phase.LATE)
-        .setApplyIf(() -> MainMenuModule.INSTANCE.isEnabled() && MainMenuModule.replaceCustomMainMenu)
-        .addRequiredMod(TargetMods.CUSTOM_MAIN_MENU)
-        .addClientMixins("custommainmenu.MixinCMMEventHandler_MainMenu")),
 
     // Menus module
     MENUS(new MixinBuilder("GTNH style menus").setPhase(Phase.EARLY)
