@@ -90,19 +90,17 @@ public final class MinecraftModule extends TweakModule {
 
     /** Writes the current outline settings to the config file, after a change on the outline screen. */
     public static void saveOutline() {
+        // through Configuration.get, which finds the category whatever its case: Forge keeps it lower case
         Configuration config = ModuleManager.getConfig(INSTANCE);
-        config.getCategory(CATEGORY_OUTLINE)
-            .get("color")
+        config.get(CATEGORY_OUTLINE, "color", formatColor(VANILLA_COLOR))
             .set(formatColor(outlineColor));
-        config.getCategory(CATEGORY_OUTLINE)
-            .get("width")
-            .set(outlineWidth);
-        config.getCategory(CATEGORY_OUTLINE)
-            .get("mode")
+        // getFloat keeps floats as text properties: written the same way
+        config.get(CATEGORY_OUTLINE, "width", Float.toString(VANILLA_WIDTH))
+            .set(Float.toString(outlineWidth));
+        config.get(CATEGORY_OUTLINE, "mode", OutlineMode.NORMAL.name())
             .set(outlineMode.name());
-        config.getCategory(CATEGORY_OUTLINE)
-            .get("fillOpacity")
-            .set(fillOpacity);
+        config.get(CATEGORY_OUTLINE, "fillOpacity", Float.toString(0F))
+            .set(Float.toString(fillOpacity));
         ModuleManager.saveAndReload();
     }
 

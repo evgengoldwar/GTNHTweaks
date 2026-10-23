@@ -1,5 +1,7 @@
 package gtnhtweaks.core;
 
+import java.util.Locale;
+
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
 
@@ -74,6 +76,8 @@ public abstract class TweakModule {
 
     /** Removes a key that is no longer read, so it does not linger in the config file. */
     protected static void removeKey(Configuration config, String category, String key) {
+        // Forge keeps the category names lower case
+        category = category.toLowerCase(Locale.ENGLISH);
         if (!config.hasCategory(category)) return;
         ConfigCategory entries = config.getCategory(category);
         if (entries.containsKey(key)) entries.remove(key);

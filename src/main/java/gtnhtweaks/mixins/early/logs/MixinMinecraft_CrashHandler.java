@@ -199,7 +199,35 @@ public abstract class MixinMinecraft_CrashHandler {
             ingameGUI.getChatGUI()
                 .clearChatMessages();
         } catch (Throwable ignored) {}
-        displayGuiScreen(new CrashScreen(CrashInfo.fromReport(report, kind)));
+        gtnhtweaks$showCrashScreen(new CrashScreen(CrashInfo.fromReport(report, kind)), report);
+    }
+
+    /**
+     * Opens the crash screen. Opening it closes the current screen first, which can crash again when that screen is the
+     * broken one: then it is dropped without closing, and as a last resort the crash screen gets a loop of its own.
+     */
+    @Unique
+    private void gtnhtweaks$showCrashScreen(GuiScreen screen, CrashReport report) {
+        try {
+            displayGuiScreen(screen);
+            return;
+        } catch (Throwable t) {
+            GTNHTweaks.LOG.error("The open screen crashed while closing, it is dropped", t);
+        }
+        try {
+            currentScreen = null;
+            displayGuiScreen(screen);
+            return;
+        } catch (Throwable t) {
+            GTNHTweaks.LOG.error("Could not open the crash screen", t);
+        }
+        try {
+            currentScreen = null;
+            gtnhtweaks$runScreen(screen);
+        } catch (Throwable t) {
+            GTNHTweaks.LOG.error("Could not show the crash screen", t);
+        }
+        throw new ReportedException(report);
     }
 
     /** Leaves the world and frees memory, as after a disconnect. */
@@ -275,7 +303,13 @@ public abstract class MixinMinecraft_CrashHandler {
     /** Draws the screen in a loop of its own, until it is left or the window is closed. */
     @Unique
     private void gtnhtweaks$runScreen(GuiScreen screen) {
-        displayGuiScreen(screen);
+        try {
+            displayGuiScreen(screen);
+        } catch (Throwable t) {
+            // the open screen crashed while closing: dropped without closing
+            currentScreen = null;
+            displayGuiScreen(screen);
+        }
         while (running && currentScreen == screen) {
             if (Display.isCloseRequested()) break;
             leftClickCounter = 10000;
