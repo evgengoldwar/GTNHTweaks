@@ -50,10 +50,16 @@ public class ColorPicker {
 
     /** Opens the picker on {@code argb}; {@code onChange} gets every new color, the old one again on cancel. */
     public void open(int argb, IntConsumer onChange) {
+        open(argb, argb, onChange);
+    }
+
+    /** Opens the picker showing {@code start}, while cancel gives {@code original} back. */
+    public void open(int start, int original, IntConsumer onChange) {
         this.open = true;
         this.onChange = onChange;
-        this.original = argb;
-        setColor(argb);
+        this.original = original;
+        setColor(start);
+        if (start != original) onChange.accept(start);
         Keyboard.enableRepeatEvents(true);
     }
 

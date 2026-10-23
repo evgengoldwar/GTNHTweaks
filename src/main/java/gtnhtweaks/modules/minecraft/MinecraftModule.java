@@ -31,8 +31,12 @@ public final class MinecraftModule extends TweakModule {
     public static int outlineColor = VANILLA_COLOR;
     public static float outlineWidth = VANILLA_WIDTH;
     public static OutlineMode outlineMode = OutlineMode.NORMAL;
-    /** Opacity of the filled faces, 0 for none. */
-    public static float fillOpacity = 0F;
+    /** ARGB color of the filled faces, alpha 0 for no fill. */
+    public static int fillColor = 0;
+    /** Lines in the colors of the rainbow, flowing along the outline. */
+    public static boolean rainbow = false;
+    /** Rounds of the rainbow per second. */
+    public static float rainbowSpeed = 0.5F;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
@@ -80,13 +84,32 @@ public final class MinecraftModule extends TweakModule {
         } catch (IllegalArgumentException e) {
             outlineMode = OutlineMode.NORMAL;
         }
-        fillOpacity = config.getFloat(
-            "fillOpacity",
+        // the fill had the color of the lines with an opacity of its own before it got its own color
+        String fillOpacity = removeOldKey(config, CATEGORY_OUTLINE, "fillOpacity");
+        int oldFill = 0;
+        try {
+            float opacity = fillOpacity == null ? 0 : Float.parseFloat(fillOpacity);
+            if (opacity > 0) oldFill = Math.round(opacity * 255) << 24 | outlineColor & 0xFFFFFF;
+        } catch (NumberFormatException ignored) {}
+        fillColor = parseColor(
+            config.getString(
+                "fillColor",
+                CATEGORY_OUTLINE,
+                formatColor(oldFill),
+                "Color of the filled faces as AARRGGBB in hex, alpha 00 for no fill"),
+            0);
+        rainbow = config.getBoolean(
+            "rainbow",
             CATEGORY_OUTLINE,
-            0F,
-            0F,
-            1F,
-            "Fill the faces of the block in the color of the lines with this opacity, 0 for no fill");
+            false,
+            "Draw the lines in the colors of the rainbow, flowing along the outline. The alpha of the color is kept");
+        rainbowSpeed = config.getFloat(
+            "rainbowSpeed",
+            CATEGORY_OUTLINE,
+            0.5F,
+            0.05F,
+            5F,
+            "Rounds of the rainbow per second");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
@@ -106,8 +129,12 @@ public final class MinecraftModule extends TweakModule {
             .set(Float.toString(outlineWidth));
         config.get(CATEGORY_OUTLINE, "mode", OutlineMode.NORMAL.name())
             .set(outlineMode.name());
-        config.get(CATEGORY_OUTLINE, "fillOpacity", Float.toString(0F))
-            .set(Float.toString(fillOpacity));
+        config.get(CATEGORY_OUTLINE, "fillColor", formatColor(0))
+            .set(formatColor(fillColor));
+        config.get(CATEGORY_OUTLINE, "rainbow", false)
+            .set(rainbow);
+        config.get(CATEGORY_OUTLINE, "rainbowSpeed", Float.toString(0.5F))
+            .set(Float.toString(rainbowSpeed));
         ModuleManager.saveAndReload();
     }
 

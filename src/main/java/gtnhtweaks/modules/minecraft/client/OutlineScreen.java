@@ -49,6 +49,8 @@ public class OutlineScreen extends GuiScreen {
     private final List<Slider> sliders = new ArrayList<>();
     private Slider dragging;
     private final ColorPicker picker = new ColorPicker();
+    private float rainbowSwitch = MinecraftModule.rainbow ? 1 : 0;
+    private long lastFrame;
 
     private int windowX, windowY, windowW, windowH;
     private int previewX, previewY, previewW, previewH;
@@ -130,25 +132,25 @@ public class OutlineScreen extends GuiScreen {
                 return MinecraftModule.outlineWidth + " px";
             }
         });
-        sliders.add(new Slider("Fill") {
+        sliders.add(new Slider("Rainbow speed") {
 
             @Override
             float get() {
-                return MinecraftModule.fillOpacity;
+                return (MinecraftModule.rainbowSpeed - 0.05F) / 4.95F;
             }
 
             @Override
             void set(float t) {
-                MinecraftModule.fillOpacity = Math.round(t * 20) / 20F;
+                MinecraftModule.rainbowSpeed = Math.max(0.05F, Math.round((0.05F + t * 4.95F) * 20) / 20F);
             }
 
             @Override
             String text() {
-                return MinecraftModule.fillOpacity == 0 ? "off" : Math.round(MinecraftModule.fillOpacity * 100) + "%";
+                return String.format("%.2f /s", MinecraftModule.rainbowSpeed);
             }
         });
 
-        int y = controlsY + 46;
+        int y = controlsY + 64;
         for (Slider slider : sliders) {
             slider.x = controlsX;
             slider.w = CONTROLS_WIDTH;
@@ -157,8 +159,16 @@ public class OutlineScreen extends GuiScreen {
         }
     }
 
-    private int modeY() {
+    private int rainbowY() {
+        return controlsY + 44;
+    }
+
+    private int fillY() {
         return sliders.get(sliders.size() - 1).y + 28;
+    }
+
+    private int modeY() {
+        return fillY() + 26;
     }
 
     private int buttonsY() {
@@ -223,7 +233,25 @@ public class OutlineScreen extends GuiScreen {
             }
         }
 
+        // rainbow switch
+        int ry = rainbowY();
+        boolean rainbowHovered = UI.inside(mouseX, mouseY, controlsX, ry, CONTROLS_WIDTH, 16);
+        UI.text("Rainbow", controlsX, ry + 4, rainbowHovered ? theme.hoverText : theme.textDim);
+        rainbowSwitch = UI.approach(rainbowSwitch, MinecraftModule.rainbow ? 1 : 0, frameMs(), 120);
+        UI.toggle(controlsX + CONTROLS_WIDTH - 22, ry + 3, rainbowSwitch, rainbowHovered);
+
         for (Slider slider : sliders) slider.draw(mouseX, mouseY);
+
+        // fill: a button with the fill color that opens the color picker
+        int fy = fillY();
+        boolean fillHovered = UI.inside(mouseX, mouseY, controlsX, fy, CONTROLS_WIDTH, 20);
+        UI.button(controlsX, fy, CONTROLS_WIDTH, 20, fillHovered, true);
+        UI.inset(controlsX + 3, fy + 3, 26, 14);
+        boolean filled = (MinecraftModule.fillColor >>> 24) > 0;
+        if (filled) UI.rect(controlsX + 5, fy + 5, 22, 10, MinecraftModule.fillColor | 0xFF000000);
+        UI.text("Fill", controlsX + 35, fy + 6, fillHovered ? theme.hoverText : theme.text);
+        String fill = filled ? Math.round((MinecraftModule.fillColor >>> 24) * 100 / 255F) + "%" : "off";
+        UI.text(fill, controlsX + CONTROLS_WIDTH - 6 - fontRendererObj.getStringWidth(fill), fy + 6, theme.textDim);
 
         // mode
         int y = modeY();
@@ -236,6 +264,14 @@ public class OutlineScreen extends GuiScreen {
         int by = buttonsY();
         UI.button(controlsX, by, half, 18, "Vanilla", mouseX, mouseY, true);
         UI.button(controlsX + half + 4, by, half, 18, "Done", mouseX, mouseY, true);
+    }
+
+    /** Milliseconds since the last frame, for the switch animation. */
+    private float frameMs() {
+        long now = System.nanoTime();
+        float dt = lastFrame == 0 ? 0 : Math.min(100, (now - lastFrame) / 1_000_000F);
+        lastFrame = now;
+        return dt;
     }
 
     private void modeButton(int x, int y, int w, String label, boolean selected, int mouseX, int mouseY) {
@@ -306,7 +342,7 @@ public class OutlineScreen extends GuiScreen {
                 MinecraftModule.outlineColor,
                 MinecraftModule.outlineWidth,
                 MinecraftModule.outlineMode == OutlineMode.THROUGH_BLOCKS,
-                MinecraftModule.fillOpacity,
+                MinecraftModule.fillColor,
                 1.0 / (scale * new ScaledResolution(mc, mc.displayWidth, mc.displayHeight).getScaleFactor()));
             if (pipe && drawn) {
                 // the highlighted cell goes round the sides, as if the cursor moved over the grid
@@ -341,6 +377,19 @@ public class OutlineScreen extends GuiScreen {
                 return;
             }
         }
+        if (UI.inside(mouseX, mouseY, controlsX, rainbowY(), CONTROLS_WIDTH, 16)) {
+            MinecraftModule.rainbow = !MinecraftModule.rainbow;
+            UI.playClick();
+            return;
+        }
+        if (UI.inside(mouseX, mouseY, controlsX, fillY(), CONTROLS_WIDTH, 20)) {
+            UI.playClick();
+            int fill = MinecraftModule.fillColor;
+            // no fill yet: start with the line color, a third opaque
+            int start = (fill >>> 24) > 0 ? fill : MinecraftModule.outlineColor & 0xFFFFFF | 0x55 << 24;
+            picker.open(start, fill, color -> MinecraftModule.fillColor = color);
+            return;
+        }
         for (Slider slider : sliders) {
             if (slider.hit(mouseX, mouseY)) {
                 dragging = slider;
@@ -362,7 +411,9 @@ public class OutlineScreen extends GuiScreen {
             MinecraftModule.outlineColor = MinecraftModule.VANILLA_COLOR;
             MinecraftModule.outlineWidth = MinecraftModule.VANILLA_WIDTH;
             MinecraftModule.outlineMode = OutlineMode.NORMAL;
-            MinecraftModule.fillOpacity = 0;
+            MinecraftModule.fillColor = 0;
+            MinecraftModule.rainbow = false;
+            MinecraftModule.rainbowSpeed = 0.5F;
             UI.playClick();
         } else if (UI.inside(mouseX, mouseY, controlsX + half + 4, by, half, 18)) {
             UI.playClick();

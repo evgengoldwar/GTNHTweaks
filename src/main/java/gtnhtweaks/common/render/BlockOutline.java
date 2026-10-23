@@ -2,6 +2,7 @@ package gtnhtweaks.common.render;
 
 import static org.lwjgl.opengl.GL11.*;
 
+import java.awt.Color;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
@@ -43,8 +44,24 @@ public final class BlockOutline {
             && MinecraftModule.outlineMode == MinecraftModule.OutlineMode.THROUGH_BLOCKS;
     }
 
-    public static float fillOpacity() {
-        return MinecraftModule.outlineActive() ? MinecraftModule.fillOpacity : 0F;
+    public static int fillColor() {
+        return MinecraftModule.outlineActive() ? MinecraftModule.fillColor : 0;
+    }
+
+    public static boolean rainbow() {
+        return MinecraftModule.outlineActive() && MinecraftModule.rainbow;
+    }
+
+    /** The rainbow color at a place along the outline, 0 to 1, now; with the alpha of the line color. */
+    public static int rainbowColor(float place, int alphaOf) {
+        double rounds = System.currentTimeMillis() / 1000D * MinecraftModule.rainbowSpeed;
+        float hue = (float) ((rounds + place) % 1);
+        return Color.HSBtoRGB(hue, 0.85F, 1F) & 0xFFFFFF | alphaOf & 0xFF000000;
+    }
+
+    /** The color of plain lines like the GregTech grid: the line color, or the rainbow of this moment. */
+    public static int lineColor() {
+        return rainbow() ? rainbowColor(0, color()) : color();
     }
 
     /**
@@ -52,14 +69,14 @@ public final class BlockOutline {
      * depth state and color are restored by the caller's attribute stack.
      */
     public static void draw(AxisAlignedBB box) {
-        draw(box, color(), width(), throughBlocks(), fillOpacity(), 0);
+        draw(box, color(), width(), throughBlocks(), fillColor(), 0);
     }
 
     /**
      * @param preview 0 for a box around the camera at the origin, as in the world: it is then pulled a little toward
      *                the camera so the faces of the block itself never hide it. Above 0 for a preview, not pulled
      */
-    public static void draw(AxisAlignedBB box, int color, float width, boolean throughBlocks, float fillOpacity,
+    public static void draw(AxisAlignedBB box, int color, float width, boolean throughBlocks, int fillColor,
         double preview) {
         glPushMatrix();
         if (preview <= 0) glScalef(0.997F, 0.997F, 0.997F);
@@ -71,7 +88,7 @@ public final class BlockOutline {
         glEnable(GL_DEPTH_TEST);
         if (throughBlocks) glDepthRange(0, 0.1);
 
-        if (fillOpacity > 0) {
+        if ((fillColor >>> 24) > 0) {
             // drawn first, the strips go over it
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(-1, -1);
@@ -79,7 +96,7 @@ public final class BlockOutline {
                 glBegin(GL_QUADS);
                 quads(box);
                 glEnd();
-            }, color & 0xFFFFFF | Math.round(fillOpacity * 255) << 24);
+            }, fillColor);
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
 
@@ -136,6 +153,8 @@ public final class BlockOutline {
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         glLoadIdentity();
+        rainbowNow = rainbow();
+        rainbowAlpha = color;
         try {
             float half = width / 2;
             twoPasses(() -> {
@@ -153,6 +172,7 @@ public final class BlockOutline {
                 glEnd();
             }, color);
         } finally {
+            rainbowNow = false;
             glPopMatrix();
             glMatrixMode(GL_PROJECTION);
             glPopMatrix();
@@ -184,7 +204,16 @@ public final class BlockOutline {
         }
     }
 
+    /** Set while the rainbow is drawn: the alpha it keeps. */
+    private static boolean rainbowNow;
+    private static int rainbowAlpha;
+
     private static void vertex(float x, float y, float z, float vx, float vy, float vw, float vh) {
+        if (rainbowNow) {
+            // the hue runs diagonally over the screen, so it flows along the outline and is smooth at the joints
+            float place = ((x - vx) + (y - vy)) / Math.max(1, Math.min(vw, vh)) * 1.5F;
+            GLDraw.color(rainbowColor(place, rainbowAlpha));
+        }
         glVertex3f((x - vx) / vw * 2 - 1, (y - vy) / vh * 2 - 1, z);
     }
 

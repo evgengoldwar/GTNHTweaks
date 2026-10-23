@@ -74,6 +74,18 @@ public abstract class TweakModule {
                 GTNHTheme.names()));
     }
 
+    /** Removes a key that is no longer read and gives its value, or null if it was not there. */
+    protected static String removeOldKey(Configuration config, String category, String key) {
+        category = category.toLowerCase(Locale.ENGLISH);
+        if (!config.hasCategory(category)) return null;
+        ConfigCategory entries = config.getCategory(category);
+        if (!entries.containsKey(key)) return null;
+        String value = entries.get(key)
+            .getString();
+        entries.remove(key);
+        return value;
+    }
+
     /** Removes a key that is no longer read, so it does not linger in the config file. */
     protected static void removeKey(Configuration config, String category, String key) {
         // Forge keeps the category names lower case

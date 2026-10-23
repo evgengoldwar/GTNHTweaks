@@ -63,7 +63,7 @@ public final class GridOverlay {
         float lineWidth) {
         if (MinecraftModule.outlineActive()) {
             // the color, width and mode of the block outline settings
-            GLDraw.color(BlockOutline.color());
+            GLDraw.color(BlockOutline.lineColor());
             glLineWidth(BlockOutline.width());
             if (BlockOutline.throughBlocks()) glDisable(GL_DEPTH_TEST);
         } else {
