@@ -93,10 +93,12 @@ public final class EarlyCrashWindow {
      * @param reportFile where the report was saved, or null
      */
     public static void show(Throwable error, String fullReport, File reportFile) {
-        if (shown || error == null || GraphicsEnvironment.isHeadless()
+        if (shown || error == null
+            || GraphicsEnvironment.isHeadless()
             || System.getProperty("os.name", "")
                 .toLowerCase(Locale.ROOT)
-                .contains("mac")) return;
+                .contains("mac"))
+            return;
         shown = true;
 
         if (fullReport == null) {
