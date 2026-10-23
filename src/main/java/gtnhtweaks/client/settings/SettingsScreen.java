@@ -150,6 +150,7 @@ public class SettingsScreen extends GuiScreen {
                 p.rows.add(new Rows.HeaderRow(UI.humanize(name), category.getComment()));
                 for (Property property : category.getValues()
                     .values()) {
+                    if (!module.showInSettings(name, property.getName())) continue;
                     p.rows.add(new Rows.SettingRow(this, property, controlWidth));
                 }
             }

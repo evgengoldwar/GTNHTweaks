@@ -83,6 +83,16 @@ public abstract class TweakModule {
         if (entries.containsKey(key)) entries.remove(key);
     }
 
+    /**
+     * Whether a setting is shown in the settings screen. Settings with a screen of their own in game can be hidden
+     * there; they stay in the config file.
+     *
+     * @param category the category name, lower case as Forge keeps it
+     */
+    public boolean showInSettings(String category, String key) {
+        return true;
+    }
+
     /** Reads the module's own settings. Called once, even when the module is disabled, so the file is generated. */
     protected abstract void loadConfig(Configuration config);
 

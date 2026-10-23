@@ -48,7 +48,8 @@ public final class MinecraftModule extends TweakModule {
             CATEGORY_OUTLINE,
             "enabled",
             false,
-            "Draw the outline with the settings below, and add the key that opens the outline screen. "
+            "Draw the block outline in your own color, width and mode. Its look is set in game, with a live "
+                + "preview, on the screen of the key \"Block outline\" (O by default, Controls, GTNHTweaks). "
                 + "Turning it on needs a restart for the key");
         outlineEnabled = enabled.getBoolean(false);
         outlineColor = parseColor(
@@ -86,6 +87,12 @@ public final class MinecraftModule extends TweakModule {
             0F,
             1F,
             "Fill the faces of the block in the color of the lines with this opacity, 0 for no fill");
+    }
+
+    /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
+    @Override
+    public boolean showInSettings(String category, String key) {
+        return !CATEGORY_OUTLINE.equalsIgnoreCase(category) || "enabled".equals(key);
     }
 
     /** Writes the current outline settings to the config file, after a change on the outline screen. */
