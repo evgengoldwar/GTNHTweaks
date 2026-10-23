@@ -144,7 +144,9 @@ public final class ChatHeads {
         String writer = null;
         Matcher matcher = NAME.matcher(text.substring(0, end));
         while (matcher.find()) {
-            String name = online.get(matcher.group().toLowerCase(Locale.ROOT));
+            String name = online.get(
+                matcher.group()
+                    .toLowerCase(Locale.ROOT));
             // the last one: the nearest to the message, after ranks and tags
             if (name != null) writer = name;
         }
