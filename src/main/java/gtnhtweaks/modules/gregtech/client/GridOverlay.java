@@ -68,9 +68,7 @@ public final class GridOverlay {
             if (BlockOutline.throughBlocks()) glDisable(GL_DEPTH_TEST);
         } else {
             // pulsing between blue and white like in GTCEu
-            float rg = Math.max(
-                0,
-                0.2F + (float) Math.sin((System.currentTimeMillis() % (Math.PI * 800)) / 800) / 2);
+            float rg = Math.max(0, 0.2F + (float) Math.sin((System.currentTimeMillis() % (Math.PI * 800)) / 800) / 2);
             glLineWidth(lineWidth);
             glColor4f(rg, rg, 1, 1);
         }

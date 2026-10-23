@@ -72,13 +72,14 @@ public final class MinecraftModule extends TweakModule {
             "Width of the lines in pixels, 2 in vanilla");
         try {
             outlineMode = OutlineMode.valueOf(
-                config.getString(
-                    "mode",
-                    CATEGORY_OUTLINE,
-                    OutlineMode.NORMAL.name(),
-                    "NORMAL: hidden behind other blocks, like vanilla. THROUGH_BLOCKS: seen through every block, "
-                        + "like a wireframe",
-                    new String[] { OutlineMode.NORMAL.name(), OutlineMode.THROUGH_BLOCKS.name() })
+                config
+                    .getString(
+                        "mode",
+                        CATEGORY_OUTLINE,
+                        OutlineMode.NORMAL.name(),
+                        "NORMAL: hidden behind other blocks, like vanilla. THROUGH_BLOCKS: seen through every block, "
+                            + "like a wireframe",
+                        new String[] { OutlineMode.NORMAL.name(), OutlineMode.THROUGH_BLOCKS.name() })
                     .trim()
                     .toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
@@ -103,13 +104,8 @@ public final class MinecraftModule extends TweakModule {
             CATEGORY_OUTLINE,
             false,
             "Draw the lines in the colors of the rainbow, flowing along the outline. The alpha of the color is kept");
-        rainbowSpeed = config.getFloat(
-            "rainbowSpeed",
-            CATEGORY_OUTLINE,
-            0.5F,
-            0.05F,
-            5F,
-            "Rounds of the rainbow per second");
+        rainbowSpeed = config
+            .getFloat("rainbowSpeed", CATEGORY_OUTLINE, 0.5F, 0.05F, 5F, "Rounds of the rainbow per second");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */

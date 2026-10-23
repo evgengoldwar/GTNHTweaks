@@ -289,8 +289,7 @@ public class OutlineScreen extends GuiScreen {
         int size = presetSize();
         for (int i = 0; i < PRESETS.length; i++) {
             int x = controlsX + i * (size + 2);
-            boolean selected = fill
-                ? (current >>> 24) > 0 && (current & 0xFFFFFF) == (PRESETS[i] & 0xFFFFFF)
+            boolean selected = fill ? (current >>> 24) > 0 && (current & 0xFFFFFF) == (PRESETS[i] & 0xFFFFFF)
                 : PRESETS[i] == current;
             UI.inset(x, y, size, 14);
             UI.rect(x + 2, y + 2, size - 4, 10, PRESETS[i] | 0xFF000000);
@@ -380,8 +379,7 @@ public class OutlineScreen extends GuiScreen {
                 1.0 / (scale * new ScaledResolution(mc, mc.displayWidth, mc.displayHeight).getScaleFactor()));
             if (pipe && drawn) {
                 // the highlighted cell goes round the sides, as if the cursor moved over the grid
-                ForgeDirection hovered = ForgeDirection.VALID_DIRECTIONS[(int) (System.currentTimeMillis() / 1000
-                    % 6)];
+                ForgeDirection hovered = ForgeDirection.VALID_DIRECTIONS[(int) (System.currentTimeMillis() / 1000 % 6)];
                 GridOverlay.drawGridAt(0, 0, 0, ForgeDirection.UP, PipePreview::wrenchIcon, hovered, 3);
             }
         } finally {

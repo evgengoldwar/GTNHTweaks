@@ -25,8 +25,7 @@ public final class PipePreview {
 
     /** Icons of a wrench on a pipe connected east and west, as the tool overlay shows them. */
     public static ToolIcon wrenchIcon(ForgeDirection side) {
-        return side == ForgeDirection.EAST || side == ForgeDirection.WEST ? ToolIcon.PIPE_CONNECT
-            : ToolIcon.PIPE_BLOCK;
+        return side == ForgeDirection.EAST || side == ForgeDirection.WEST ? ToolIcon.PIPE_CONNECT : ToolIcon.PIPE_BLOCK;
     }
 
     /** The first fluid or item pipe of GregTech. */
