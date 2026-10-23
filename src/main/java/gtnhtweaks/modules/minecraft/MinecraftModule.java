@@ -26,7 +26,7 @@ public final class MinecraftModule extends TweakModule {
     public static final int VANILLA_COLOR = 0x66000000;
     public static final float VANILLA_WIDTH = 2F;
 
-    public static boolean outlineEnabled = false;
+    public static boolean outlineEnabled = true;
     /** ARGB. */
     public static int outlineColor = VANILLA_COLOR;
     public static float outlineWidth = VANILLA_WIDTH;
@@ -51,11 +51,11 @@ public final class MinecraftModule extends TweakModule {
         Property enabled = config.get(
             CATEGORY_OUTLINE,
             "enabled",
-            false,
+            true,
             "Draw the block outline in your own color, width and mode. Its look is set in game, with a live "
                 + "preview, on the screen of the key \"Block outline\" (O by default, Controls, GTNHTweaks). "
                 + "Turning it on needs a restart for the key");
-        outlineEnabled = enabled.getBoolean(false);
+        outlineEnabled = enabled.getBoolean(true);
         outlineColor = parseColor(
             config.getString(
                 "color",
