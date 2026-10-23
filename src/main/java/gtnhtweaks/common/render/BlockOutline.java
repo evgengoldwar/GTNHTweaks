@@ -52,42 +52,48 @@ public final class BlockOutline {
         glPushMatrix();
         glScalef(pull, pull, pull);
 
-        // A translucent outline must cover every pixel once: where lines and corner points overlap, blending twice
-        // makes the joints brighter. Every pixel written stores its depth, and with GL_LESS a second fragment at the
-        // same depth fails. Seen through blocks, every fragment gets the depth 0, so it passes the world and still
-        // fails on a pixel the outline already covered.
+        // A translucent outline must be blended once per pixel: where lines and corner points overlap, blending
+        // twice makes the joints brighter. So it is drawn twice. The first pass writes only depth: the nearest
+        // outline fragment of every pixel. The second draws the color with GL_EQUAL: only that fragment passes.
+        // Seen through blocks, the outline depth is squeezed into the front of the depth range, so the world never
+        // hides it while the outline still sorts itself.
         glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LESS);
-        glDepthMask(true);
-        if (throughBlocks) glDepthRange(0, 0);
+        if (throughBlocks) glDepthRange(0, 0.0001);
 
-        edges(box, color, width);
-
+        twoPasses(() -> edges(box, width), color);
         if (fillOpacity > 0) {
-            // behind the lines, which already hold their pixels; the faces of the block itself must not hide it
-            GLDraw.color(color & 0xFFFFFF | Math.round(fillOpacity * 255) << 24);
+            // behind the lines: their pixels hold a nearer depth, the fill does not tint them
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(-1, -1);
-            if (!throughBlocks) {
-                glDepthFunc(GL_LEQUAL);
-                glDepthMask(false);
-            }
-            glBegin(GL_QUADS);
-            quads(box);
-            glEnd();
+            twoPasses(() -> {
+                glBegin(GL_QUADS);
+                quads(box);
+                glEnd();
+            }, color & 0xFFFFFF | Math.round(fillOpacity * 255) << 24);
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
 
         glDepthRange(0, 1);
         glDepthFunc(GL_LEQUAL);
         glDepthMask(true);
-        glEnable(GL_DEPTH_TEST);
         glPopMatrix();
     }
 
-    private static void edges(AxisAlignedBB box, int color, float width) {
-        glLineWidth(width);
+    /** Depth only, then the color of the nearest fragment of every pixel. */
+    private static void twoPasses(Runnable geometry, int color) {
+        glColorMask(false, false, false, false);
+        glDepthMask(true);
+        glDepthFunc(GL_LEQUAL);
+        geometry.run();
+        glColorMask(true, true, true, true);
+        glDepthMask(false);
+        glDepthFunc(GL_EQUAL);
         GLDraw.color(color);
+        geometry.run();
+    }
+
+    private static void edges(AxisAlignedBB box, float width) {
+        glLineWidth(width);
         glBegin(GL_LINES);
         // bottom, top, then the vertical edges: plain lines, no strip, so no vertex is drawn twice in a row
         line(box.minX, box.minY, box.minZ, box.maxX, box.minY, box.minZ);
