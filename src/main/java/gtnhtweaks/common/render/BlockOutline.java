@@ -40,6 +40,11 @@ public final class BlockOutline {
     }
 
     public static void draw(AxisAlignedBB box, int color, float width, boolean throughBlocks, float fillOpacity) {
+        // the box is in camera space: scaling it a little around the camera pulls it toward the eye, so its edges
+        // are never hidden by the faces of the block itself (wide lines and the small expand of the box are not
+        // always enough), while blocks in front still hide it
+        glPushMatrix();
+        glScalef(0.997F, 0.997F, 0.997F);
         glDepthMask(false);
         if (throughBlocks) glDisable(GL_DEPTH_TEST);
         else glEnable(GL_DEPTH_TEST);
@@ -83,6 +88,7 @@ public final class BlockOutline {
 
         glEnable(GL_DEPTH_TEST);
         glDepthMask(true);
+        glPopMatrix();
     }
 
     private static void quads(AxisAlignedBB b) {
