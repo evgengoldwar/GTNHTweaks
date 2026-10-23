@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiTextField;
 
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.GL11;
 
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHTheme;
@@ -138,6 +139,8 @@ public class ColorPicker {
         }
         GTNHTheme theme = UI.theme();
 
+        // 3D previews behind, drawn closer than the GUI, would show through the picker
+        GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
         // dim everything behind
         UI.rect(0, 0, screenWidth, screenHeight, 0x80000000);
         UI.panel(x, y, WIDTH, HEIGHT);
