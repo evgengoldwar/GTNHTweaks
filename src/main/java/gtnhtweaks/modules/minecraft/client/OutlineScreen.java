@@ -150,25 +150,52 @@ public class OutlineScreen extends GuiScreen {
             }
         });
 
-        int y = controlsY + 64;
         for (Slider slider : sliders) {
             slider.x = controlsX;
             slider.w = CONTROLS_WIDTH;
-            slider.y = y;
-            y += 26;
         }
+        // color and its presets, fill and its presets, rainbow and its speed, mode, width
+        sliders.get(1).y = rainbowY() + 18;
+        sliders.get(0).y = modeY() + 30;
     }
 
-    private int rainbowY() {
-        return controlsY + 44;
+    private int presetsY() {
+        return controlsY + 24;
     }
 
     private int fillY() {
-        return sliders.get(sliders.size() - 1).y + 28;
+        return controlsY + 42;
+    }
+
+    private int fillPresetsY() {
+        return fillY() + 22;
+    }
+
+    private int rainbowY() {
+        return fillPresetsY() + 18;
     }
 
     private int modeY() {
-        return fillY() + 26;
+        return sliders.get(1).y + 26;
+    }
+
+    private int presetSize() {
+        return (CONTROLS_WIDTH - (PRESETS.length - 1) * 2) / PRESETS.length;
+    }
+
+    /** The preset under the mouse in the row at y, or -1. */
+    private int presetAt(int mouseX, int mouseY, int y) {
+        int size = presetSize();
+        for (int i = 0; i < PRESETS.length; i++) {
+            if (UI.inside(mouseX, mouseY, controlsX + i * (size + 2), y, size, 14)) return i;
+        }
+        return -1;
+    }
+
+    /** A preset as fill: its color with the opacity of the fill, or a third opaque when there is no fill. */
+    private static int fillPreset(int preset) {
+        int alpha = MinecraftModule.fillColor >>> 24;
+        return preset & 0xFFFFFF | (alpha > 0 ? alpha : 0x55) << 24;
     }
 
     private int buttonsY() {
@@ -222,25 +249,7 @@ public class OutlineScreen extends GuiScreen {
             controlsX + CONTROLS_WIDTH - 6 - fontRendererObj.getStringWidth(opacity),
             controlsY + 6,
             theme.textDim);
-        int size = (CONTROLS_WIDTH - (PRESETS.length - 1) * 2) / PRESETS.length;
-        for (int i = 0; i < PRESETS.length; i++) {
-            int x = controlsX + i * (size + 2);
-            boolean selected = PRESETS[i] == MinecraftModule.outlineColor;
-            UI.inset(x, controlsY + 24, size, 14);
-            UI.rect(x + 2, controlsY + 26, size - 4, 10, PRESETS[i] | 0xFF000000);
-            if (selected || UI.inside(mouseX, mouseY, x, controlsY + 24, size, 14)) {
-                UI.rect(x, controlsY + 37, size, 1, theme.barFill);
-            }
-        }
-
-        // rainbow switch
-        int ry = rainbowY();
-        boolean rainbowHovered = UI.inside(mouseX, mouseY, controlsX, ry, CONTROLS_WIDTH, 16);
-        UI.text("Rainbow", controlsX, ry + 4, rainbowHovered ? theme.hoverText : theme.textDim);
-        rainbowSwitch = UI.approach(rainbowSwitch, MinecraftModule.rainbow ? 1 : 0, frameMs(), 120);
-        UI.toggle(controlsX + CONTROLS_WIDTH - 22, ry + 3, rainbowSwitch, rainbowHovered);
-
-        for (Slider slider : sliders) slider.draw(mouseX, mouseY);
+        drawPresets(presetsY(), MinecraftModule.outlineColor, false, mouseX, mouseY, theme);
 
         // fill: a button with the fill color that opens the color picker
         int fy = fillY();
@@ -252,6 +261,16 @@ public class OutlineScreen extends GuiScreen {
         UI.text("Fill", controlsX + 35, fy + 6, fillHovered ? theme.hoverText : theme.text);
         String fill = filled ? Math.round((MinecraftModule.fillColor >>> 24) * 100 / 255F) + "%" : "off";
         UI.text(fill, controlsX + CONTROLS_WIDTH - 6 - fontRendererObj.getStringWidth(fill), fy + 6, theme.textDim);
+        drawPresets(fillPresetsY(), MinecraftModule.fillColor, true, mouseX, mouseY, theme);
+
+        // rainbow switch and its speed
+        int ry = rainbowY();
+        boolean rainbowHovered = UI.inside(mouseX, mouseY, controlsX, ry, CONTROLS_WIDTH, 16);
+        UI.text("Rainbow", controlsX, ry + 4, rainbowHovered ? theme.hoverText : theme.textDim);
+        rainbowSwitch = UI.approach(rainbowSwitch, MinecraftModule.rainbow ? 1 : 0, frameMs(), 120);
+        UI.toggle(controlsX + CONTROLS_WIDTH - 22, ry + 3, rainbowSwitch, rainbowHovered);
+
+        for (Slider slider : sliders) slider.draw(mouseX, mouseY);
 
         // mode
         int y = modeY();
@@ -264,6 +283,21 @@ public class OutlineScreen extends GuiScreen {
         int by = buttonsY();
         UI.button(controlsX, by, half, 18, "Vanilla", mouseX, mouseY, true);
         UI.button(controlsX + half + 4, by, half, 18, "Done", mouseX, mouseY, true);
+    }
+
+    private void drawPresets(int y, int current, boolean fill, int mouseX, int mouseY, GTNHTheme theme) {
+        int size = presetSize();
+        for (int i = 0; i < PRESETS.length; i++) {
+            int x = controlsX + i * (size + 2);
+            boolean selected = fill
+                ? (current >>> 24) > 0 && (current & 0xFFFFFF) == (PRESETS[i] & 0xFFFFFF)
+                : PRESETS[i] == current;
+            UI.inset(x, y, size, 14);
+            UI.rect(x + 2, y + 2, size - 4, 10, PRESETS[i] | 0xFF000000);
+            if (selected || UI.inside(mouseX, mouseY, x, y, size, 14)) {
+                UI.rect(x, y + 13, size, 1, theme.barFill);
+            }
+        }
     }
 
     /** Milliseconds since the last frame, for the switch animation. */
@@ -369,13 +403,17 @@ public class OutlineScreen extends GuiScreen {
         }
         if (button != 0) return;
 
-        int size = (CONTROLS_WIDTH - (PRESETS.length - 1) * 2) / PRESETS.length;
-        for (int i = 0; i < PRESETS.length; i++) {
-            if (UI.inside(mouseX, mouseY, controlsX + i * (size + 2), controlsY + 24, size, 14)) {
-                MinecraftModule.outlineColor = PRESETS[i];
-                UI.playClick();
-                return;
-            }
+        int preset = presetAt(mouseX, mouseY, presetsY());
+        if (preset >= 0) {
+            MinecraftModule.outlineColor = PRESETS[preset];
+            UI.playClick();
+            return;
+        }
+        preset = presetAt(mouseX, mouseY, fillPresetsY());
+        if (preset >= 0) {
+            MinecraftModule.fillColor = fillPreset(PRESETS[preset]);
+            UI.playClick();
+            return;
         }
         if (UI.inside(mouseX, mouseY, controlsX, rainbowY(), CONTROLS_WIDTH, 16)) {
             MinecraftModule.rainbow = !MinecraftModule.rainbow;
