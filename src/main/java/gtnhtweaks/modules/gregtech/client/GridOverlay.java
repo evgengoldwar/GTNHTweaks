@@ -17,6 +17,8 @@ import net.minecraftforge.common.util.ForgeDirection;
 import org.lwjgl.opengl.GL20;
 
 import gtnhtweaks.common.render.BlockOutline;
+import gtnhtweaks.common.render.GLDraw;
+import gtnhtweaks.modules.minecraft.MinecraftModule;
 
 /**
  * Draws the tool overlay of GregTech CEu Modern on the looked at face: the vanilla outline, a pulsing 3x3 grid and an
@@ -59,10 +61,19 @@ public final class GridOverlay {
 
     private static void drawGridAt(Face f, Function<ForgeDirection, ToolIcon> icons, ForgeDirection hovered,
         float lineWidth) {
-        // the grid, pulsing between blue and white like in GTCEu
-        float rg = Math.max(0, 0.2F + (float) Math.sin((System.currentTimeMillis() % (Math.PI * 800)) / 800) / 2);
-        glLineWidth(lineWidth);
-        glColor4f(rg, rg, 1, 1);
+        if (MinecraftModule.outlineActive()) {
+            // the color, width and mode of the block outline settings
+            GLDraw.color(BlockOutline.color());
+            glLineWidth(BlockOutline.width());
+            if (BlockOutline.throughBlocks()) glDisable(GL_DEPTH_TEST);
+        } else {
+            // pulsing between blue and white like in GTCEu
+            float rg = Math.max(
+                0,
+                0.2F + (float) Math.sin((System.currentTimeMillis() % (Math.PI * 800)) / 800) / 2);
+            glLineWidth(lineWidth);
+            glColor4f(rg, rg, 1, 1);
+        }
         glBegin(GL_LINES);
         f.vertex(-0.25, -0.5, LIFT);
         f.vertex(-0.25, 0.5, LIFT);
