@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -28,10 +29,10 @@ public class MixinGuiNewChat_ChatHeads {
 
     // ---- splitting a message into lines (func_146237_a: message, id, update counter, refreshing)
 
-    @Inject(method = "func_146237_a", at = @At("HEAD"))
-    private void gtnhtweaks$beginMessage(IChatComponent message, int id, int updateCounter, boolean refresh,
-        CallbackInfo ci) {
-        ChatHeads.beginMessage(message);
+    /** Finds the writer, and the message to split: without the name of the writer when the names are hidden. */
+    @ModifyVariable(method = "func_146237_a", at = @At("HEAD"), argsOnly = true)
+    private IChatComponent gtnhtweaks$beginMessage(IChatComponent message) {
+        return ChatHeads.beginMessage(message);
     }
 
     @Inject(method = "func_146237_a", at = @At("RETURN"))

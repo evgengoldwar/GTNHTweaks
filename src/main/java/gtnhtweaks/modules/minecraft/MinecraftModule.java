@@ -43,6 +43,8 @@ public final class MinecraftModule extends TweakModule {
     public static boolean chatHeads = true;
     /** A bar before the messages not written by a player, as in the chat of newer versions. */
     public static boolean systemMessageBar = true;
+    /** Only the head before the messages of players, without their name. */
+    public static boolean hideNames = false;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
@@ -119,6 +121,12 @@ public final class MinecraftModule extends TweakModule {
             chatHeads,
             "Show the head of the player before their messages in the chat. The writer is the online player named "
                 + "before the first >, : or » of the message, as in <Name> or [Rank] Name:. Needs a restart");
+        hideNames = config.getBoolean(
+            "hideNames",
+            CATEGORY_CHAT,
+            hideNames,
+            "With playerHeads: only the head before the messages of players, without the name. Everything before "
+                + "the text of the message is hidden, ranks and tags too: <Name> hi and [Rank] Name: hi become hi");
         systemMessageBar = config.getBoolean(
             "systemMessageBar",
             CATEGORY_CHAT,

@@ -15,6 +15,7 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiPlayerInfo;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.ResourceLocation;
@@ -70,18 +71,27 @@ public final class ChatHeads {
 
     // ---- lines of a message
 
-    /** A message is split into lines: finds its writer. */
-    public static void beginMessage(IChatComponent message) {
+    /**
+     * A message is split into lines: finds its writer. Returns the message to split: without the name of the writer
+     * when the names are hidden, which is kept and split again when the chat is wrapped again.
+     */
+    public static IChatComponent beginMessage(IChatComponent message) {
         Message key = new Message(message);
         String writer;
         if (WRITERS.containsKey(key)) writer = WRITERS.get(key);
         else {
-            writer = findWriter(message);
+            Writer found = findWriter(message);
+            writer = found == null ? null : found.name;
             WRITERS.put(key, writer);
+            if (found != null && MinecraftModule.chatHeads && MinecraftModule.hideNames) {
+                message = cut(message, found.textStart);
+                WRITERS.put(new Message(message), writer);
+            }
         }
         inMessage = true;
         current = MinecraftModule.chatHeads ? writer : null;
         firstMade = false;
+        return message;
     }
 
     public static void endMessage() {
@@ -126,20 +136,34 @@ public final class ChatHeads {
 
     // ---- the writer
 
-    static String findWriter(IChatComponent message) {
+    /** The name of a writer, and where the text of the message starts after it, in characters without formatting. */
+    static final class Writer {
+
+        final String name;
+        final int textStart;
+
+        Writer(String name, int textStart) {
+            this.name = name;
+            this.textStart = textStart;
+        }
+    }
+
+    static Writer findWriter(IChatComponent message) {
         String text = EnumChatFormatting.getTextWithoutFormattingCodes(message.getUnformattedText());
         if (text == null) return null;
         int end = -1;
         for (int i = 0; i < Math.min(text.length(), 80); i++) {
             char c = text.charAt(i);
-            if (c == '>' || c == ':' || c == '»') {
+            if (c == '>' || c == ':' || c == '\u00bb') {
                 end = i;
                 break;
             }
         }
         if (end <= 0) return null;
+        int textStart = end + 1;
+        while (textStart < text.length() && text.charAt(textStart) == ' ') textStart++;
         Matcher vanilla = VANILLA_FORMAT.matcher(text);
-        if (vanilla.find()) return vanilla.group(1);
+        if (vanilla.find()) return new Writer(vanilla.group(1), textStart);
         Map<String, String> online = onlinePlayers();
         String writer = null;
         Matcher matcher = NAME.matcher(text.substring(0, end));
@@ -150,7 +174,35 @@ public final class ChatHeads {
             // the last one: the nearest to the message, after ranks and tags
             if (name != null) writer = name;
         }
-        return writer;
+        return writer == null ? null : new Writer(writer, textStart);
+    }
+
+    /**
+     * The message without its first characters, not counting formatting codes, which are kept for the colors of the
+     * rest. Split into parts with their styles, as the chat draws it, so colors, links and hover texts stay.
+     */
+    static IChatComponent cut(IChatComponent message, int characters) {
+        ChatComponentText result = new ChatComponentText("");
+        int skipped = 0;
+        for (Object object : message) {
+            IChatComponent part = (IChatComponent) object;
+            String text = part.getUnformattedTextForChat();
+            StringBuilder kept = new StringBuilder();
+            for (int i = 0; i < text.length(); i++) {
+                char c = text.charAt(i);
+                if (c == '\u00a7' && i + 1 < text.length()) {
+                    kept.append(c)
+                        .append(text.charAt(++i));
+                } else if (skipped < characters) skipped++;
+                else kept.append(c);
+            }
+            if (kept.length() == 0) continue;
+            ChatComponentText piece = new ChatComponentText(kept.toString());
+            // the parts given by the iterator are copies with their own styles, with the inherited values set
+            piece.setChatStyle(part.getChatStyle());
+            result.appendSibling(piece);
+        }
+        return result;
     }
 
     /** Names of the players on the server by their lower case. */
