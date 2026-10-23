@@ -8,7 +8,6 @@ import java.util.List;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -47,7 +46,6 @@ public class OutlineScreen extends GuiScreen {
     private final RenderBlocks renderBlocks = new RenderBlocks();
     private final boolean gregtech = Loader.isModLoaded("gregtech");
     private final List<Slider> sliders = new ArrayList<>();
-    private GuiTextField hex;
     private Slider dragging;
     private final ColorPicker picker = new ColorPicker();
 
@@ -97,28 +95,6 @@ public class OutlineScreen extends GuiScreen {
         }
     }
 
-    private Slider channel(String label, int shift) {
-        return new Slider(label) {
-
-            @Override
-            float get() {
-                return (MinecraftModule.outlineColor >>> shift & 0xFF) / 255F;
-            }
-
-            @Override
-            void set(float t) {
-                int value = Math.round(t * 255);
-                MinecraftModule.outlineColor = MinecraftModule.outlineColor & ~(0xFF << shift) | value << shift;
-                syncHex();
-            }
-
-            @Override
-            String text() {
-                return Integer.toString(MinecraftModule.outlineColor >>> shift & 0xFF);
-            }
-        };
-    }
-
     // ---- layout
 
     @Override
@@ -136,10 +112,6 @@ public class OutlineScreen extends GuiScreen {
         controlsY = previewY;
 
         sliders.clear();
-        sliders.add(channel("Red", 16));
-        sliders.add(channel("Green", 8));
-        sliders.add(channel("Blue", 0));
-        sliders.add(channel("Opacity", 24));
         sliders.add(new Slider("Width") {
 
             @Override
@@ -181,18 +153,7 @@ public class OutlineScreen extends GuiScreen {
             slider.w = CONTROLS_WIDTH;
             slider.y = y;
             y += 26;
-            // a gap between the color and the other settings
-            if (slider.label.equals("Opacity")) y += 4;
         }
-
-        hex = new GuiTextField(fontRendererObj, controlsX + 26, controlsY + 4, CONTROLS_WIDTH - 30, 12);
-        hex.setEnableBackgroundDrawing(false);
-        hex.setMaxStringLength(9);
-        syncHex();
-    }
-
-    private void syncHex() {
-        if (hex != null && !hex.isFocused()) hex.setText(MinecraftModule.formatColor(MinecraftModule.outlineColor));
     }
 
     private int modeY() {
@@ -231,22 +192,25 @@ public class OutlineScreen extends GuiScreen {
         drawPreview();
 
         drawControls(mouseX, mouseY, theme);
-        if (UI.inside(mouseX, mouseY, controlsX, controlsY, 20, 20)) {
+        if (UI.inside(mouseX, mouseY, controlsX, controlsY, CONTROLS_WIDTH, 20)) {
             drawHoveringText(Collections.singletonList("Click to pick a color"), mouseX, mouseY, fontRendererObj);
         }
         picker.draw(pickerX, pickerY, width, height);
     }
 
     private void drawControls(int mouseX, int mouseY, GTNHTheme theme) {
-        // color: swatch opening the color picker, hex field and presets
-        boolean swatchHovered = UI.inside(mouseX, mouseY, controlsX, controlsY, 20, 20);
-        UI.button(controlsX, controlsY, 20, 20, swatchHovered, true);
-        UI.rect(controlsX + 3, controlsY + 3, 14, 14, MinecraftModule.outlineColor | 0xFF000000);
-
-        UI.inset(controlsX + 22, controlsY, CONTROLS_WIDTH - 22, 20);
-        hex.setTextColor(theme.text & 0xFFFFFF);
-        hex.yPosition = controlsY + 6;
-        hex.drawTextBox();
+        // color: a button with the color that opens the color picker, and presets
+        boolean colorHovered = UI.inside(mouseX, mouseY, controlsX, controlsY, CONTROLS_WIDTH, 20);
+        UI.button(controlsX, controlsY, CONTROLS_WIDTH, 20, colorHovered, true);
+        UI.inset(controlsX + 3, controlsY + 3, 26, 14);
+        UI.rect(controlsX + 5, controlsY + 5, 22, 10, MinecraftModule.outlineColor | 0xFF000000);
+        UI.text("Color", controlsX + 35, controlsY + 6, colorHovered ? theme.hoverText : theme.text);
+        String opacity = Math.round((MinecraftModule.outlineColor >>> 24) * 100 / 255F) + "%";
+        UI.text(
+            opacity,
+            controlsX + CONTROLS_WIDTH - 6 - fontRendererObj.getStringWidth(opacity),
+            controlsY + 6,
+            theme.textDim);
         int size = (CONTROLS_WIDTH - (PRESETS.length - 1) * 2) / PRESETS.length;
         for (int i = 0; i < PRESETS.length; i++) {
             int x = controlsX + i * (size + 2);
@@ -361,23 +325,17 @@ public class OutlineScreen extends GuiScreen {
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int button) {
         if (picker.mouseClicked(mouseX, mouseY, button)) return;
-        if (button == 0 && UI.inside(mouseX, mouseY, controlsX, controlsY, 20, 20)) {
+        if (button == 0 && UI.inside(mouseX, mouseY, controlsX, controlsY, CONTROLS_WIDTH, 20)) {
             UI.playClick();
-            picker.open(MinecraftModule.outlineColor, color -> {
-                MinecraftModule.outlineColor = color;
-                syncHex();
-            });
+            picker.open(MinecraftModule.outlineColor, color -> MinecraftModule.outlineColor = color);
             return;
         }
-        hex.mouseClicked(mouseX, mouseY, button);
-        if (!hex.isFocused()) syncHex();
         if (button != 0) return;
 
         int size = (CONTROLS_WIDTH - (PRESETS.length - 1) * 2) / PRESETS.length;
         for (int i = 0; i < PRESETS.length; i++) {
             if (UI.inside(mouseX, mouseY, controlsX + i * (size + 2), controlsY + 24, size, 14)) {
                 MinecraftModule.outlineColor = PRESETS[i];
-                syncHex();
                 UI.playClick();
                 return;
             }
@@ -404,7 +362,6 @@ public class OutlineScreen extends GuiScreen {
             MinecraftModule.outlineWidth = MinecraftModule.VANILLA_WIDTH;
             MinecraftModule.outlineMode = OutlineMode.NORMAL;
             MinecraftModule.fillOpacity = 0;
-            syncHex();
             UI.playClick();
         } else if (UI.inside(mouseX, mouseY, controlsX + half + 4, by, half, 18)) {
             UI.playClick();
@@ -419,24 +376,10 @@ public class OutlineScreen extends GuiScreen {
             mc.displayGuiScreen(parent);
             return;
         }
-        if (hex.isFocused()) {
-            if (code == Keyboard.KEY_RETURN || code == Keyboard.KEY_NUMPADENTER) {
-                hex.setFocused(false);
-                syncHex();
-                return;
-            }
-            hex.textboxKeyTyped(c, code);
-            String text = hex.getText()
-                .trim();
-            if (text.length() == 6 || text.length() == 8) {
-                MinecraftModule.outlineColor = MinecraftModule.parseColor(text, MinecraftModule.outlineColor);
-            }
-        }
     }
 
     @Override
     public void updateScreen() {
-        hex.updateCursorCounter();
         picker.update();
     }
 
