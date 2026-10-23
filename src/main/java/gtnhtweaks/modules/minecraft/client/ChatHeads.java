@@ -2,10 +2,10 @@ package gtnhtweaks.modules.minecraft.client;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,8 +36,18 @@ public final class ChatHeads {
     private static final int SIZE = 8;
     private static final Pattern NAME = Pattern.compile("[A-Za-z0-9_]{2,16}");
 
-    /** The writer of a message, kept for the message, also while the chat is wrapped again. */
-    private static final Map<IChatComponent, String> WRITERS = new WeakHashMap<>();
+    /**
+     * The writer of a message, kept for the message, also while the chat is wrapped again. By identity: hashCode of
+     * a chat component can throw for a style without a color, a bug of vanilla. The chat keeps at most a few hundred
+     * messages, so the oldest are forgotten after a while.
+     */
+    private static final Map<Message, String> WRITERS = new LinkedHashMap<Message, String>() {
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Message, String> eldest) {
+            return size() > 2048;
+        }
+    };
     private static final Map<String, ResourceLocation> SKINS = new HashMap<>();
 
     /** The writer of the message being split into lines, and whether its first line was made. */
@@ -53,11 +63,12 @@ public final class ChatHeads {
 
     /** A message is split into lines: finds its writer. */
     public static void beginMessage(IChatComponent message) {
+        Message key = new Message(message);
         String writer;
-        if (WRITERS.containsKey(message)) writer = WRITERS.get(message);
+        if (WRITERS.containsKey(key)) writer = WRITERS.get(key);
         else {
             writer = findWriter(message);
-            WRITERS.put(message, writer);
+            WRITERS.put(key, writer);
         }
         current = writer;
         firstMade = false;
@@ -77,6 +88,26 @@ public final class ChatHeads {
         if (current == null) return;
         line.gtnhtweaks$setWriter(current, !firstMade);
         firstMade = true;
+    }
+
+    /** A message compared by identity. */
+    private static final class Message {
+
+        private final IChatComponent component;
+
+        Message(IChatComponent component) {
+            this.component = component;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof Message && ((Message) other).component == component;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(component);
+        }
     }
 
     // ---- the writer
