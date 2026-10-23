@@ -17,6 +17,7 @@ public final class DebugModule extends TweakModule {
     public static boolean guiInfo = true;
     /** OFF, BEFORE_WINDOW, STARTUP or IN_GAME. */
     public static String mixinCrash = "OFF";
+    public static boolean screenCloseCrash = false;
 
     private DebugModule() {
         super("debug", "Tools for mod and pack developers", true);
@@ -44,6 +45,13 @@ public final class DebugModule extends TweakModule {
                 + "IN_GAME - 3 seconds after a world is entered, every time;\n"
                 + "OFF - no test crash. Set it back to OFF after the test. Changes require a game restart",
             new String[] { "OFF", "BEFORE_WINDOW", "STARTUP", "IN_GAME" });
+        screenCloseCrash = config.getBoolean(
+            "screenCloseCrash",
+            CATEGORY_CRASH_TEST,
+            false,
+            "Crash when the block outline screen is closed (Done or Esc), and again when the crash screen closes it, "
+                + "like the bug of its first version. Tests that the crash screen still shows. Set it back to false "
+                + "after the test");
     }
 
     public static boolean crashTestEnabled() {

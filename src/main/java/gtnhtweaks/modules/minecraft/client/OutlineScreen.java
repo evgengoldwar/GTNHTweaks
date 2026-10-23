@@ -23,6 +23,7 @@ import gtnhtweaks.client.settings.UI;
 import gtnhtweaks.common.render.BlockOutline;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHTheme;
+import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.gregtech.client.GridOverlay;
 import gtnhtweaks.modules.gregtech.client.PipePreview;
 import gtnhtweaks.modules.minecraft.MinecraftModule;
@@ -415,6 +416,9 @@ public class OutlineScreen extends GuiScreen {
     @Override
     public void onGuiClosed() {
         Keyboard.enableRepeatEvents(false);
+        if (DebugModule.INSTANCE.isEnabled() && DebugModule.screenCloseCrash) {
+            throw new NullPointerException("GTNHTweaks crash test: crash while the outline screen closes");
+        }
         MinecraftModule.saveOutline();
     }
 
