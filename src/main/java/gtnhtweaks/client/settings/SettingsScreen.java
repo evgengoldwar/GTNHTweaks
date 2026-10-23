@@ -43,6 +43,7 @@ public class SettingsScreen extends GuiScreen {
         NAMES.put("loadingscreen", "Loading screen");
         NAMES.put("mainmenu", "Main menu");
         NAMES.put("menus", "Menus");
+        NAMES.put("minecraft", "Minecraft");
         NAMES.put("gregtech", "GregTech");
         NAMES.put("nei", "NEI");
         NAMES.put("logs", "Logs");

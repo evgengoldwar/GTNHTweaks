@@ -16,6 +16,8 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import org.lwjgl.opengl.GL20;
 
+import gtnhtweaks.common.render.BlockOutline;
+
 /**
  * Draws the tool overlay of GregTech CEu Modern on the looked at face: the vanilla outline, a pulsing 3x3 grid and an
  * icon in every cell that tells what the tool does to that side. The cell under the cursor is drawn opaque, the others
@@ -40,34 +42,47 @@ public final class GridOverlay {
         begin(event);
         try {
             drawOutline(event);
-            Face f = new Face(target, face);
-
-            // the grid, pulsing between blue and white like in GTCEu
-            float rg = Math.max(0, 0.2F + (float) Math.sin((System.currentTimeMillis() % (Math.PI * 800)) / 800) / 2);
-            glLineWidth(lineWidth(3));
-            glColor4f(rg, rg, 1, 1);
-            glBegin(GL_LINES);
-            f.vertex(-0.25, -0.5, LIFT);
-            f.vertex(-0.25, 0.5, LIFT);
-            f.vertex(0.25, -0.5, LIFT);
-            f.vertex(0.25, 0.5, LIFT);
-            f.vertex(-0.5, -0.25, LIFT);
-            f.vertex(0.5, -0.25, LIFT);
-            f.vertex(-0.5, 0.25, LIFT);
-            f.vertex(0.5, 0.25, LIFT);
-            glEnd();
-
-            // the icons, over everything
-            glDisable(GL_DEPTH_TEST);
-            for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
-                ToolIcon icon = icons.apply(side);
-                if (icon == null) continue;
-                float alpha = side == hovered ? 1F : 0x44 / 255F;
-                for (double[] cell : f.cells(side)) drawIcon(f, icon, cell[0], cell[1], ICON, alpha);
-            }
+            drawGridAt(new Face(target, face), icons, hovered, lineWidth(3));
         } finally {
             end();
         }
+    }
+
+    /**
+     * The grid and the icons on a face of a block centered at (x, y, z) in the current GL space, for a preview. GL
+     * state as for the world overlay: blending on, texture off.
+     */
+    public static void drawGridAt(double x, double y, double z, ForgeDirection face,
+        Function<ForgeDirection, ToolIcon> icons, ForgeDirection hovered, float lineWidth) {
+        drawGridAt(new Face(x, y, z, face), icons, hovered, lineWidth);
+    }
+
+    private static void drawGridAt(Face f, Function<ForgeDirection, ToolIcon> icons, ForgeDirection hovered,
+        float lineWidth) {
+        // the grid, pulsing between blue and white like in GTCEu
+        float rg = Math.max(0, 0.2F + (float) Math.sin((System.currentTimeMillis() % (Math.PI * 800)) / 800) / 2);
+        glLineWidth(lineWidth);
+        glColor4f(rg, rg, 1, 1);
+        glBegin(GL_LINES);
+        f.vertex(-0.25, -0.5, LIFT);
+        f.vertex(-0.25, 0.5, LIFT);
+        f.vertex(0.25, -0.5, LIFT);
+        f.vertex(0.25, 0.5, LIFT);
+        f.vertex(-0.5, -0.25, LIFT);
+        f.vertex(0.5, -0.25, LIFT);
+        f.vertex(-0.5, 0.25, LIFT);
+        f.vertex(0.5, 0.25, LIFT);
+        glEnd();
+
+        // the icons, over everything
+        glDisable(GL_DEPTH_TEST);
+        for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
+            ToolIcon icon = icons.apply(side);
+            if (icon == null) continue;
+            float alpha = side == hovered ? 1F : 0x44 / 255F;
+            for (double[] cell : f.cells(side)) drawIcon(f, icon, cell[0], cell[1], ICON, alpha);
+        }
+        glEnable(GL_DEPTH_TEST);
     }
 
     /** Only the icon of the looked at face, larger, in its middle: for tools without a grid like the soft mallet. */
@@ -128,7 +143,7 @@ public final class GridOverlay {
         glDisable(GL_TEXTURE_2D);
     }
 
-    /** The vanilla selection box, as it is drawn without the overlay. */
+    /** The selection box, as it is drawn without the overlay: vanilla or the outline of the minecraft module. */
     private static void drawOutline(DrawBlockHighlightEvent event) {
         EntityPlayer player = event.player;
         MovingObjectPosition target = event.target;
@@ -140,34 +155,7 @@ public final class GridOverlay {
         if (box == null) return;
         box = box.expand(0.002, 0.002, 0.002)
             .getOffsetBoundingBox(-camX, -camY, -camZ);
-        glLineWidth(2);
-        glColor4f(0, 0, 0, 0.4F);
-        glDepthMask(false);
-        glBegin(GL_LINE_STRIP);
-        glVertex3d(box.minX, box.minY, box.minZ);
-        glVertex3d(box.maxX, box.minY, box.minZ);
-        glVertex3d(box.maxX, box.minY, box.maxZ);
-        glVertex3d(box.minX, box.minY, box.maxZ);
-        glVertex3d(box.minX, box.minY, box.minZ);
-        glEnd();
-        glBegin(GL_LINE_STRIP);
-        glVertex3d(box.minX, box.maxY, box.minZ);
-        glVertex3d(box.maxX, box.maxY, box.minZ);
-        glVertex3d(box.maxX, box.maxY, box.maxZ);
-        glVertex3d(box.minX, box.maxY, box.maxZ);
-        glVertex3d(box.minX, box.maxY, box.minZ);
-        glEnd();
-        glBegin(GL_LINES);
-        glVertex3d(box.minX, box.minY, box.minZ);
-        glVertex3d(box.minX, box.maxY, box.minZ);
-        glVertex3d(box.maxX, box.minY, box.minZ);
-        glVertex3d(box.maxX, box.maxY, box.minZ);
-        glVertex3d(box.maxX, box.minY, box.maxZ);
-        glVertex3d(box.maxX, box.maxY, box.maxZ);
-        glVertex3d(box.minX, box.minY, box.maxZ);
-        glVertex3d(box.minX, box.maxY, box.maxZ);
-        glEnd();
-        glDepthMask(true);
+        BlockOutline.draw(box);
     }
 
     private static double camX, camY, camZ;
@@ -212,6 +200,10 @@ public final class GridOverlay {
         final double cx, cy, cz;
 
         Face(MovingObjectPosition target, ForgeDirection normal) {
+            this(target.blockX + 0.5 - camX, target.blockY + 0.5 - camY, target.blockZ + 0.5 - camZ, normal);
+        }
+
+        Face(double cx, double cy, double cz, ForgeDirection normal) {
             this.normal = normal;
             if (normal == ForgeDirection.SOUTH) {
                 u = ForgeDirection.EAST;
@@ -232,9 +224,9 @@ public final class GridOverlay {
                 u = ForgeDirection.EAST;
                 v = ForgeDirection.SOUTH;
             }
-            cx = target.blockX + 0.5 - camX;
-            cy = target.blockY + 0.5 - camY;
-            cz = target.blockZ + 0.5 - camZ;
+            this.cx = cx;
+            this.cy = cy;
+            this.cz = cz;
         }
 
         /** A point at (a, b) on the face, {@code lift} above it. */
