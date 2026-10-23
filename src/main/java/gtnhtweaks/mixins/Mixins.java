@@ -51,8 +51,11 @@ public enum Mixins implements IMixins {
             "menus.MixinMinecraft_Menus")),
 
     // Minecraft module
-    MINECRAFT_CHAT_HEADS(new MixinBuilder("Heads of the players in the chat").setPhase(Phase.EARLY)
-        .setApplyIf(() -> MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.chatHeads)
+    MINECRAFT_CHAT_HEADS(new MixinBuilder("Heads of the players and bars of other messages in the chat")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(
+            () -> MinecraftModule.INSTANCE.isEnabled()
+                && (MinecraftModule.chatHeads || MinecraftModule.systemMessageBar))
         .addClientMixins(
             "minecraft.MixinChatLine_ChatHeads",
             "minecraft.MixinGuiNewChat_ChatHeads",

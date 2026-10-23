@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 import gtnhtweaks.modules.minecraft.client.ChatHeads;
 
-/** The text under the mouse, for hover and click, found where it is drawn: after the head. */
+/** The text under the mouse, for hover and click, found where it is drawn: after the head or the bar. */
 @Mixin(GuiChat.class)
 public class MixinGuiChat_ChatHeads {
 
@@ -27,7 +27,6 @@ public class MixinGuiChat_ChatHeads {
         float chatScale = mc.gameSettings.chatScale;
         // as GuiNewChat finds the row: 27 GUI pixels above the bottom, rows of the font height
         int row = (int) Math.floor((mouseY / scale - 27) / chatScale) / mc.fontRenderer.FONT_HEIGHT;
-        if (!ChatHeads.shiftedRow(row)) return mouseX;
-        return mouseX - Math.round(ChatHeads.SPACE * chatScale * scale);
+        return mouseX - Math.round(ChatHeads.rowShift(row) * chatScale * scale);
     }
 }

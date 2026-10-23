@@ -12,14 +12,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import gtnhtweaks.modules.minecraft.client.ChatHeadLine;
 import gtnhtweaks.modules.minecraft.client.ChatHeads;
 
-/** Lines of the chat know the writer of their message, set while GuiNewChat splits it. */
+/** Lines of the chat know the writer of their message, or that it has none, set while GuiNewChat splits it. */
 @Mixin(ChatLine.class)
 public class MixinChatLine_ChatHeads implements ChatHeadLine {
 
     @Unique
     private String gtnhtweaks$writer;
     @Unique
-    private boolean gtnhtweaks$head;
+    private int gtnhtweaks$kind;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void gtnhtweaks$made(int updateCounter, IChatComponent component, int id, CallbackInfo ci) {
@@ -27,9 +27,9 @@ public class MixinChatLine_ChatHeads implements ChatHeadLine {
     }
 
     @Override
-    public void gtnhtweaks$setWriter(String writer, boolean head) {
+    public void gtnhtweaks$setWriter(String writer, int kind) {
         gtnhtweaks$writer = writer;
-        gtnhtweaks$head = head;
+        gtnhtweaks$kind = kind;
     }
 
     @Override
@@ -38,7 +38,7 @@ public class MixinChatLine_ChatHeads implements ChatHeadLine {
     }
 
     @Override
-    public boolean gtnhtweaks$hasHead() {
-        return gtnhtweaks$head;
+    public int gtnhtweaks$getKind() {
+        return gtnhtweaks$kind;
     }
 }

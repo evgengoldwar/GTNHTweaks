@@ -21,20 +21,28 @@ import net.minecraft.util.ResourceLocation;
 
 import org.lwjgl.opengl.GL11;
 
+import gtnhtweaks.modules.minecraft.MinecraftModule;
+
 /**
  * Heads of the players before their messages in the chat.
  * <p>
  * A chat message of 1.7.10 is only text, so the writer is found in it: the last name of an online player before the
  * first {@code >}, {@code :} or {@code »}, as in {@code <Name> hi} or {@code [Admin] Name: hi}. Messages without
- * such a name, like the ones of the server, get no head. The skin is the one of the player entity when it is in the
- * world, else the one downloaded by name, the same way the tab list of ServerUtilities does.
+ * such a name, like the ones of the server, get no head but a bar, as in the chat of newer versions. The vanilla
+ * format {@code <Name>} counts also for a player not in the tab list. The skin is the one of the player entity when it
+ * is in the world, else the one downloaded by name, the same way the tab list of ServerUtilities does.
  */
 public final class ChatHeads {
 
     /** Space of a head before the text, in chat pixels. */
     public static final int SPACE = 10;
+    /** Width of the bar before a message not written by a player, and its space before the text. */
+    private static final int BAR_WIDTH = 1;
+    public static final int BAR_SPACE = 4;
+    private static final int BAR_COLOR = 0xD0D0D0;
     private static final int SIZE = 8;
     private static final Pattern NAME = Pattern.compile("[A-Za-z0-9_]{2,16}");
+    private static final Pattern VANILLA_FORMAT = Pattern.compile("^<([A-Za-z0-9_]{2,16})> ");
 
     /**
      * The writer of a message, kept for the message, also while the chat is wrapped again. By identity: hashCode of
@@ -50,12 +58,13 @@ public final class ChatHeads {
     };
     private static final Map<String, ResourceLocation> SKINS = new HashMap<>();
 
-    /** The writer of the message being split into lines, and whether its first line was made. */
+    /** While a message is split into lines: its writer, and whether its first line was made. */
+    private static boolean inMessage;
     private static String current;
     private static boolean firstMade;
 
-    /** Rows of the chat on the screen, from the bottom, with a head or after one: drawn in the last frame. */
-    private static final boolean[] SHIFTED_ROWS = new boolean[256];
+    /** How far the text of each row of the chat on the screen, from the bottom, was moved in the last frame. */
+    private static final int[] ROW_SHIFTS = new int[256];
 
     private ChatHeads() {}
 
@@ -70,23 +79,28 @@ public final class ChatHeads {
             writer = findWriter(message);
             WRITERS.put(key, writer);
         }
-        current = writer;
+        inMessage = true;
+        current = MinecraftModule.chatHeads ? writer : null;
         firstMade = false;
     }
 
     public static void endMessage() {
+        inMessage = false;
         current = null;
     }
 
-    /** The space for the head, taken from the width the message is wrapped to. */
+    /** The space before the text, taken from the width the message is wrapped to. */
     public static float wrapWidth(float width) {
-        return current == null ? width : Math.max(SIZE, width - SPACE);
+        int space = !inMessage ? 0 : current != null ? SPACE : MinecraftModule.systemMessageBar ? BAR_SPACE : 0;
+        return Math.max(SIZE, width - space);
     }
 
     /** A new line of the current message: the first one gets the head, the others its space. */
     public static void lineMade(ChatHeadLine line) {
-        if (current == null) return;
-        line.gtnhtweaks$setWriter(current, !firstMade);
+        if (!inMessage) return;
+        if (current != null) {
+            line.gtnhtweaks$setWriter(current, firstMade ? ChatHeadLine.AFTER_HEAD : ChatHeadLine.HEAD);
+        } else if (MinecraftModule.systemMessageBar) line.gtnhtweaks$setWriter(null, ChatHeadLine.SYSTEM);
         firstMade = true;
     }
 
@@ -124,6 +138,8 @@ public final class ChatHeads {
             }
         }
         if (end <= 0) return null;
+        Matcher vanilla = VANILLA_FORMAT.matcher(text);
+        if (vanilla.find()) return vanilla.group(1);
         Map<String, String> online = onlinePlayers();
         String writer = null;
         Matcher matcher = NAME.matcher(text.substring(0, end));
@@ -159,27 +175,32 @@ public final class ChatHeads {
     // ---- drawing
 
     public static void beginFrame() {
-        Arrays.fill(SHIFTED_ROWS, false);
+        Arrays.fill(ROW_SHIFTS, 0);
     }
 
     /**
-     * A line of the chat is drawn at x, y with the alpha of its color: draws the head of its first line, returns
-     * where its text starts.
+     * A line of the chat is drawn at x, y with the alpha of its color: draws the head of its first line or the bar of
+     * a message not written by a player, returns where its text starts.
      */
     public static int drawLine(ChatHeadLine line, int x, int y, int color, int row) {
-        String writer = line == null ? null : line.gtnhtweaks$getWriter();
-        if (writer == null) return x;
-        if (row >= 0 && row < SHIFTED_ROWS.length) SHIFTED_ROWS[row] = true;
-        if (line.gtnhtweaks$hasHead()) {
-            int alpha = color >>> 24;
-            if (alpha > 3) drawHead(writer, x, y, alpha / 255F);
-        }
-        return x + SPACE;
+        int kind = line == null ? ChatHeadLine.PLAIN : line.gtnhtweaks$getKind();
+        int alpha = color >>> 24;
+        int shift;
+        if (kind == ChatHeadLine.HEAD || kind == ChatHeadLine.AFTER_HEAD) {
+            if (kind == ChatHeadLine.HEAD && alpha > 3) drawHead(line.gtnhtweaks$getWriter(), x, y, alpha / 255F);
+            shift = SPACE;
+        } else if (kind == ChatHeadLine.SYSTEM) {
+            // over the whole height of the line, so the bars of the lines of a message join
+            if (alpha > 3) Gui.drawRect(x, y - 1, x + BAR_WIDTH, y + 8, alpha << 24 | BAR_COLOR);
+            shift = BAR_SPACE;
+        } else return x;
+        if (row >= 0 && row < ROW_SHIFTS.length) ROW_SHIFTS[row] = shift;
+        return x + shift;
     }
 
-    /** Whether the text of the row is moved by the head, for the text under the mouse. */
-    public static boolean shiftedRow(int row) {
-        return row >= 0 && row < SHIFTED_ROWS.length && SHIFTED_ROWS[row];
+    /** How far the text of the row is moved, for the text under the mouse. */
+    public static int rowShift(int row) {
+        return row >= 0 && row < ROW_SHIFTS.length ? ROW_SHIFTS[row] : 0;
     }
 
     private static void drawHead(String writer, int x, int y, float alpha) {

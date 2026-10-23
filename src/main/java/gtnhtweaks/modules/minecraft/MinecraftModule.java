@@ -41,6 +41,8 @@ public final class MinecraftModule extends TweakModule {
 
     /** Heads of the players before their messages in the chat. */
     public static boolean chatHeads = true;
+    /** A bar before the messages not written by a player, as in the chat of newer versions. */
+    public static boolean systemMessageBar = true;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
@@ -117,6 +119,12 @@ public final class MinecraftModule extends TweakModule {
             chatHeads,
             "Show the head of the player before their messages in the chat. The writer is the online player named "
                 + "before the first >, : or » of the message, as in <Name> or [Rank] Name:. Needs a restart");
+        systemMessageBar = config.getBoolean(
+            "systemMessageBar",
+            CATEGORY_CHAT,
+            systemMessageBar,
+            "Show a bar before the messages not written by a player, like the ones of the server, as in the chat "
+                + "of newer versions. Needs a restart");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
