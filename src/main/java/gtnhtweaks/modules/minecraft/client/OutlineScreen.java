@@ -3,6 +3,7 @@ package gtnhtweaks.modules.minecraft.client;
 import static org.lwjgl.opengl.GL11.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.block.Block;
@@ -19,6 +20,7 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
 import cpw.mods.fml.common.Loader;
+import gtnhtweaks.client.settings.ColorPicker;
 import gtnhtweaks.client.settings.UI;
 import gtnhtweaks.common.render.BlockOutline;
 import gtnhtweaks.common.render.GLDraw;
@@ -47,6 +49,7 @@ public class OutlineScreen extends GuiScreen {
     private final List<Slider> sliders = new ArrayList<>();
     private GuiTextField hex;
     private Slider dragging;
+    private final ColorPicker picker = new ColorPicker();
 
     private int windowX, windowY, windowW, windowH;
     private int previewX, previewY, previewW, previewH;
@@ -204,6 +207,12 @@ public class OutlineScreen extends GuiScreen {
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        // the open color picker takes the mouse: no hover on the screen behind it
+        int pickerX = mouseX, pickerY = mouseY;
+        if (picker.isOpen()) {
+            mouseX = -1000;
+            mouseY = -1000;
+        }
         if (dragging != null) {
             if (Mouse.isButtonDown(0)) dragging.drag(mouseX);
             else dragging = null;
@@ -222,12 +231,18 @@ public class OutlineScreen extends GuiScreen {
         drawPreview();
 
         drawControls(mouseX, mouseY, theme);
+        if (UI.inside(mouseX, mouseY, controlsX, controlsY, 20, 20)) {
+            drawHoveringText(Collections.singletonList("Click to pick a color"), mouseX, mouseY, fontRendererObj);
+        }
+        picker.draw(pickerX, pickerY, width, height);
     }
 
     private void drawControls(int mouseX, int mouseY, GTNHTheme theme) {
-        // color: swatch, hex field and presets
-        UI.inset(controlsX, controlsY, 20, 20);
-        UI.rect(controlsX + 2, controlsY + 2, 16, 16, MinecraftModule.outlineColor);
+        // color: swatch opening the color picker, hex field and presets
+        boolean swatchHovered = UI.inside(mouseX, mouseY, controlsX, controlsY, 20, 20);
+        UI.button(controlsX, controlsY, 20, 20, swatchHovered, true);
+        UI.rect(controlsX + 3, controlsY + 3, 14, 14, MinecraftModule.outlineColor | 0xFF000000);
+
         UI.inset(controlsX + 22, controlsY, CONTROLS_WIDTH - 22, 20);
         hex.setTextColor(theme.text & 0xFFFFFF);
         hex.yPosition = controlsY + 6;
@@ -345,6 +360,15 @@ public class OutlineScreen extends GuiScreen {
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int button) {
+        if (picker.mouseClicked(mouseX, mouseY, button)) return;
+        if (button == 0 && UI.inside(mouseX, mouseY, controlsX, controlsY, 20, 20)) {
+            UI.playClick();
+            picker.open(MinecraftModule.outlineColor, color -> {
+                MinecraftModule.outlineColor = color;
+                syncHex();
+            });
+            return;
+        }
         hex.mouseClicked(mouseX, mouseY, button);
         if (!hex.isFocused()) syncHex();
         if (button != 0) return;
@@ -390,6 +414,7 @@ public class OutlineScreen extends GuiScreen {
 
     @Override
     protected void keyTyped(char c, int code) {
+        if (picker.keyTyped(c, code)) return;
         if (code == Keyboard.KEY_ESCAPE) {
             mc.displayGuiScreen(parent);
             return;
@@ -412,6 +437,7 @@ public class OutlineScreen extends GuiScreen {
     @Override
     public void updateScreen() {
         hex.updateCursorCounter();
+        picker.update();
     }
 
     @Override
