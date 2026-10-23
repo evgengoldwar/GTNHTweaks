@@ -89,14 +89,22 @@ public final class BlockOutline {
         if (throughBlocks) glDepthRange(0, 0.1);
 
         if ((fillColor >>> 24) > 0) {
-            // drawn first, the strips go over it
+            // Only the faces toward the camera, so every pixel is blended once, and without writing depth, so the
+            // strips drawn over it are never hidden by it
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(-1, -1);
-            twoPasses(() -> {
-                glBegin(GL_QUADS);
-                quads(box);
-                glEnd();
-            }, fillColor);
+            glDepthMask(false);
+            glDepthFunc(GL_LEQUAL);
+            GLDraw.color(fillColor);
+            boolean[] facing = facingCamera(box);
+            boolean cull = glIsEnabled(GL_CULL_FACE);
+            glDisable(GL_CULL_FACE);
+            glBegin(GL_QUADS);
+            for (int face = 0; face < 6; face++) {
+                if (facing[face]) face(box, face);
+            }
+            glEnd();
+            if (cull) glEnable(GL_CULL_FACE);
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
 
@@ -263,31 +271,72 @@ public final class BlockOutline {
         return r;
     }
 
-    private static void quads(AxisAlignedBB b) {
-        // bottom, top, north, south, west, east
-        glVertex3d(b.minX, b.minY, b.minZ);
-        glVertex3d(b.maxX, b.minY, b.minZ);
-        glVertex3d(b.maxX, b.minY, b.maxZ);
-        glVertex3d(b.minX, b.minY, b.maxZ);
-        glVertex3d(b.minX, b.maxY, b.minZ);
-        glVertex3d(b.minX, b.maxY, b.maxZ);
-        glVertex3d(b.maxX, b.maxY, b.maxZ);
-        glVertex3d(b.maxX, b.maxY, b.minZ);
-        glVertex3d(b.minX, b.minY, b.minZ);
-        glVertex3d(b.minX, b.maxY, b.minZ);
-        glVertex3d(b.maxX, b.maxY, b.minZ);
-        glVertex3d(b.maxX, b.minY, b.minZ);
-        glVertex3d(b.minX, b.minY, b.maxZ);
-        glVertex3d(b.maxX, b.minY, b.maxZ);
-        glVertex3d(b.maxX, b.maxY, b.maxZ);
-        glVertex3d(b.minX, b.maxY, b.maxZ);
-        glVertex3d(b.minX, b.minY, b.minZ);
-        glVertex3d(b.minX, b.minY, b.maxZ);
-        glVertex3d(b.minX, b.maxY, b.maxZ);
-        glVertex3d(b.minX, b.maxY, b.minZ);
-        glVertex3d(b.maxX, b.minY, b.minZ);
-        glVertex3d(b.maxX, b.maxY, b.minZ);
-        glVertex3d(b.maxX, b.maxY, b.maxZ);
-        glVertex3d(b.maxX, b.minY, b.maxZ);
+    /** Outward normals of the faces: bottom, top, north, south, west, east. */
+    private static final int[][] NORMALS = { { 0, -1, 0 }, { 0, 1, 0 }, { 0, 0, -1 }, { 0, 0, 1 }, { -1, 0, 0 },
+        { 1, 0, 0 } };
+
+    /** Which faces of the box the camera sees, from the current modelview and projection. */
+    private static boolean[] facingCamera(AxisAlignedBB b) {
+        float[] m = matrix(GL_MODELVIEW_MATRIX);
+        float[] p = matrix(GL_PROJECTION_MATRIX);
+        boolean ortho = p[11] == 0 && p[15] != 0;
+        double cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2, cz = (b.minZ + b.maxZ) / 2;
+        double hx = (b.maxX - b.minX) / 2, hy = (b.maxY - b.minY) / 2, hz = (b.maxZ - b.minZ) / 2;
+        boolean[] facing = new boolean[6];
+        for (int f = 0; f < 6; f++) {
+            int[] n = NORMALS[f];
+            // the normal in eye space, then the center of the face
+            float nx = m[0] * n[0] + m[4] * n[1] + m[8] * n[2];
+            float ny = m[1] * n[0] + m[5] * n[1] + m[9] * n[2];
+            float nz = m[2] * n[0] + m[6] * n[1] + m[10] * n[2];
+            if (ortho) {
+                facing[f] = nz > 0;
+                continue;
+            }
+            float[] c = transform(m, new double[] { cx + n[0] * hx, cy + n[1] * hy, cz + n[2] * hz });
+            facing[f] = nx * c[0] + ny * c[1] + nz * c[2] < 0;
+        }
+        return facing;
+    }
+
+    private static void face(AxisAlignedBB b, int face) {
+        switch (face) {
+            case 0:
+                glVertex3d(b.minX, b.minY, b.minZ);
+                glVertex3d(b.maxX, b.minY, b.minZ);
+                glVertex3d(b.maxX, b.minY, b.maxZ);
+                glVertex3d(b.minX, b.minY, b.maxZ);
+                break;
+            case 1:
+                glVertex3d(b.minX, b.maxY, b.minZ);
+                glVertex3d(b.minX, b.maxY, b.maxZ);
+                glVertex3d(b.maxX, b.maxY, b.maxZ);
+                glVertex3d(b.maxX, b.maxY, b.minZ);
+                break;
+            case 2:
+                glVertex3d(b.minX, b.minY, b.minZ);
+                glVertex3d(b.minX, b.maxY, b.minZ);
+                glVertex3d(b.maxX, b.maxY, b.minZ);
+                glVertex3d(b.maxX, b.minY, b.minZ);
+                break;
+            case 3:
+                glVertex3d(b.minX, b.minY, b.maxZ);
+                glVertex3d(b.maxX, b.minY, b.maxZ);
+                glVertex3d(b.maxX, b.maxY, b.maxZ);
+                glVertex3d(b.minX, b.maxY, b.maxZ);
+                break;
+            case 4:
+                glVertex3d(b.minX, b.minY, b.minZ);
+                glVertex3d(b.minX, b.minY, b.maxZ);
+                glVertex3d(b.minX, b.maxY, b.maxZ);
+                glVertex3d(b.minX, b.maxY, b.minZ);
+                break;
+            default:
+                glVertex3d(b.maxX, b.minY, b.minZ);
+                glVertex3d(b.maxX, b.maxY, b.minZ);
+                glVertex3d(b.maxX, b.maxY, b.maxZ);
+                glVertex3d(b.maxX, b.minY, b.maxZ);
+                break;
+        }
     }
 }
