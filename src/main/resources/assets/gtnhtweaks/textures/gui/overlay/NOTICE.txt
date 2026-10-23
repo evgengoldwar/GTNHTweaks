@@ -1,0 +1,3 @@
+The tool_*.png textures in this folder are taken unchanged from GregTech CEu Modern
+(https://github.com/GregTechCEu/GregTech-Modern, src/main/resources/assets/gtceu/textures/gui/overlay),
+licensed under the GNU Lesser General Public License v3.0.

@@ -55,6 +55,10 @@ public enum Mixins implements IMixins {
             .setApplyIf(() -> GregTechModule.INSTANCE.isEnabled() && GregTechModule.hideCableInsulation)
             .addRequiredMod(TargetMods.GREGTECH)
             .addClientMixins("gregtech.MixinMTECable_GregTech")),
+    GREGTECH_MODERN_TOOL_OVERLAY(new MixinBuilder("Tool overlay of GregTech CEu Modern").setPhase(Phase.LATE)
+        .setApplyIf(() -> GregTechModule.INSTANCE.isEnabled() && GregTechModule.modernToolOverlay)
+        .addRequiredMod(TargetMods.GREGTECH)
+        .addClientMixins("gregtech.MixinBlockOverlayRenderer_GregTech")),
 
     // NEI module
     NEI_CRAFTING_TREE_CAMERA(new MixinBuilder("Smooth movement in the NEI crafting tree").setPhase(Phase.LATE)
