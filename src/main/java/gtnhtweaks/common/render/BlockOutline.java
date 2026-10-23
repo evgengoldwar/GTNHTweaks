@@ -36,15 +36,21 @@ public final class BlockOutline {
      * line width, depth state and color are restored by the caller's attribute stack.
      */
     public static void draw(AxisAlignedBB box) {
-        draw(box, color(), width(), throughBlocks(), fillOpacity());
+        draw(box, color(), width(), throughBlocks(), fillOpacity(), true);
     }
 
-    public static void draw(AxisAlignedBB box, int color, float width, boolean throughBlocks, float fillOpacity) {
+    /**
+     * @param inCameraSpace true for a box around the camera at the origin, as in the world: it is then pulled toward
+     *                      the camera. False for a preview, where the origin is the middle of the box
+     */
+    public static void draw(AxisAlignedBB box, int color, float width, boolean throughBlocks, float fillOpacity,
+        boolean inCameraSpace) {
         // the box is in camera space: scaling it a little around the camera pulls it toward the eye, so its edges
-        // are never hidden by the faces of the block itself (wide lines and the small expand of the box are not
-        // always enough), while blocks in front still hide it
+        // are never hidden by the faces of the block itself, while blocks in front still hide it. Wide lines reach
+        // further into those faces, half of them would be hidden: the wider, the more it is pulled
+        float pull = inCameraSpace ? 1 - (0.002F + 0.0012F * width) : 1F;
         glPushMatrix();
-        glScalef(0.997F, 0.997F, 0.997F);
+        glScalef(pull, pull, pull);
         glDepthMask(false);
         if (throughBlocks) glDisable(GL_DEPTH_TEST);
         else glEnable(GL_DEPTH_TEST);
@@ -85,6 +91,25 @@ public final class BlockOutline {
         glVertex3d(box.minX, box.minY, box.maxZ);
         glVertex3d(box.minX, box.maxY, box.maxZ);
         glEnd();
+
+        // wide lines end square and leave notches or spikes where they meet: a round point of the same width on
+        // every corner closes the joint
+        if (width > 1.5F) {
+            glPointSize(width);
+            glEnable(GL_POINT_SMOOTH);
+            glBegin(GL_POINTS);
+            glVertex3d(box.minX, box.minY, box.minZ);
+            glVertex3d(box.maxX, box.minY, box.minZ);
+            glVertex3d(box.maxX, box.minY, box.maxZ);
+            glVertex3d(box.minX, box.minY, box.maxZ);
+            glVertex3d(box.minX, box.maxY, box.minZ);
+            glVertex3d(box.maxX, box.maxY, box.minZ);
+            glVertex3d(box.maxX, box.maxY, box.maxZ);
+            glVertex3d(box.minX, box.maxY, box.maxZ);
+            glEnd();
+            glDisable(GL_POINT_SMOOTH);
+            glPointSize(1);
+        }
 
         glEnable(GL_DEPTH_TEST);
         glDepthMask(true);

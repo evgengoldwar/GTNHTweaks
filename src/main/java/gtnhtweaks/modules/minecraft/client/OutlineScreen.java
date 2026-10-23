@@ -326,7 +326,8 @@ public class OutlineScreen extends GuiScreen {
                 MinecraftModule.outlineColor,
                 MinecraftModule.outlineWidth,
                 MinecraftModule.outlineMode == OutlineMode.THROUGH_BLOCKS,
-                MinecraftModule.fillOpacity);
+                MinecraftModule.fillOpacity,
+                false);
             if (pipe && drawn) {
                 // the highlighted cell goes round the sides, as if the cursor moved over the grid
                 ForgeDirection hovered = ForgeDirection.VALID_DIRECTIONS[(int) (System.currentTimeMillis() / 1000
