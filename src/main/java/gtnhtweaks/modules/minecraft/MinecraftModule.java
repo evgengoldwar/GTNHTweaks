@@ -10,12 +10,13 @@ import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
 
-/** Tweaks of Minecraft itself. The first one: the outline of the looked at block. */
+/** Tweaks of Minecraft itself: the outline of the looked at block and the heads of the players in the chat. */
 public final class MinecraftModule extends TweakModule {
 
     public static final MinecraftModule INSTANCE = new MinecraftModule();
 
     public static final String CATEGORY_OUTLINE = "blockOutline";
+    public static final String CATEGORY_CHAT = "chat";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -37,6 +38,9 @@ public final class MinecraftModule extends TweakModule {
     public static boolean rainbow = false;
     /** Rounds of the rainbow per second. */
     public static float rainbowSpeed = 0.5F;
+
+    /** Heads of the players before their messages in the chat. */
+    public static boolean chatHeads = true;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
@@ -106,6 +110,13 @@ public final class MinecraftModule extends TweakModule {
             "Draw the lines in the colors of the rainbow, flowing along the outline. The alpha of the color is kept");
         rainbowSpeed = config
             .getFloat("rainbowSpeed", CATEGORY_OUTLINE, 0.5F, 0.05F, 5F, "Rounds of the rainbow per second");
+
+        chatHeads = config.getBoolean(
+            "playerHeads",
+            CATEGORY_CHAT,
+            chatHeads,
+            "Show the head of the player before their messages in the chat. The writer is the online player named "
+                + "before the first >, : or » of the message, as in <Name> or [Rank] Name:. Needs a restart");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
