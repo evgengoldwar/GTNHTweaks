@@ -25,6 +25,7 @@ import gtnhtweaks.modules.mainmenu.MainMenuModule;
 import gtnhtweaks.modules.menus.MenusModule;
 import gtnhtweaks.modules.minecraft.MinecraftModule;
 import gtnhtweaks.modules.nei.NEIModule;
+import gtnhtweaks.modules.tinkers.TinkersModule;
 
 public final class ModuleManager {
 
@@ -39,6 +40,7 @@ public final class ModuleManager {
             MinecraftModule.INSTANCE,
             GregTechModule.INSTANCE,
             NEIModule.INSTANCE,
+            TinkersModule.INSTANCE,
             LogsModule.INSTANCE,
             BackupsModule.INSTANCE,
             DebugModule.INSTANCE));
