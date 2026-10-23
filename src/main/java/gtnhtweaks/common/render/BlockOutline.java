@@ -51,49 +51,61 @@ public final class BlockOutline {
         float pull = inCameraSpace ? 1 - (0.002F + 0.0012F * width) : 1F;
         glPushMatrix();
         glScalef(pull, pull, pull);
-        glDepthMask(false);
-        if (throughBlocks) glDisable(GL_DEPTH_TEST);
-        else glEnable(GL_DEPTH_TEST);
+
+        // A translucent outline must cover every pixel once: where lines and corner points overlap, blending twice
+        // makes the joints brighter. Every pixel written stores its depth, and with GL_LESS a second fragment at the
+        // same depth fails. Seen through blocks, every fragment gets the depth 0, so it passes the world and still
+        // fails on a pixel the outline already covered.
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glDepthMask(true);
+        if (throughBlocks) glDepthRange(0, 0);
+
+        edges(box, color, width);
 
         if (fillOpacity > 0) {
+            // behind the lines, which already hold their pixels; the faces of the block itself must not hide it
             GLDraw.color(color & 0xFFFFFF | Math.round(fillOpacity * 255) << 24);
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(-1, -1);
+            if (!throughBlocks) {
+                glDepthFunc(GL_LEQUAL);
+                glDepthMask(false);
+            }
             glBegin(GL_QUADS);
             quads(box);
             glEnd();
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
 
+        glDepthRange(0, 1);
+        glDepthFunc(GL_LEQUAL);
+        glDepthMask(true);
+        glEnable(GL_DEPTH_TEST);
+        glPopMatrix();
+    }
+
+    private static void edges(AxisAlignedBB box, int color, float width) {
         glLineWidth(width);
         GLDraw.color(color);
-        glBegin(GL_LINE_STRIP);
-        glVertex3d(box.minX, box.minY, box.minZ);
-        glVertex3d(box.maxX, box.minY, box.minZ);
-        glVertex3d(box.maxX, box.minY, box.maxZ);
-        glVertex3d(box.minX, box.minY, box.maxZ);
-        glVertex3d(box.minX, box.minY, box.minZ);
-        glEnd();
-        glBegin(GL_LINE_STRIP);
-        glVertex3d(box.minX, box.maxY, box.minZ);
-        glVertex3d(box.maxX, box.maxY, box.minZ);
-        glVertex3d(box.maxX, box.maxY, box.maxZ);
-        glVertex3d(box.minX, box.maxY, box.maxZ);
-        glVertex3d(box.minX, box.maxY, box.minZ);
-        glEnd();
         glBegin(GL_LINES);
-        glVertex3d(box.minX, box.minY, box.minZ);
-        glVertex3d(box.minX, box.maxY, box.minZ);
-        glVertex3d(box.maxX, box.minY, box.minZ);
-        glVertex3d(box.maxX, box.maxY, box.minZ);
-        glVertex3d(box.maxX, box.minY, box.maxZ);
-        glVertex3d(box.maxX, box.maxY, box.maxZ);
-        glVertex3d(box.minX, box.minY, box.maxZ);
-        glVertex3d(box.minX, box.maxY, box.maxZ);
+        // bottom, top, then the vertical edges: plain lines, no strip, so no vertex is drawn twice in a row
+        line(box.minX, box.minY, box.minZ, box.maxX, box.minY, box.minZ);
+        line(box.maxX, box.minY, box.minZ, box.maxX, box.minY, box.maxZ);
+        line(box.maxX, box.minY, box.maxZ, box.minX, box.minY, box.maxZ);
+        line(box.minX, box.minY, box.maxZ, box.minX, box.minY, box.minZ);
+        line(box.minX, box.maxY, box.minZ, box.maxX, box.maxY, box.minZ);
+        line(box.maxX, box.maxY, box.minZ, box.maxX, box.maxY, box.maxZ);
+        line(box.maxX, box.maxY, box.maxZ, box.minX, box.maxY, box.maxZ);
+        line(box.minX, box.maxY, box.maxZ, box.minX, box.maxY, box.minZ);
+        line(box.minX, box.minY, box.minZ, box.minX, box.maxY, box.minZ);
+        line(box.maxX, box.minY, box.minZ, box.maxX, box.maxY, box.minZ);
+        line(box.maxX, box.minY, box.maxZ, box.maxX, box.maxY, box.maxZ);
+        line(box.minX, box.minY, box.maxZ, box.minX, box.maxY, box.maxZ);
         glEnd();
 
-        // wide lines end square and leave notches or spikes where they meet: a round point of the same width on
-        // every corner closes the joint
+        // wide lines end square and leave notches where they meet: a round point of the same width on every corner
+        // closes the joint
         if (width > 1.5F) {
             glPointSize(width);
             glEnable(GL_POINT_SMOOTH);
@@ -110,10 +122,11 @@ public final class BlockOutline {
             glDisable(GL_POINT_SMOOTH);
             glPointSize(1);
         }
+    }
 
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(true);
-        glPopMatrix();
+    private static void line(double x1, double y1, double z1, double x2, double y2, double z2) {
+        glVertex3d(x1, y1, z1);
+        glVertex3d(x2, y2, z2);
     }
 
     private static void quads(AxisAlignedBB b) {
