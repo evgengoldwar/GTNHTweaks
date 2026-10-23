@@ -65,6 +65,11 @@ public enum Mixins implements IMixins {
         .setApplyIf(() -> NEIModule.INSTANCE.isEnabled() && (NEIModule.preciseDrag || NEIModule.smoothScroll))
         .addRequiredMod(TargetMods.NEI)
         .addClientMixins("nei.MixinCamera_NEI")),
+    NEI_FILL_ONE_CRAFT(new MixinBuilder("Ctrl + Shift + click on the recipe + fills the grid for one craft")
+        .setPhase(Phase.LATE)
+        .setApplyIf(() -> NEIModule.INSTANCE.isEnabled() && NEIModule.fillOneCraftWithCtrl)
+        .addRequiredMod(TargetMods.NEI)
+        .addClientMixins("nei.MixinGuiOverlayButton_NEI")),
 
     // Debug module
     DEBUG_CRASH_TEST_MIXIN(

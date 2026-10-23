@@ -10,10 +10,12 @@ public final class NEIModule extends TweakModule {
     public static final NEIModule INSTANCE = new NEIModule();
 
     private static final String CATEGORY_CRAFTING_TREE = "craftingTree";
+    private static final String CATEGORY_RECIPES = "recipes";
 
     public static boolean preciseDrag = true;
     public static boolean smoothScroll = true;
     public static int scrollTimeMs = 120;
+    public static boolean fillOneCraftWithCtrl = true;
 
     private NEIModule() {
         super("nei", "Client side tweaks of NotEnoughItems", true);
@@ -43,5 +45,12 @@ public final class NEIModule extends TweakModule {
             10,
             1000,
             "How long a wheel scroll or zoom takes, in milliseconds");
+
+        fillOneCraftWithCtrl = config.getBoolean(
+            "fillOneCraftWithCtrl",
+            CATEGORY_RECIPES,
+            fillOneCraftWithCtrl,
+            "Ctrl + Shift + click on the + of a recipe puts the items of one craft in the crafting grid, Shift + click "
+                + "still as many as possible. Needs a restart");
     }
 }
