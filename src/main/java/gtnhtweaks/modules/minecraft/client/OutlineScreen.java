@@ -8,6 +8,7 @@ import java.util.List;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -306,7 +307,7 @@ public class OutlineScreen extends GuiScreen {
                 MinecraftModule.outlineWidth,
                 MinecraftModule.outlineMode == OutlineMode.THROUGH_BLOCKS,
                 MinecraftModule.fillOpacity,
-                false);
+                1.0 / (scale * new ScaledResolution(mc, mc.displayWidth, mc.displayHeight).getScaleFactor()));
             if (pipe && drawn) {
                 // the highlighted cell goes round the sides, as if the cursor moved over the grid
                 ForgeDirection hovered = ForgeDirection.VALID_DIRECTIONS[(int) (System.currentTimeMillis() / 1000
