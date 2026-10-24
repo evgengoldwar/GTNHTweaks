@@ -180,7 +180,8 @@ public final class HealingAxePlant implements IItemRenderer {
         PottedPlantModel.render(
             Minecraft.getSystemTime() % 100_000_000L / 1000.0,
             seed(type, item, entity),
-            type != ItemRenderType.INVENTORY);
+            type != ItemRenderType.INVENTORY,
+            ExtraUtilitiesModule.moods ? PlantMoods.at(entity) : PottedPlantModel.Mood.NEUTRAL);
         GL11.glPopMatrix();
         GL11.glPopAttrib();
     }

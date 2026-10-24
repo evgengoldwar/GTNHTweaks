@@ -16,6 +16,7 @@ public final class ExtraUtilitiesModule extends TweakModule {
 
     public static boolean plantInHand = true;
     public static boolean holdingArm = true;
+    public static boolean moods = true;
     public static boolean plantInInventory = true;
     public static boolean plantOnGround = true;
 
@@ -41,6 +42,12 @@ public final class ExtraUtilitiesModule extends TweakModule {
             holdingArm,
             "In first person the arm of the player holds the pot from below, with the skin of the player, instead of "
                 + "the pot floating in the air. The left arm in the off hand of Backhand");
+        moods = config.getBoolean(
+            "moods",
+            CATEGORY_HEALING_AXE,
+            moods,
+            "The plant feels where it is: it sleeps at night, is happy in the rain falling on it and wilts in hot "
+                + "biomes and in the Nether");
         plantInInventory = config
             .getBoolean("inInventory", CATEGORY_HEALING_AXE, plantInInventory, "The plant in the inventory slots");
         plantOnGround = config
