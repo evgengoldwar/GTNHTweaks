@@ -1,5 +1,6 @@
 package gtnhtweaks.modules.extrautilities.client;
 
+import java.nio.DoubleBuffer;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -14,6 +15,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
@@ -42,6 +44,9 @@ public final class HealingAxeRenderer implements IItemRenderer {
     private static final float ON_HAND_SINK = 0.04F;
     /** The lantern hangs a little smaller, from a little above the middle of the held block in third person. */
     private static final float LANTERN_SCALE = 0.8F, LANTERN_HELD_Y = 0.2F;
+
+    /** The plane the arm is cut by, set in the space of the companion. */
+    private static final DoubleBuffer BOTTOM = BufferUtils.createDoubleBuffer(4);
 
     /** The light the lantern spirit was drawn in, before its full brightness. */
     private static float brightnessX, brightnessY;
@@ -184,7 +189,22 @@ public final class HealingAxeRenderer implements IItemRenderer {
                     // and the companion on its hand
                     GL11.glTranslatef(0.5F, 0.5F, 0.5F);
                     GL11.glScalef(2.5F, 2.5F, 2.5F);
-                    float[] hand = HoldingArm.render((AbstractClientPlayer) entity);
+                    AbstractClientPlayer player = (AbstractClientPlayer) entity;
+                    float[] hand = HoldingArm.hand(player);
+                    GL11.glPushMatrix();
+                    GL11.glTranslatef(hand[0], hand[1], hand[2]);
+                    GL11.glScalef(ON_HAND_SCALE, ON_HAND_SCALE, ON_HAND_SCALE);
+                    GL11.glTranslatef(0, 0.5F - ON_HAND_SINK, 0);
+                    // the arm goes up to the bottom of the companion and no further, not through it: cut above
+                    // its bottom, y = -0.5
+                    BOTTOM.clear();
+                    BOTTOM.put(new double[] { 0, -1, 0, -0.5 })
+                        .flip();
+                    GL11.glClipPlane(GL11.GL_CLIP_PLANE0, BOTTOM);
+                    GL11.glPopMatrix();
+                    GL11.glEnable(GL11.GL_CLIP_PLANE0);
+                    HoldingArm.render(player);
+                    GL11.glDisable(GL11.GL_CLIP_PLANE0);
                     // the items texture back for what the item renderer draws next
                     Minecraft.getMinecraft()
                         .getTextureManager()
