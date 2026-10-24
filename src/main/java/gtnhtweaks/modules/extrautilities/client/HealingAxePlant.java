@@ -30,6 +30,8 @@ import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
 public final class HealingAxePlant implements IItemRenderer {
 
     private static final String AXE = "com.rwtema.extrautils.item.ItemHealingAxe";
+    private static final float FIRST_PERSON_LIFT = 0.55F;
+    private static final float FIRST_PERSON_SCALE = 0.85F;
 
     /** Renderers the axe had before, by the render type they handled. */
     private final Map<ItemRenderType, IItemRenderer> previous = new EnumMap<>(ItemRenderType.class);
@@ -130,9 +132,13 @@ public final class HealingAxePlant implements IItemRenderer {
         GL11.glPushMatrix();
         switch (type) {
             case EQUIPPED:
-            case EQUIPPED_FIRST_PERSON:
                 // the block helper puts the corner of the block in the hand: back to its center
                 GL11.glTranslatef(0.5F, 0.5F, 0.5F);
+                break;
+            case EQUIPPED_FIRST_PERSON:
+                // held like a block the pot is below the screen: lift it so the whole plant is seen
+                GL11.glTranslatef(0.5F, 0.5F + FIRST_PERSON_LIFT, 0.5F);
+                GL11.glScalef(FIRST_PERSON_SCALE, FIRST_PERSON_SCALE, FIRST_PERSON_SCALE);
                 break;
             case ENTITY:
                 // dropped items are drawn at half the size of a block and centered on the ground: stand on it
@@ -147,7 +153,10 @@ public final class HealingAxePlant implements IItemRenderer {
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glEnable(GL12.GL_RESCALE_NORMAL);
         GL11.glDisable(GL11.GL_BLEND);
-        PottedPlantModel.render(Minecraft.getSystemTime() % 100_000_000L / 1000.0, seed(type, item, entity));
+        PottedPlantModel.render(
+            Minecraft.getSystemTime() % 100_000_000L / 1000.0,
+            seed(type, item, entity),
+            type != ItemRenderType.INVENTORY);
         GL11.glPopMatrix();
         GL11.glPopAttrib();
     }

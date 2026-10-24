@@ -66,23 +66,34 @@ public final class PottedPlantModel {
     /**
      * Draws the plant with its face turned to the viewer, found from the current modelview matrix.
      *
-     * @param time seconds
-     * @param seed plants with other seeds live out of step
+     * @param time      seconds
+     * @param seed      plants with other seeds live out of step
+     * @param towardEye true: the face turns to the eye, as seen in perspective, so a plant in the right hand looks to
+     *                  the left and one in the left hand to the right; false: it faces the screen, for the inventory
      */
-    public static void render(double time, int seed) {
+    public static void render(double time, int seed, boolean towardEye) {
         MATRIX.clear();
         glGetFloat(GL_MODELVIEW_MATRIX, MATRIX);
-        // the direction to the viewer (+z of the eye space) in model space: the third column of the inverse of the
-        // linear part, which is (row 0 x row 1) / determinant
+        // the direction to the viewer in eye space: to the eye at the origin, or +z
+        float vx = 0, vy = 0, vz = 1;
+        if (towardEye) {
+            vx = -MATRIX.get(12);
+            vy = -MATRIX.get(13);
+            vz = -MATRIX.get(14);
+        }
+        // the same direction in model space, through the inverse of the linear part, whose columns are
+        // (row 1 x row 2, row 2 x row 0, row 0 x row 1) / determinant
         float a = MATRIX.get(0), b = MATRIX.get(4), c = MATRIX.get(8);
         float d = MATRIX.get(1), e = MATRIX.get(5), f = MATRIX.get(9);
         float g = MATRIX.get(2), h = MATRIX.get(6), k = MATRIX.get(10);
-        float x = b * f - c * e, y = c * d - a * f, z = a * e - b * d;
-        float det = g * x + h * y + k * z;
-        if (det != 0) {
-            x /= det;
-            y /= det;
-            z /= det;
+        float x = vx * (e * k - f * h) + vy * (h * c - k * b) + vz * (b * f - c * e);
+        float y = vx * (f * g - d * k) + vy * (k * a - g * c) + vz * (c * d - a * f);
+        float z = vx * (d * h - e * g) + vy * (g * b - h * a) + vz * (a * e - b * d);
+        float det = a * (e * k - f * h) + b * (f * g - d * k) + c * (d * h - e * g);
+        if (det < 0) {
+            x = -x;
+            y = -y;
+            z = -z;
         }
         float yaw = (float) Math.toDegrees(Math.atan2(x, z));
         float pitch = (float) Math.toDegrees(Math.atan2(y, Math.sqrt(x * x + z * z)));
