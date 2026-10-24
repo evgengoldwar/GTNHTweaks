@@ -17,8 +17,8 @@ import static org.lwjgl.opengl.GL11.glTranslatef;
  * A little glass tank with a goldfish. The fish swims round the tank, now and then comes to the front glass to look at
  * the viewer and blow a bubble; bubbles rise from a stone, seaweed waves.
  * <p>
- * At night the fish sleeps on the sand, in the rain the water rises and the fish swims fast and jumps, in the heat
- * the water is low and the fish gasps at the surface.
+ * At night the fish sleeps still on the sand, in the rain the water rises and the fish jumps out now and then, in
+ * the heat the water is low and the fish gasps at the surface.
  */
 public final class AquariumModel implements CompanionModel {
 
@@ -47,6 +47,10 @@ public final class AquariumModel implements CompanionModel {
     /** Inside of the glass. */
     private static final float HALF = 0.28F, BOTTOM = -0.42F, TOP = 0.26F;
     private static final float SAND_TOP = -0.37F;
+    /** Rounds of the fish round the tank per second. */
+    private static final double LAPS_PER_SECOND = 0.12;
+    /** In the rain the fish jumps out of the water once in so many seconds, for so long. */
+    private static final double JUMP_EVERY = 7, JUMP_LENGTH = 1.2;
 
     private AquariumModel() {}
 
@@ -117,27 +121,29 @@ public final class AquariumModel implements CompanionModel {
     }
 
     private static void drawFish(double t, int seed, float water, float faceYaw, Mood mood) {
-        // round the tank, and every few seconds to the front to look at the viewer
-        double lap = t * (0.35 + 0.35 * mood.rain);
-        float x = (float) (0.1 * Math.sin(lap * 2 * Math.PI));
-        float z = (float) (0.08 * Math.sin(lap * 4 * Math.PI));
-        float y = (float) (-0.1 + 0.08 * Math.sin(t * 0.6));
-        float heading = (float) Math.toDegrees(Math.atan2(Math.cos(lap * 2 * Math.PI) * 0.1, Math.cos(lap * 4 * Math.PI) * 0.16));
-        float look = pulse(t + rand(seed, 2) * 10, 11, 3);
+        // a slow figure of eight round the tank, always at the same pace: the moods change how far it goes, never
+        // how fast, so it never jumps from one place to another as they come in
+        float awake = 1 - mood.night;
+        double lap = t * LAPS_PER_SECOND * 2 * Math.PI;
+        float x = (float) (0.1 * Math.sin(lap)) * awake;
+        float z = (float) (0.08 * Math.sin(2 * lap)) * awake;
+        float y = (float) (-0.1 + 0.06 * Math.sin(t * 0.4));
         // heading is around y from +z, the fish being drawn along +x
-        float yaw = heading - 90;
+        float yaw = (float) Math.toDegrees(Math.atan2(Math.cos(lap) * 0.1, Math.cos(2 * lap) * 0.16)) - 90;
+        // every few seconds it turns to look at the viewer; asleep it lies on its side, facing the viewer
+        float look = pulse(t + rand(seed, 2) * 10, 11, 3) * awake;
         yaw += wrap(faceYaw - 90 - yaw) * look;
-        // asleep on the sand, gasping at the surface in the heat, jumping out in the rain
+        yaw += wrap(faceYaw - yaw) * mood.night;
+        // asleep on the sand, gasping at the surface in the heat, jumping out now and then in the rain
         y += (SAND_TOP + 0.06F - y) * mood.night + (water - 0.05F - y) * mood.heat;
-        float jump = pulse(t, 5.5, 0.8) * mood.rain;
+        float jump = pulse(t, JUMP_EVERY, JUMP_LENGTH) * mood.rain;
         y += jump * (water - y + 0.12F);
-        float speed = 1 - mood.night * 0.8F;
 
         glPushMatrix();
-        glTranslatef(x * speed, y, z * speed);
+        glTranslatef(x, y, z);
         glRotatef(yaw, 0, 1, 0);
-        glRotatef(jump * 30 * (float) Math.cos(Math.PI * frac(t / 5.5) / (0.8 / 5.5)), 0, 0, 1);
-        glRotatef((float) (6 * Math.sin(t * 7) * speed), 0, 1, 0);
+        glRotatef(jump * 30 * (float) Math.cos(Math.PI * frac(t / JUMP_EVERY) * JUMP_EVERY / JUMP_LENGTH), 0, 0, 1);
+        glRotatef((float) (4 * Math.sin(t * 3)) * awake, 0, 1, 0);
         glScalef(1.9F, 1.9F, 1.9F);
         // the body along +x, the head at +x
         box(-0.05F, -0.035F, -0.025F, 0.05F, 0.035F, 0.025F, FISH);
@@ -148,7 +154,8 @@ public final class AquariumModel implements CompanionModel {
         box(-0.02F, 0.045F, -0.004F, 0.025F, 0.065F, 0.004F, FIN);
         glPushMatrix();
         glTranslatef(-0.05F, 0, 0);
-        glRotatef((float) (25 * Math.sin(t * (9 - 6 * mood.night))), 0, 1, 0);
+        // the tail: slow and small asleep, a little livelier in the rain
+        glRotatef((float) (Math.sin(t * 4) * (20 + 8 * mood.rain) * (0.15 + 0.85 * awake)), 0, 1, 0);
         box(-0.05F, -0.04F, -0.004F, 0, 0.04F, 0.004F, FIN);
         box(-0.06F, -0.05F, -0.003F, -0.04F, -0.02F, 0.003F, FIN);
         box(-0.06F, 0.02F, -0.003F, -0.04F, 0.05F, 0.003F, FIN);
@@ -168,7 +175,8 @@ public final class AquariumModel implements CompanionModel {
             glPopMatrix();
         }
         // the mouth opening and closing, wide when gasping
-        float open = (float) (0.5 + 0.5 * Math.sin(t * (4 + 6 * mood.heat))) * (0.4F + 0.6F * Math.max(look, mood.heat));
+        float open = (float) ((0.5 + 0.5 * Math.sin(t * 2.5)) * (1 - mood.heat) + (0.5 + 0.5 * Math.sin(t * 5)) * mood.heat)
+            * (0.4F + 0.6F * Math.max(look, mood.heat)) * (1 - 0.7F * mood.night);
         box(0.069F, -0.008F - 0.008F * open, -0.008F, 0.073F, 0.002F + 0.004F * open, 0.008F, MOUTH);
         if (mood.night > 0.5F) drawSleep(t);
         glPopMatrix();
@@ -177,9 +185,9 @@ public final class AquariumModel implements CompanionModel {
     /** Bubbles rising from the stone and from the fish, popping at the surface. */
     private static void drawBubbles(double t, int seed, float water, Mood mood) {
         for (int i = 0; i < 8; i++) {
-            double period = 1.6 + rand(seed, 60 + i);
+            double period = 2.6 + 1.5 * rand(seed, 60 + i);
             double p = frac((t + rand(seed, 70 + i) * period) / period);
-            float x = 0.15F + 0.02F * (float) Math.sin(t * 5 + i), z = -0.15F + 0.02F * (float) Math.cos(t * 4 + i);
+            float x = 0.15F + 0.02F * (float) Math.sin(t * 2 + i), z = -0.15F + 0.02F * (float) Math.cos(t * 1.7 + i);
             float y = SAND_TOP + 0.09F + (float) p * (water - SAND_TOP - 0.1F);
             float size = (0.012F + 0.008F * (float) rand(seed, 80 + i)) * (1 - mood.heat * 0.7F);
             glPushMatrix();
