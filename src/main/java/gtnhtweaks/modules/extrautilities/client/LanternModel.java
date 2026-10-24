@@ -38,6 +38,7 @@ public final class LanternModel implements CompanionModel {
     private static final int IRON = 0x3B3C42;
     private static final int IRON_LIGHT = 0x5A5C66;
     private static final int EYE_WHITE = 0xFFFFFF;
+
     /** The colors of the fire, warm, or blue like soul fire in the Nether. */
     private static final class Fire {
 

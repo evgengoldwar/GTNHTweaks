@@ -61,7 +61,6 @@ public final class HealingAxeRenderer implements IItemRenderer {
             .setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, brightnessX, brightnessY);
     }
 
-
     /** Renderers the axe had before, by the render type they handled. */
     private final Map<ItemRenderType, IItemRenderer> previous = new EnumMap<>(ItemRenderType.class);
 

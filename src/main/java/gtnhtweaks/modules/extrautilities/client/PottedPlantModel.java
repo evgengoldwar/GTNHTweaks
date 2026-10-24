@@ -1,10 +1,5 @@
 package gtnhtweaks.modules.extrautilities.client;
 
-import static org.lwjgl.opengl.GL11.glPopMatrix;
-import static org.lwjgl.opengl.GL11.glPushMatrix;
-import static org.lwjgl.opengl.GL11.glRotatef;
-import static org.lwjgl.opengl.GL11.glScalef;
-import static org.lwjgl.opengl.GL11.glTranslatef;
 import static gtnhtweaks.modules.extrautilities.client.Shapes.box;
 import static gtnhtweaks.modules.extrautilities.client.Shapes.color;
 import static gtnhtweaks.modules.extrautilities.client.Shapes.easeOut;
@@ -13,6 +8,11 @@ import static gtnhtweaks.modules.extrautilities.client.Shapes.letterZ;
 import static gtnhtweaks.modules.extrautilities.client.Shapes.mix;
 import static gtnhtweaks.modules.extrautilities.client.Shapes.pulse;
 import static gtnhtweaks.modules.extrautilities.client.Shapes.rand;
+import static org.lwjgl.opengl.GL11.glPopMatrix;
+import static org.lwjgl.opengl.GL11.glPushMatrix;
+import static org.lwjgl.opengl.GL11.glRotatef;
+import static org.lwjgl.opengl.GL11.glScalef;
+import static org.lwjgl.opengl.GL11.glTranslatef;
 
 /**
  * A clay pot with a living plant in it, drawn with untextured boxes. The plant sways, breathes, blinks, smiles at the

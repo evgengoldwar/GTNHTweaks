@@ -175,8 +175,9 @@ public final class AquariumModel implements CompanionModel {
             glPopMatrix();
         }
         // the mouth opening and closing, wide when gasping
-        float open = (float) ((0.5 + 0.5 * Math.sin(t * 2.5)) * (1 - mood.heat) + (0.5 + 0.5 * Math.sin(t * 5)) * mood.heat)
-            * (0.4F + 0.6F * Math.max(look, mood.heat)) * (1 - 0.7F * mood.night);
+        float open = (float) ((0.5 + 0.5 * Math.sin(t * 2.5)) * (1 - mood.heat)
+            + (0.5 + 0.5 * Math.sin(t * 5)) * mood.heat) * (0.4F + 0.6F * Math.max(look, mood.heat))
+            * (1 - 0.7F * mood.night);
         box(0.069F, -0.008F - 0.008F * open, -0.008F, 0.073F, 0.002F + 0.004F * open, 0.008F, MOUTH);
         if (mood.night > 0.5F) drawSleep(t);
         glPopMatrix();

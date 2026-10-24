@@ -48,8 +48,7 @@ final class Moods {
         if (!world.blockExists(x, y, z)) return Mood.NEUTRAL;
         BiomeGenBase biome = world.getBiomeGenForCoords(x, z);
 
-        float heat = world.provider.isHellWorld ? 1
-            : (biome.getFloatTemperature(x, y, z) - WARM) / (HOT - WARM);
+        float heat = world.provider.isHellWorld ? 1 : (biome.getFloatTemperature(x, y, z) - WARM) / (HOT - WARM);
 
         // only rain, not snow, and only falling on it: under the open sky
         float rain = 0;

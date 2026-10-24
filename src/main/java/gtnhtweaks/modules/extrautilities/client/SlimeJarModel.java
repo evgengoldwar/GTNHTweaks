@@ -70,8 +70,7 @@ public final class SlimeJarModel implements CompanionModel {
         height *= awake;
         squash *= awake;
         // flat asleep and melting
-        float flat = 0.4F * mood.night + 0.5F * mood.heat
-            + (float) Math.sin(t * 1.2) * 0.04F * mood.night;
+        float flat = 0.4F * mood.night + 0.5F * mood.heat + (float) Math.sin(t * 1.2) * 0.04F * mood.night;
         float sy = (1 - squash) * (1 - flat), sxz = (1 + squash * 0.6F) * (1 + flat * 0.7F);
 
         // where it lands after each hop, and now and then right at the glass toward the viewer
