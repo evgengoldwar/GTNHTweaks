@@ -5,6 +5,7 @@ import java.util.Map;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
+import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -23,30 +24,47 @@ import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
 
 /**
- * Draws the Healing Axe of Extra Utilities as a {@link PottedPlantModel pot with a living plant}: in the hands, in
- * the inventory and on the ground. Held in the off hand of Backhand it is drawn the same way, as Backhand draws the off
- * hand item with the renderer of the item; the plant there lives out of step with the one in the main hand.
+ * Draws the Healing Axe of Extra Utilities as a little living {@link CompanionModel companion}, chosen in the config:
+ * in the hands, in the inventory and on the ground. Held in the off hand of Backhand it is drawn the same way, as
+ * Backhand draws the off hand item with the renderer of the item; the one there lives out of step with the one in the
+ * main hand. The lantern hangs from the hand, the others stand on it.
  * <p>
- * Where the plant is switched off in the config, the renderer the axe had before (if any) draws it.
+ * Where it is switched off in the config, the renderer the axe had before (if any) draws it.
  */
-public final class HealingAxePlant implements IItemRenderer {
+public final class HealingAxeRenderer implements IItemRenderer {
 
     private static final String AXE = "com.rwtema.extrautils.item.ItemHealingAxe";
     private static final float FIRST_PERSON_LIFT = 0.55F;
     private static final float FIRST_PERSON_SCALE = 0.85F;
-    /** Size of the pot on the hand, in the space of the held item before its scale by 0.4. */
+    /** Size of the companion on the hand, in the space of the held item before its scale by 0.4. */
     private static final float ON_HAND_SCALE = 0.9F;
-    /** How deep the hand goes into the bottom of the pot, in sizes of the pot. */
+    /** How deep the hand goes into its bottom, in its sizes. */
     private static final float ON_HAND_SINK = 0.04F;
+    /** The lantern hangs a little smaller, from a little above the middle of the held block in third person. */
+    private static final float LANTERN_SCALE = 0.8F, LANTERN_HELD_Y = 0.2F;
+
+    /** The light the lantern spirit was drawn in, before its full brightness. */
+    private static float brightnessX, brightnessY;
+
+    static {
+        LanternModel.fullBright = () -> {
+            brightnessX = OpenGlHelper.lastBrightnessX;
+            brightnessY = OpenGlHelper.lastBrightnessY;
+            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
+        };
+        LanternModel.usualLight = () -> OpenGlHelper
+            .setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, brightnessX, brightnessY);
+    }
+
 
     /** Renderers the axe had before, by the render type they handled. */
     private final Map<ItemRenderType, IItemRenderer> previous = new EnumMap<>(ItemRenderType.class);
 
-    private HealingAxePlant() {}
+    private HealingAxeRenderer() {}
 
     /**
-     * Registers the renderer on the first client tick, once every mod has registered its own renderers, so the plant
-     * is not replaced by one registered later.
+     * Registers the renderer on the first client tick, once every mod has registered its own renderers, so it is not
+     * replaced by one registered later.
      */
     public static void register() {
         FMLCommonHandler.instance()
@@ -73,27 +91,27 @@ public final class HealingAxePlant implements IItemRenderer {
                 item.getClass()
                     .getName()))
                 continue;
-            HealingAxePlant plant = new HealingAxePlant();
+            HealingAxeRenderer companion = new HealingAxeRenderer();
             ItemStack stack = new ItemStack(item);
             for (ItemRenderType type : ItemRenderType.values()) {
                 IItemRenderer renderer = MinecraftForgeClient.getItemRenderer(stack, type);
-                if (renderer != null) plant.previous.put(type, renderer);
+                if (renderer != null) companion.previous.put(type, renderer);
             }
-            MinecraftForgeClient.registerItemRenderer(item, plant);
+            MinecraftForgeClient.registerItemRenderer(item, companion);
             return;
         }
         GTNHTweaks.LOG.warn("The Healing Axe of Extra Utilities was not found, it is drawn as usual");
     }
 
-    private static boolean drawsPlant(ItemRenderType type) {
+    private static boolean drawsCompanion(ItemRenderType type) {
         switch (type) {
             case EQUIPPED:
             case EQUIPPED_FIRST_PERSON:
-                return ExtraUtilitiesModule.plantInHand;
+                return ExtraUtilitiesModule.inHand;
             case INVENTORY:
-                return ExtraUtilitiesModule.plantInInventory;
+                return ExtraUtilitiesModule.inInventory;
             case ENTITY:
-                return ExtraUtilitiesModule.plantOnGround;
+                return ExtraUtilitiesModule.onGround;
             default:
                 return false;
         }
@@ -101,14 +119,14 @@ public final class HealingAxePlant implements IItemRenderer {
 
     @Override
     public boolean handleRenderType(ItemStack item, ItemRenderType type) {
-        if (drawsPlant(type)) return true;
+        if (drawsCompanion(type)) return true;
         IItemRenderer renderer = previous.get(type);
         return renderer != null && renderer.handleRenderType(item, type);
     }
 
     @Override
     public boolean shouldUseRenderHelper(ItemRenderType type, ItemStack item, ItemRendererHelper helper) {
-        if (!drawsPlant(type)) {
+        if (!drawsCompanion(type)) {
             IItemRenderer renderer = previous.get(type);
             return renderer != null && renderer.shouldUseRenderHelper(type, item, helper);
         }
@@ -127,15 +145,21 @@ public final class HealingAxePlant implements IItemRenderer {
 
     @Override
     public void renderItem(ItemRenderType type, ItemStack item, Object... data) {
-        if (!drawsPlant(type)) {
+        if (!drawsCompanion(type)) {
             IItemRenderer renderer = previous.get(type);
             if (renderer != null) renderer.renderItem(type, item, data);
             return;
         }
         Entity entity = data.length > 1 && data[1] instanceof Entity ? (Entity) data[1] : null;
+        boolean lantern = ExtraUtilitiesModule.companion == ExtraUtilitiesModule.Companion.LANTERN;
+        // the lantern hangs below the hand, where the bare arm of vanilla, reaching up, would hide it: it is held as
+        // in newer versions, without the arm
         boolean arm = type == ItemRenderType.EQUIPPED_FIRST_PERSON && ExtraUtilitiesModule.holdingArm
+            && !lantern
             && entity instanceof AbstractClientPlayer
             && !entity.isInvisible();
+        boolean offhand = entity instanceof EntityPlayer && Backhand.isOffhand((EntityPlayer) entity, item);
+        double time = Minecraft.getSystemTime() % 100_000_000L / 1000.0;
 
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT);
         GL11.glPushMatrix();
@@ -148,11 +172,16 @@ public final class HealingAxePlant implements IItemRenderer {
             case EQUIPPED:
                 // the block helper puts the corner of the block in the hand: back to its center
                 GL11.glTranslatef(0.5F, 0.5F, 0.5F);
+                if (lantern) {
+                    GL11.glTranslatef(0, LANTERN_HELD_Y, 0);
+                    GL11.glScalef(LANTERN_SCALE, LANTERN_SCALE, LANTERN_SCALE);
+                    LanternSwing.hang(entity, offhand, time);
+                }
                 break;
             case EQUIPPED_FIRST_PERSON:
                 if (arm) {
                     // back to the space of the held item before its scale by 0.4, where vanilla places the bare arm,
-                    // and the pot standing on its hand
+                    // and the companion on its hand
                     GL11.glTranslatef(0.5F, 0.5F, 0.5F);
                     GL11.glScalef(2.5F, 2.5F, 2.5F);
                     float[] hand = HoldingArm.render((AbstractClientPlayer) entity);
@@ -164,9 +193,14 @@ public final class HealingAxePlant implements IItemRenderer {
                     GL11.glScalef(ON_HAND_SCALE, ON_HAND_SCALE, ON_HAND_SCALE);
                     GL11.glTranslatef(0, 0.5F - ON_HAND_SINK, 0);
                 } else {
-                    // held like a block the pot is below the screen: lift it so the whole plant is seen
+                    // held like a block it is below the screen: lift it so all of it is seen
                     GL11.glTranslatef(0.5F, 0.5F + FIRST_PERSON_LIFT, 0.5F);
                     GL11.glScalef(FIRST_PERSON_SCALE, FIRST_PERSON_SCALE, FIRST_PERSON_SCALE);
+                    if (lantern) {
+                        // hanging by its handle from where the top of the item is
+                        GL11.glTranslatef(0, 0.5F, 0);
+                        LanternSwing.hang(entity, offhand, time);
+                    }
                 }
                 break;
             case ENTITY:
@@ -177,21 +211,35 @@ public final class HealingAxePlant implements IItemRenderer {
                 break;
         }
         GL11.glDisable(GL11.GL_TEXTURE_2D);
-        PottedPlantModel.render(
-            Minecraft.getSystemTime() % 100_000_000L / 1000.0,
-            seed(type, item, entity),
-            type != ItemRenderType.INVENTORY,
-            ExtraUtilitiesModule.moods ? PlantMoods.at(entity) : PottedPlantModel.Mood.NEUTRAL);
+        float[] facing = EyeSpace.current()
+            .facing(type != ItemRenderType.INVENTORY);
+        model().render(
+            time,
+            seed(type, item, entity, offhand),
+            facing[0],
+            facing[1],
+            ExtraUtilitiesModule.moods ? Moods.at(entity) : Mood.NEUTRAL);
         GL11.glPopMatrix();
         GL11.glPopAttrib();
     }
 
-    /** The plants in both hands, on the ground and of every player live each their own life. */
-    private static int seed(ItemRenderType type, ItemStack item, Entity entity) {
+    private static CompanionModel model() {
+        switch (ExtraUtilitiesModule.companion) {
+            case AQUARIUM:
+                return AquariumModel.INSTANCE;
+            case SLIME:
+                return SlimeJarModel.INSTANCE;
+            case LANTERN:
+                return LanternModel.INSTANCE;
+            default:
+                return PottedPlantModel.INSTANCE;
+        }
+    }
+
+    /** The companions in both hands, on the ground and of every player live each their own life. */
+    private static int seed(ItemRenderType type, ItemStack item, Entity entity, boolean offhand) {
         if (type == ItemRenderType.INVENTORY) return System.identityHashCode(item);
         if (entity == null) return 0;
-        int seed = entity.getEntityId() * 31;
-        if (entity instanceof EntityPlayer && Backhand.isOffhand((EntityPlayer) entity, item)) seed += 7;
-        return seed;
+        return entity.getEntityId() * 31 + (offhand ? 7 : 0);
     }
 }

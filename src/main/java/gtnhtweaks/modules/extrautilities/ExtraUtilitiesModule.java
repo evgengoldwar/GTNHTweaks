@@ -1,11 +1,13 @@
 package gtnhtweaks.modules.extrautilities;
 
+import java.util.Locale;
+
 import net.minecraftforge.common.config.Configuration;
 
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import gtnhtweaks.core.TweakModule;
-import gtnhtweaks.modules.extrautilities.client.HealingAxePlant;
+import gtnhtweaks.modules.extrautilities.client.HealingAxeRenderer;
 
 /** Client side tweaks of Extra Utilities. Does nothing when it is not installed. */
 public final class ExtraUtilitiesModule extends TweakModule {
@@ -14,11 +16,24 @@ public final class ExtraUtilitiesModule extends TweakModule {
 
     private static final String CATEGORY_HEALING_AXE = "healingAxe";
 
-    public static boolean plantInHand = true;
+    /** What the Healing Axe is drawn as. */
+    public enum Companion {
+        /** A clay pot with a living plant. */
+        PLANT,
+        /** A glass tank with a goldfish. */
+        AQUARIUM,
+        /** A slime in a glass jar. */
+        SLIME,
+        /** An iron lantern with a fire spirit, hanging from the hand. */
+        LANTERN
+    }
+
+    public static Companion companion = Companion.PLANT;
+    public static boolean inHand = true;
     public static boolean holdingArm = true;
     public static boolean moods = true;
-    public static boolean plantInInventory = true;
-    public static boolean plantOnGround = true;
+    public static boolean inInventory = true;
+    public static boolean onGround = true;
 
     private ExtraUtilitiesModule() {
         super("extrautilities", "Client side tweaks of Extra Utilities", true);
@@ -28,34 +43,52 @@ public final class ExtraUtilitiesModule extends TweakModule {
     protected void loadConfig(Configuration config) {
         config.addCustomCategoryComment(
             CATEGORY_HEALING_AXE,
-            "The Healing Axe drawn as a clay pot with a living plant: it sways, blinks and smiles at you, now and then "
-                + "shakes with joy, and its leaves turn yellow, fall beside the pot and grow again. Works in the off "
-                + "hand of Backhand too. Where it is off, the axe is drawn as usual");
-        plantInHand = config.getBoolean(
+            "The Healing Axe drawn as a little living companion that blinks and smiles at you. Works in the off hand of "
+                + "Backhand too. Where it is off, the axe is drawn as usual");
+        String[] names = new String[Companion.values().length];
+        for (Companion c : Companion.values()) names[c.ordinal()] = c.name();
+        try {
+            companion = Companion.valueOf(
+                config
+                    .getString(
+                        "model",
+                        CATEGORY_HEALING_AXE,
+                        Companion.PLANT.name(),
+                        "PLANT: a clay pot with a plant that sways, its leaves falling and growing again.\n"
+                            + "AQUARIUM: a glass tank with a goldfish swimming round, seaweed and bubbles.\n"
+                            + "SLIME: a slime in a jar, hopping about and bumping the lid.\n"
+                            + "LANTERN: an iron lantern with a fire spirit in it, hanging from the hand and swinging "
+                            + "as you turn and walk",
+                        names)
+                    .trim()
+                    .toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            companion = Companion.PLANT;
+        }
+        inHand = config.getBoolean(
             "inHand",
             CATEGORY_HEALING_AXE,
-            plantInHand,
-            "The plant in place of the axe in the hands, in first and third person, the off hand of Backhand included");
+            inHand,
+            "In place of the axe in the hands, in first and third person, the off hand of Backhand included");
         holdingArm = config.getBoolean(
             "holdingArm",
             CATEGORY_HEALING_AXE,
             holdingArm,
-            "In first person the arm of the player holds the pot from below, with the skin of the player, instead of "
-                + "the pot floating in the air. The left arm in the off hand of Backhand");
+            "In first person the arm of the player holds it, the arm vanilla draws for an empty hand, instead of it "
+                + "floating in the air. The left arm in the off hand of Backhand. Not for the lantern, which hangs "
+                + "from the hand as in newer versions");
         moods = config.getBoolean(
             "moods",
             CATEGORY_HEALING_AXE,
             moods,
-            "The plant feels where it is: it sleeps at night, is happy in the rain falling on it and wilts in hot "
-                + "biomes and in the Nether");
-        plantInInventory = config
-            .getBoolean("inInventory", CATEGORY_HEALING_AXE, plantInInventory, "The plant in the inventory slots");
-        plantOnGround = config
-            .getBoolean("onGround", CATEGORY_HEALING_AXE, plantOnGround, "The plant when the axe lies on the ground");
+            "It feels where it is: it sleeps at night, reacts to the rain falling on it and to hot biomes and the "
+                + "Nether");
+        inInventory = config.getBoolean("inInventory", CATEGORY_HEALING_AXE, inInventory, "In the inventory slots");
+        onGround = config.getBoolean("onGround", CATEGORY_HEALING_AXE, onGround, "When the axe lies on the ground");
     }
 
     @Override
     public void postInit(FMLPostInitializationEvent event) {
-        if (Loader.isModLoaded("ExtraUtilities")) HealingAxePlant.register();
+        if (Loader.isModLoaded("ExtraUtilities")) HealingAxeRenderer.register();
     }
 }

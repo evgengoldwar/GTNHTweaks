@@ -54,6 +54,20 @@ final class EyeSpace {
             s * (x * (d * h - e * g) + y * (g * b - h * a) + z * (a * e - b * d)) };
     }
 
+    /**
+     * The yaw and pitch, in degrees, that turn a face drawn toward +z to the viewer.
+     *
+     * @param towardEye true: to the eye, as seen in perspective, so a face in the right hand looks to the left and one
+     *                  in the left hand to the right; false: to the screen, for the inventory
+     */
+    float[] facing(boolean towardEye) {
+        float[] v = towardEye ? point(0, 0, 0) : direction(0, 0, 1);
+        float x = v[0], y = v[1], z = v[2];
+        float yaw = (float) Math.toDegrees(Math.atan2(x, z));
+        float pitch = (float) Math.toDegrees(Math.atan2(y, Math.sqrt(x * x + z * z)));
+        return new float[] { yaw, Math.max(-25, Math.min(25, pitch * 0.5F)) };
+    }
+
     /** Where the origin of the model space is in the eye space. */
     float[] origin() {
         return new float[] { tx, ty, tz };

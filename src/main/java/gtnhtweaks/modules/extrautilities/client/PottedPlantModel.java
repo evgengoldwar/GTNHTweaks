@@ -1,16 +1,18 @@
 package gtnhtweaks.modules.extrautilities.client;
 
-import static org.lwjgl.opengl.GL11.GL_QUADS;
-import static org.lwjgl.opengl.GL11.glBegin;
-import static org.lwjgl.opengl.GL11.glColor4ub;
-import static org.lwjgl.opengl.GL11.glEnd;
-import static org.lwjgl.opengl.GL11.glNormal3f;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
 import static org.lwjgl.opengl.GL11.glRotatef;
 import static org.lwjgl.opengl.GL11.glScalef;
 import static org.lwjgl.opengl.GL11.glTranslatef;
-import static org.lwjgl.opengl.GL11.glVertex3f;
+import static gtnhtweaks.modules.extrautilities.client.Shapes.box;
+import static gtnhtweaks.modules.extrautilities.client.Shapes.color;
+import static gtnhtweaks.modules.extrautilities.client.Shapes.easeOut;
+import static gtnhtweaks.modules.extrautilities.client.Shapes.face;
+import static gtnhtweaks.modules.extrautilities.client.Shapes.letterZ;
+import static gtnhtweaks.modules.extrautilities.client.Shapes.mix;
+import static gtnhtweaks.modules.extrautilities.client.Shapes.pulse;
+import static gtnhtweaks.modules.extrautilities.client.Shapes.rand;
 
 /**
  * A clay pot with a living plant in it, drawn with untextured boxes. The plant sways, breathes, blinks, smiles at the
@@ -21,9 +23,9 @@ import static org.lwjgl.opengl.GL11.glVertex3f;
  * <p>
  * Everything is a function of the time, so nothing has to be kept between frames: two plants with other seeds just
  * live out of step. The model fills the unit cube centered on the origin, the pot standing on y = -0.5, like a block
- * drawn as an item. GL_TEXTURE_2D must be disabled; the normals are set for the item lighting.
+ * drawn as an item.
  */
-public final class PottedPlantModel {
+public final class PottedPlantModel implements CompanionModel {
 
     private static final int POT = 0xC0653A;
     private static final int POT_FOOT = 0xA9552F;
@@ -58,53 +60,12 @@ public final class PottedPlantModel {
     private static final double GROWN = 0.12, YELLOWING = 0.7, FALLING = 0.82;
     private static final float LEAF_SIZE = 1.35F;
 
+    public static final PottedPlantModel INSTANCE = new PottedPlantModel();
+
     private PottedPlantModel() {}
 
-    /** How the plant feels where it is, each from 0 to 1. Heat wins over the rest, rain over sleep. */
-    public static final class Mood {
-
-        public static final Mood NEUTRAL = new Mood(0, 0, 0);
-
-        /** At night: asleep. */
-        final float sleep;
-        /** In the rain: happy. */
-        final float joy;
-        /** In the heat: wilting. */
-        final float wilt;
-
-        public Mood(float sleep, float joy, float wilt) {
-            this.wilt = clamp(wilt);
-            this.joy = clamp(joy) * (1 - this.wilt);
-            this.sleep = clamp(sleep) * (1 - this.joy) * (1 - this.wilt);
-        }
-    }
-
-    /**
-     * Draws the plant with its face turned to the viewer, found from the current modelview matrix.
-     *
-     * @param time      seconds
-     * @param seed      plants with other seeds live out of step
-     * @param towardEye true: the face turns to the eye, as seen in perspective, so a plant in the right hand looks to
-     *                  the left and one in the left hand to the right; false: it faces the screen, for the inventory
-     * @param mood      how the plant feels where it is
-     */
-    public static void render(double time, int seed, boolean towardEye, Mood mood) {
-        EyeSpace eye = EyeSpace.current();
-        float[] v = towardEye ? eye.point(0, 0, 0) : eye.direction(0, 0, 1);
-        float x = v[0], y = v[1], z = v[2];
-        float yaw = (float) Math.toDegrees(Math.atan2(x, z));
-        float pitch = (float) Math.toDegrees(Math.atan2(y, Math.sqrt(x * x + z * z)));
-        render(time, seed, yaw, Math.max(-25, Math.min(25, pitch * 0.5F)), mood);
-    }
-
-    /**
-     * @param time      seconds
-     * @param seed      plants with other seeds live out of step
-     * @param faceYaw   degrees around y that turn the face (drawn toward +z) to the viewer
-     * @param facePitch degrees the face tilts up to the viewer
-     * @param mood      how the plant feels where it is
-     */
-    public static void render(double time, int seed, float faceYaw, float facePitch, Mood mood) {
+    @Override
+    public void render(double time, int seed, float faceYaw, float facePitch, Mood mood) {
         double t = time + rand(seed, 0) * 1000;
         drawPot();
 
@@ -114,13 +75,13 @@ public final class PottedPlantModel {
             glTranslatef(stem[i][0], stem[i][1], stem[i][2]);
             glRotatef(stem[i][3], 0, 0, 1);
             glRotatef(stem[i][4], 1, 0, 0);
-            box(-0.022F, -0.01F, -0.022F, 0.022F, SEGMENT + 0.01F, 0.022F, mix(STEM, WILTED, mood.wilt * 0.5F));
+            box(-0.022F, -0.01F, -0.022F, 0.022F, SEGMENT + 0.01F, 0.022F, mix(STEM, WILTED, mood.heat * 0.5F));
             glPopMatrix();
         }
 
         for (int i = 0; i < LEAF_AT.length; i++) drawLeaf(t, seed, i, stem, mood);
         drawHead(t, stem[SEGMENTS], faceYaw, facePitch, mood);
-        if (mood.joy > 0) drawRain(t, seed, mood.joy);
+        if (mood.rain > 0) drawRain(t, seed, mood.rain);
     }
 
     // ---- pot ----
@@ -151,9 +112,9 @@ public final class PottedPlantModel {
         float[][] joints = new float[SEGMENTS + 1][5];
         float shake = shake(t, mood);
         // asleep it sways less and nods, in the rain more; wilting it bends to the side and forward
-        float sway = 1 - 0.6F * mood.sleep - 0.5F * mood.wilt + 0.3F * mood.joy;
-        float bendRoll = 9 * mood.wilt;
-        float bendPitch = 6 * mood.wilt + mood.sleep * (float) (3 + 2 * Math.sin(t * 0.8));
+        float sway = 1 - 0.6F * mood.night - 0.5F * mood.heat + 0.3F * mood.rain;
+        float bendRoll = 9 * mood.heat;
+        float bendPitch = 6 * mood.heat + mood.night * (float) (3 + 2 * Math.sin(t * 0.8));
         float x = 0, y = SOIL_Y, z = 0, roll = 0, pitch = 0;
         for (int i = 0; i <= SEGMENTS; i++) {
             roll += (float) (sway * 4.5 * Math.sin(t * 1.3 + i * 0.6) + shake * 10 * Math.sin(t * 17 + i * 0.8))
@@ -189,14 +150,8 @@ public final class PottedPlantModel {
 
     /** 0, or up to 1 during the happy shake the plant does now and then, and more often in the rain. */
     private static float shake(double t, Mood mood) {
-        float calm = pulse(t, 9.5, 1.4) * (1 - mood.sleep) * (1 - mood.wilt);
-        return Math.max(calm, pulse(t + 2, 4.1, 1.2) * mood.joy);
-    }
-
-    /** 0, or up to 1 for the given length once in every period. */
-    private static float pulse(double t, double period, double length) {
-        double u = ((t % period) + period) % period;
-        return u < length ? (float) Math.sin(Math.PI * u / length) : 0;
+        float calm = pulse(t, 9.5, 1.4) * (1 - mood.night) * (1 - mood.heat);
+        return Math.max(calm, pulse(t + 2, 4.1, 1.2) * mood.rain);
     }
 
     // ---- leaves ----
@@ -206,7 +161,7 @@ public final class PottedPlantModel {
         double shifted = t + rand(seed, i + 20) * period;
         double life = ((shifted / period) % 1 + 1) % 1;
         // up in the rain, hanging asleep and more so wilting
-        float tilt = (float) (28 + 7 * Math.sin(t * 2.1 + i * 1.7)) + 10 * mood.joy - 15 * mood.sleep - 45 * mood.wilt;
+        float tilt = (float) (28 + 7 * Math.sin(t * 2.1 + i * 1.7)) + 10 * mood.rain - 15 * mood.night - 45 * mood.heat;
 
         if (life < FALLING) {
             float[] at = alongStem(stem, LEAF_AT[i]);
@@ -220,7 +175,7 @@ public final class PottedPlantModel {
             // a dry leaf hangs lower
             glRotatef(tilt - dry * 25, 0, 0, 1);
             glScalef(grow * LEAF_SIZE, grow * LEAF_SIZE, grow * LEAF_SIZE);
-            leaf(mix(mix(LEAF, WILTED, mood.wilt * 0.6F), LEAF_DRY, dry * 0.85F));
+            leaf(mix(mix(LEAF, WILTED, mood.heat * 0.6F), LEAF_DRY, dry * 0.85F));
             glPopMatrix();
             return;
         }
@@ -261,7 +216,7 @@ public final class PottedPlantModel {
 
     private static void drawHead(double t, float[] top, float faceYaw, float facePitch, Mood mood) {
         // asleep it breathes slower and deeper: the slow breath is mixed in, not the speed changed, so nothing jumps
-        float breath = (float) (Math.sin(t * 2.2) * 0.025 * (1 - mood.sleep) + Math.sin(t * 1.1) * 0.045 * mood.sleep);
+        float breath = (float) (Math.sin(t * 2.2) * 0.025 * (1 - mood.night) + Math.sin(t * 1.1) * 0.045 * mood.night);
         float shake = shake(t, mood);
         glPushMatrix();
         glTranslatef(top[0], top[1], top[2]);
@@ -272,21 +227,21 @@ public final class PottedPlantModel {
         glRotatef(faceYaw + (float) (8 * Math.sin(t * 0.7)), 0, 1, 0);
         glRotatef(-facePitch, 1, 0, 0);
         // drooping asleep and wilting, looking up at the rain
-        glRotatef(18 * mood.sleep + 22 * mood.wilt - 15 * mood.joy, 1, 0, 0);
-        glRotatef(14 * mood.wilt, 0, 0, 1);
+        glRotatef(18 * mood.night + 22 * mood.heat - 15 * mood.rain, 1, 0, 0);
+        glRotatef(14 * mood.heat, 0, 0, 1);
         glRotatef(shake * 8 * (float) Math.sin(t * 20), 0, 0, 1);
         glScalef(1 + breath, 1 - breath, 1 + breath);
 
-        int head = mix(HEAD, WILTED, mood.wilt * 0.5F);
+        int head = mix(HEAD, WILTED, mood.heat * 0.5F);
         box(-0.11F, -0.1F, -0.08F, 0.11F, 0.1F, 0.08F, head);
-        box(-0.085F, 0.1F, -0.06F, 0.085F, 0.125F, 0.06F, mix(HEAD_TOP, WILTED, mood.wilt * 0.5F));
+        box(-0.085F, 0.1F, -0.06F, 0.085F, 0.125F, 0.06F, mix(HEAD_TOP, WILTED, mood.heat * 0.5F));
         box(-0.08F, -0.12F, -0.055F, 0.08F, -0.1F, 0.055F, head);
         box(-0.125F, -0.07F, -0.06F, -0.11F, 0.07F, 0.06F, head);
         box(0.11F, -0.07F, -0.06F, 0.125F, 0.07F, 0.06F, head);
         drawSprout(t, mood);
         drawFace(t, shake, mood);
-        if (mood.sleep > 0) drawSleep(t, mood.sleep);
-        if (mood.wilt > 0) drawSweat(t, mood.wilt);
+        if (mood.night > 0) drawSleep(t, mood.night);
+        if (mood.heat > 0) drawSweat(t, mood.heat);
         glPopMatrix();
     }
 
@@ -297,18 +252,18 @@ public final class PottedPlantModel {
             glPushMatrix();
             glTranslatef(0, 0.155F, 0);
             glRotatef(side == 1 ? 0 : 180, 0, 1, 0);
-            glRotatef((float) (35 + 12 * Math.sin(t * 3 + side)) - 50 * mood.wilt - 20 * mood.sleep, 0, 0, 1);
+            glRotatef((float) (35 + 12 * Math.sin(t * 3 + side)) - 50 * mood.heat - 20 * mood.night, 0, 0, 1);
             glScalef(0.6F, 0.6F, 0.6F);
-            leaf(mix(LEAF, WILTED, mood.wilt * 0.6F));
+            leaf(mix(LEAF, WILTED, mood.heat * 0.6F));
             glPopMatrix();
         }
     }
 
     private static void drawFace(double t, float shake, Mood mood) {
         float z = 0.081F;
-        boolean asleep = mood.sleep > 0.5F;
-        boolean sad = mood.wilt > 0.5F;
-        boolean happy = shake > 0.2F || mood.joy > 0.5F;
+        boolean asleep = mood.night > 0.5F;
+        boolean sad = mood.heat > 0.5F;
+        boolean happy = shake > 0.2F || mood.rain > 0.5F;
         // blinks every few seconds, the time between them changing a little
         double blinkPeriod = 3.7;
         double sinceBlink = ((t + 0.6 * Math.sin(t * 0.31)) % blinkPeriod + blinkPeriod) % blinkPeriod;
@@ -364,18 +319,7 @@ public final class PottedPlantModel {
             glTranslatef(0.13F + 0.1F * (float) p, 0.12F + 0.28F * (float) p, 0.02F);
             glRotatef((float) (10 * Math.sin(t * 2 + k)), 0, 0, 1);
             glScalef(size, size, size);
-            float w = 0.035F, h = 0.035F, line = 0.009F;
-            face(-w, h - line, w, h, 0, SLEEP_Z);
-            face(-w, -h, w, -h + line, 0, SLEEP_Z);
-            // the slanted stroke, from the lower left to the upper right
-            color(SLEEP_Z);
-            glBegin(GL_QUADS);
-            glNormal3f(0, 0, 1);
-            glVertex3f(-w, -h + line, 0);
-            glVertex3f(-w + line * 1.8F, -h + line, 0);
-            glVertex3f(w, h - line, 0);
-            glVertex3f(w - line * 1.8F, h - line, 0);
-            glEnd();
+            letterZ(0.035F, 0.035F, 0.009F, SLEEP_Z);
             glPopMatrix();
         }
     }
@@ -413,90 +357,5 @@ public final class PottedPlantModel {
             }
             glPopMatrix();
         }
-    }
-
-    /** A flat rectangle facing +z. Works with x0 > x1 too. */
-    private static void face(float x0, float y0, float x1, float y1, float z, int color) {
-        if (x0 > x1) {
-            float swap = x0;
-            x0 = x1;
-            x1 = swap;
-        }
-        color(color);
-        glBegin(GL_QUADS);
-        glNormal3f(0, 0, 1);
-        glVertex3f(x0, y0, z);
-        glVertex3f(x1, y0, z);
-        glVertex3f(x1, y1, z);
-        glVertex3f(x0, y1, z);
-        glEnd();
-    }
-
-    // ---- helpers ----
-
-    /** A box with outward facing quads and their normals. */
-    private static void box(float x0, float y0, float z0, float x1, float y1, float z1, int color) {
-        color(color);
-        glBegin(GL_QUADS);
-        glNormal3f(0, 1, 0);
-        glVertex3f(x0, y1, z0);
-        glVertex3f(x0, y1, z1);
-        glVertex3f(x1, y1, z1);
-        glVertex3f(x1, y1, z0);
-        glNormal3f(0, -1, 0);
-        glVertex3f(x0, y0, z0);
-        glVertex3f(x1, y0, z0);
-        glVertex3f(x1, y0, z1);
-        glVertex3f(x0, y0, z1);
-        glNormal3f(0, 0, 1);
-        glVertex3f(x0, y0, z1);
-        glVertex3f(x1, y0, z1);
-        glVertex3f(x1, y1, z1);
-        glVertex3f(x0, y1, z1);
-        glNormal3f(0, 0, -1);
-        glVertex3f(x1, y0, z0);
-        glVertex3f(x0, y0, z0);
-        glVertex3f(x0, y1, z0);
-        glVertex3f(x1, y1, z0);
-        glNormal3f(1, 0, 0);
-        glVertex3f(x1, y0, z1);
-        glVertex3f(x1, y0, z0);
-        glVertex3f(x1, y1, z0);
-        glVertex3f(x1, y1, z1);
-        glNormal3f(-1, 0, 0);
-        glVertex3f(x0, y0, z0);
-        glVertex3f(x0, y0, z1);
-        glVertex3f(x0, y1, z1);
-        glVertex3f(x0, y1, z0);
-        glEnd();
-    }
-
-    private static void color(int rgb) {
-        glColor4ub((byte) (rgb >> 16), (byte) (rgb >> 8), (byte) rgb, (byte) 255);
-    }
-
-    private static int mix(int a, int b, float f) {
-        f = Math.max(0, Math.min(1, f));
-        int r = (int) (((a >> 16) & 255) * (1 - f) + ((b >> 16) & 255) * f);
-        int g = (int) (((a >> 8) & 255) * (1 - f) + ((b >> 8) & 255) * f);
-        int bl = (int) ((a & 255) * (1 - f) + (b & 255) * f);
-        return r << 16 | g << 8 | bl;
-    }
-
-    private static float clamp(float f) {
-        return Math.max(0, Math.min(1, f));
-    }
-
-    private static double easeOut(double f) {
-        return 1 - (1 - f) * (1 - f);
-    }
-
-    /** A number in [0, 1) that only depends on its arguments. */
-    private static double rand(int seed, int i) {
-        long h = seed * 0x9E3779B97F4A7C15L + i * 0xC2B2AE3D27D4EB4FL;
-        h ^= h >>> 31;
-        h *= 0xBF58476D1CE4E5B9L;
-        h ^= h >>> 29;
-        return (h >>> 11) / (double) (1L << 53);
     }
 }
