@@ -75,8 +75,7 @@ public final class ExtraUtilitiesModule extends TweakModule {
             CATEGORY_HEALING_AXE,
             holdingArm,
             "In first person the arm of the player holds it, the arm vanilla draws for an empty hand, instead of it "
-                + "floating in the air. The left arm in the off hand of Backhand. Not for the lantern, which hangs "
-                + "from the hand as in newer versions");
+                + "floating in the air. The left arm in the off hand of Backhand. The lantern hangs from its hand");
         moods = config.getBoolean(
             "moods",
             CATEGORY_HEALING_AXE,

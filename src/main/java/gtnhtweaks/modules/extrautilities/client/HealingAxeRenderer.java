@@ -44,6 +44,13 @@ public final class HealingAxeRenderer implements IItemRenderer {
     private static final float ON_HAND_SINK = 0.04F;
     /** The lantern hangs a little smaller, from a little above the middle of the held block in third person. */
     private static final float LANTERN_SCALE = 0.8F, LANTERN_HELD_Y = 0.2F;
+    /**
+     * In first person the arm holding the lantern is raised by so much, in the eye space, so that the lantern under
+     * its hand is seen whole: 0 for the arm just where vanilla has it, the lantern then partly below the screen.
+     */
+    private static final float LANTERN_ARM_RAISE = 0.2F;
+    /** Size of the lantern on the hand, and where it hangs from the hand, in the eye space. */
+    private static final float LANTERN_ON_HAND_SCALE = 0.3F, LANTERN_INWARD = 0.04F, LANTERN_FORWARD = 0.1F;
 
     /** The plane the arm is cut by, set in the space of the companion. */
     private static final DoubleBuffer BOTTOM = BufferUtils.createDoubleBuffer(4);
@@ -156,10 +163,7 @@ public final class HealingAxeRenderer implements IItemRenderer {
         }
         Entity entity = data.length > 1 && data[1] instanceof Entity ? (Entity) data[1] : null;
         boolean lantern = ExtraUtilitiesModule.companion == ExtraUtilitiesModule.Companion.LANTERN;
-        // the lantern hangs below the hand, where the bare arm of vanilla, reaching up, would hide it: it is held as
-        // in newer versions, without the arm
         boolean arm = type == ItemRenderType.EQUIPPED_FIRST_PERSON && ExtraUtilitiesModule.holdingArm
-            && !lantern
             && entity instanceof AbstractClientPlayer
             && !entity.isInvisible();
         boolean offhand = entity instanceof EntityPlayer && Backhand.isOffhand((EntityPlayer) entity, item);
@@ -183,7 +187,11 @@ public final class HealingAxeRenderer implements IItemRenderer {
                 }
                 break;
             case EQUIPPED_FIRST_PERSON:
-                if (arm) {
+                if (arm && lantern) {
+                    GL11.glTranslatef(0.5F, 0.5F, 0.5F);
+                    GL11.glScalef(2.5F, 2.5F, 2.5F);
+                    holdLantern((AbstractClientPlayer) entity, offhand, time);
+                } else if (arm) {
                     // back to the space of the held item before its scale by 0.4, where vanilla places the bare arm,
                     // and the companion on its hand
                     GL11.glTranslatef(0.5F, 0.5F, 0.5F);
@@ -238,8 +246,39 @@ public final class HealingAxeRenderer implements IItemRenderer {
             facing[0],
             facing[1],
             ExtraUtilitiesModule.moods ? Moods.at(entity) : Mood.NEUTRAL);
+        // as holdLantern left it
+        if (arm && lantern) GL11.glDepthRange(0, 1);
         GL11.glPopMatrix();
         GL11.glPopAttrib();
+    }
+
+    /**
+     * The bare arm of vanilla, in its pose, a little higher, and the lantern hanging from its hand. Under the hand is
+     * the arm itself, going down toward the eye: the lantern is drawn in front of it, in the nearer part of the depth
+     * range, as the depth is cleared before the hands are drawn. Leaves the space of the lantern and that depth range.
+     */
+    private static void holdLantern(AbstractClientPlayer player, boolean offhand, double time) {
+        EyeSpace eye = EyeSpace.current();
+        float[] up = eye.direction(0, LANTERN_ARM_RAISE, 0);
+        GL11.glTranslatef(up[0], up[1], up[2]);
+        float[] hand = HoldingArm.hand(player);
+        // from the fingers: a little toward the middle of the screen and toward the eye
+        float[] fingers = EyeSpace.current()
+            .direction(eye.mirrored() ? LANTERN_INWARD : -LANTERN_INWARD, 0, LANTERN_FORWARD);
+
+        GL11.glDepthRange(0.4, 1);
+        HoldingArm.render(player);
+        // the items texture back for what the item renderer draws next
+        Minecraft.getMinecraft()
+            .getTextureManager()
+            .bindTexture(TextureMap.locationItemsTexture);
+        GL11.glDepthRange(0, 0.4);
+
+        GL11.glTranslatef(hand[0] + fingers[0], hand[1] + fingers[1], hand[2] + fingers[2]);
+        GL11.glScalef(LANTERN_ON_HAND_SCALE, LANTERN_ON_HAND_SCALE, LANTERN_ON_HAND_SCALE);
+        LanternSwing.hang(player, offhand, time);
+        // the top of the handle a little inside the fist
+        GL11.glTranslatef(0, ON_HAND_SINK, 0);
     }
 
     private static CompanionModel model() {
