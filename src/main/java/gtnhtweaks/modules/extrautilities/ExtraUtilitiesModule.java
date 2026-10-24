@@ -15,6 +15,7 @@ public final class ExtraUtilitiesModule extends TweakModule {
     private static final String CATEGORY_HEALING_AXE = "healingAxe";
 
     public static boolean plantInHand = true;
+    public static boolean holdingArm = true;
     public static boolean plantInInventory = true;
     public static boolean plantOnGround = true;
 
@@ -34,6 +35,12 @@ public final class ExtraUtilitiesModule extends TweakModule {
             CATEGORY_HEALING_AXE,
             plantInHand,
             "The plant in place of the axe in the hands, in first and third person, the off hand of Backhand included");
+        holdingArm = config.getBoolean(
+            "holdingArm",
+            CATEGORY_HEALING_AXE,
+            holdingArm,
+            "In first person the arm of the player holds the pot from below, with the skin of the player, instead of "
+                + "the pot floating in the air. The left arm in the off hand of Backhand");
         plantInInventory = config
             .getBoolean("inInventory", CATEGORY_HEALING_AXE, plantInInventory, "The plant in the inventory slots");
         plantOnGround = config

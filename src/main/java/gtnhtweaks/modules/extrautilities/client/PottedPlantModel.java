@@ -1,11 +1,9 @@
 package gtnhtweaks.modules.extrautilities.client;
 
-import static org.lwjgl.opengl.GL11.GL_MODELVIEW_MATRIX;
 import static org.lwjgl.opengl.GL11.GL_QUADS;
 import static org.lwjgl.opengl.GL11.glBegin;
 import static org.lwjgl.opengl.GL11.glColor4ub;
 import static org.lwjgl.opengl.GL11.glEnd;
-import static org.lwjgl.opengl.GL11.glGetFloat;
 import static org.lwjgl.opengl.GL11.glNormal3f;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
@@ -13,10 +11,6 @@ import static org.lwjgl.opengl.GL11.glRotatef;
 import static org.lwjgl.opengl.GL11.glScalef;
 import static org.lwjgl.opengl.GL11.glTranslatef;
 import static org.lwjgl.opengl.GL11.glVertex3f;
-
-import java.nio.FloatBuffer;
-
-import org.lwjgl.BufferUtils;
 
 /**
  * A clay pot with a living plant in it, drawn with untextured boxes. The plant sways, breathes, blinks, smiles at the
@@ -59,8 +53,6 @@ public final class PottedPlantModel {
     private static final double GROWN = 0.12, YELLOWING = 0.7, FALLING = 0.82;
     private static final float LEAF_SIZE = 1.35F;
 
-    private static final FloatBuffer MATRIX = BufferUtils.createFloatBuffer(16);
-
     private PottedPlantModel() {}
 
     /**
@@ -72,29 +64,9 @@ public final class PottedPlantModel {
      *                  the left and one in the left hand to the right; false: it faces the screen, for the inventory
      */
     public static void render(double time, int seed, boolean towardEye) {
-        MATRIX.clear();
-        glGetFloat(GL_MODELVIEW_MATRIX, MATRIX);
-        // the direction to the viewer in eye space: to the eye at the origin, or +z
-        float vx = 0, vy = 0, vz = 1;
-        if (towardEye) {
-            vx = -MATRIX.get(12);
-            vy = -MATRIX.get(13);
-            vz = -MATRIX.get(14);
-        }
-        // the same direction in model space, through the inverse of the linear part, whose columns are
-        // (row 1 x row 2, row 2 x row 0, row 0 x row 1) / determinant
-        float a = MATRIX.get(0), b = MATRIX.get(4), c = MATRIX.get(8);
-        float d = MATRIX.get(1), e = MATRIX.get(5), f = MATRIX.get(9);
-        float g = MATRIX.get(2), h = MATRIX.get(6), k = MATRIX.get(10);
-        float x = vx * (e * k - f * h) + vy * (h * c - k * b) + vz * (b * f - c * e);
-        float y = vx * (f * g - d * k) + vy * (k * a - g * c) + vz * (c * d - a * f);
-        float z = vx * (d * h - e * g) + vy * (g * b - h * a) + vz * (a * e - b * d);
-        float det = a * (e * k - f * h) + b * (f * g - d * k) + c * (d * h - e * g);
-        if (det < 0) {
-            x = -x;
-            y = -y;
-            z = -z;
-        }
+        EyeSpace eye = EyeSpace.current();
+        float[] v = towardEye ? eye.point(0, 0, 0) : eye.direction(0, 0, 1);
+        float x = v[0], y = v[1], z = v[2];
         float yaw = (float) Math.toDegrees(Math.atan2(x, z));
         float pitch = (float) Math.toDegrees(Math.atan2(y, Math.sqrt(x * x + z * z)));
         render(time, seed, yaw, Math.max(-25, Math.min(25, pitch * 0.5F)));
