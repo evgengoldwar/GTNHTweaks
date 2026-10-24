@@ -54,6 +54,11 @@ final class EyeSpace {
             s * (x * (d * h - e * g) + y * (g * b - h * a) + z * (a * e - b * d)) };
     }
 
+    /** Where the origin of the model space is in the eye space. */
+    float[] origin() {
+        return new float[] { tx, ty, tz };
+    }
+
     /** A point of the eye space in the model space. The eye is at (0, 0, 0). */
     float[] point(float x, float y, float z) {
         return direction(x - tx, y - ty, z - tz);

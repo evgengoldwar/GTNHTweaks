@@ -5,7 +5,6 @@ import java.util.Map;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -35,9 +34,10 @@ public final class HealingAxePlant implements IItemRenderer {
     private static final String AXE = "com.rwtema.extrautils.item.ItemHealingAxe";
     private static final float FIRST_PERSON_LIFT = 0.55F;
     private static final float FIRST_PERSON_SCALE = 0.85F;
-    /** Higher and a little smaller with the arm under it, so the arm is seen too. */
-    private static final float FIRST_PERSON_LIFT_ARM = 1.0F;
-    private static final float FIRST_PERSON_SCALE_ARM = 0.75F;
+    /** Size of the pot on the hand, in the space of the held item before its scale by 0.4. */
+    private static final float ON_HAND_SCALE = 0.9F;
+    /** How deep the hand goes into the bottom of the pot, in sizes of the pot. */
+    private static final float ON_HAND_SINK = 0.04F;
 
     /** Renderers the axe had before, by the render type they handled. */
     private final Map<ItemRenderType, IItemRenderer> previous = new EnumMap<>(ItemRenderType.class);
@@ -139,16 +139,35 @@ public final class HealingAxePlant implements IItemRenderer {
 
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT);
         GL11.glPushMatrix();
+        // drawn as closed boxes, so faces turned away are hidden anyway; Backhand mirrors the off hand
+        GL11.glDisable(GL11.GL_CULL_FACE);
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glEnable(GL12.GL_RESCALE_NORMAL);
+        GL11.glDisable(GL11.GL_BLEND);
         switch (type) {
             case EQUIPPED:
                 // the block helper puts the corner of the block in the hand: back to its center
                 GL11.glTranslatef(0.5F, 0.5F, 0.5F);
                 break;
             case EQUIPPED_FIRST_PERSON:
-                // held like a block the pot is below the screen: lift it so the whole plant is seen
-                float scale = arm ? FIRST_PERSON_SCALE_ARM : FIRST_PERSON_SCALE;
-                GL11.glTranslatef(0.5F, 0.5F + (arm ? FIRST_PERSON_LIFT_ARM : FIRST_PERSON_LIFT), 0.5F);
-                GL11.glScalef(scale, scale, scale);
+                if (arm) {
+                    // back to the space of the held item before its scale by 0.4, where vanilla places the bare arm,
+                    // and the pot standing on its hand
+                    GL11.glTranslatef(0.5F, 0.5F, 0.5F);
+                    GL11.glScalef(2.5F, 2.5F, 2.5F);
+                    float[] hand = HoldingArm.render((AbstractClientPlayer) entity);
+                    // the items texture back for what the item renderer draws next
+                    Minecraft.getMinecraft()
+                        .getTextureManager()
+                        .bindTexture(TextureMap.locationItemsTexture);
+                    GL11.glTranslatef(hand[0], hand[1], hand[2]);
+                    GL11.glScalef(ON_HAND_SCALE, ON_HAND_SCALE, ON_HAND_SCALE);
+                    GL11.glTranslatef(0, 0.5F - ON_HAND_SINK, 0);
+                } else {
+                    // held like a block the pot is below the screen: lift it so the whole plant is seen
+                    GL11.glTranslatef(0.5F, 0.5F + FIRST_PERSON_LIFT, 0.5F);
+                    GL11.glScalef(FIRST_PERSON_SCALE, FIRST_PERSON_SCALE, FIRST_PERSON_SCALE);
+                }
                 break;
             case ENTITY:
                 // dropped items are drawn at half the size of a block and centered on the ground: stand on it
@@ -158,24 +177,10 @@ public final class HealingAxePlant implements IItemRenderer {
                 break;
         }
         GL11.glDisable(GL11.GL_TEXTURE_2D);
-        // drawn as closed boxes, so faces turned away are hidden anyway; Backhand mirrors the off hand
-        GL11.glDisable(GL11.GL_CULL_FACE);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-        GL11.glDisable(GL11.GL_BLEND);
         PottedPlantModel.render(
             Minecraft.getSystemTime() % 100_000_000L / 1000.0,
             seed(type, item, entity),
             type != ItemRenderType.INVENTORY);
-        if (arm) {
-            // the skin of the player for the arm, then the items texture back for what the item renderer draws next
-            TextureManager textures = Minecraft.getMinecraft()
-                .getTextureManager();
-            textures.bindTexture(((AbstractClientPlayer) entity).getLocationSkin());
-            GL11.glEnable(GL11.GL_TEXTURE_2D);
-            HoldingArm.render();
-            textures.bindTexture(TextureMap.locationItemsTexture);
-        }
         GL11.glPopMatrix();
         GL11.glPopAttrib();
     }
