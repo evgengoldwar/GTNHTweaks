@@ -45,7 +45,7 @@ final class Moods {
             float angle = world.getCelestialAngle(1);
             night = Math.min(ramp(angle, 0.25F, 0.3F), 1 - ramp(angle, 0.7F, 0.75F));
         }
-        return new Mood(night, rain, heat);
+        return new Mood(night, rain, heat, world.provider.isHellWorld);
     }
 
     private static float ramp(float value, float from, float to) {
