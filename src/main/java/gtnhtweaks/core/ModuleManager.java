@@ -18,6 +18,7 @@ import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.modules.backups.BackupsModule;
 import gtnhtweaks.modules.debug.DebugModule;
+import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.logs.LogsModule;
@@ -41,6 +42,7 @@ public final class ModuleManager {
             GregTechModule.INSTANCE,
             NEIModule.INSTANCE,
             TinkersModule.INSTANCE,
+            ExtraUtilitiesModule.INSTANCE,
             LogsModule.INSTANCE,
             BackupsModule.INSTANCE,
             DebugModule.INSTANCE));

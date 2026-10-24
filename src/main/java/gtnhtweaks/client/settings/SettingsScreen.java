@@ -46,6 +46,8 @@ public class SettingsScreen extends GuiScreen {
         NAMES.put("minecraft", "Minecraft");
         NAMES.put("gregtech", "GregTech");
         NAMES.put("nei", "NEI");
+        NAMES.put("tinkers", "Tinkers' Construct");
+        NAMES.put("extrautilities", "Extra Utilities");
         NAMES.put("logs", "Logs");
         NAMES.put("backups", "Backups");
         NAMES.put("debug", "Debug");
