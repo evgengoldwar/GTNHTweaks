@@ -44,11 +44,6 @@ public final class HealingAxeRenderer implements IItemRenderer {
     private static final float ON_HAND_SINK = 0.04F;
     /** The lantern hangs a little smaller, from a little above the middle of the held block in third person. */
     private static final float LANTERN_SCALE = 0.8F, LANTERN_HELD_Y = 0.2F;
-    /**
-     * In first person the arm holding the lantern is raised by so much, in the eye space, so that the lantern under
-     * its hand is seen whole: 0 for the arm just where vanilla has it, the lantern then partly below the screen.
-     */
-    private static final float LANTERN_ARM_RAISE = 0.2F;
     /** Size of the lantern on the hand, and where it hangs from the hand, in the eye space. */
     private static final float LANTERN_ON_HAND_SCALE = 0.3F, LANTERN_INWARD = 0.04F, LANTERN_FORWARD = 0.1F;
 
@@ -246,33 +241,26 @@ public final class HealingAxeRenderer implements IItemRenderer {
             facing[0],
             facing[1],
             ExtraUtilitiesModule.moods ? Moods.at(entity) : Mood.NEUTRAL);
-        // as holdLantern left it
-        if (arm && lantern) GL11.glDepthRange(0, 1);
         GL11.glPopMatrix();
         GL11.glPopAttrib();
     }
 
     /**
-     * The bare arm of vanilla, in its pose, a little higher, and the lantern hanging from its hand. Under the hand is
-     * the arm itself, going down toward the eye: the lantern is drawn in front of it, in the nearer part of the depth
-     * range, as the depth is cleared before the hands are drawn. Leaves the space of the lantern and that depth range.
+     * The bare arm of vanilla, just where vanilla has it, so it is the size of the other, empty hand, and the lantern
+     * hanging from its fingers, toward the middle of the screen. Where the arm is in front of the lantern it hides it.
+     * Leaves the space of the lantern.
      */
     private static void holdLantern(AbstractClientPlayer player, boolean offhand, double time) {
         EyeSpace eye = EyeSpace.current();
-        float[] up = eye.direction(0, LANTERN_ARM_RAISE, 0);
-        GL11.glTranslatef(up[0], up[1], up[2]);
         float[] hand = HoldingArm.hand(player);
         // from the fingers: a little toward the middle of the screen and toward the eye
-        float[] fingers = EyeSpace.current()
-            .direction(eye.mirrored() ? LANTERN_INWARD : -LANTERN_INWARD, 0, LANTERN_FORWARD);
+        float[] fingers = eye.direction(eye.mirrored() ? LANTERN_INWARD : -LANTERN_INWARD, 0, LANTERN_FORWARD);
 
-        GL11.glDepthRange(0.4, 1);
         HoldingArm.render(player);
         // the items texture back for what the item renderer draws next
         Minecraft.getMinecraft()
             .getTextureManager()
             .bindTexture(TextureMap.locationItemsTexture);
-        GL11.glDepthRange(0, 0.4);
 
         GL11.glTranslatef(hand[0] + fingers[0], hand[1] + fingers[1], hand[2] + fingers[2]);
         GL11.glScalef(LANTERN_ON_HAND_SCALE, LANTERN_ON_HAND_SCALE, LANTERN_ON_HAND_SCALE);
