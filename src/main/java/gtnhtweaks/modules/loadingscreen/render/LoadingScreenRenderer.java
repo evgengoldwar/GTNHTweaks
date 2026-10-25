@@ -3,6 +3,7 @@ package gtnhtweaks.modules.loadingscreen.render;
 import static gtnhtweaks.common.render.GLDraw.rect;
 import static org.lwjgl.opengl.GL11.*;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.lwjgl.opengl.Display;
@@ -17,14 +18,86 @@ import gtnhtweaks.modules.loadingscreen.LoadingTimer;
 /**
  * Draws the whole GTNH loading screen into the current GL context, over whatever was drawn before. Leaves the GL state
  * as it found it.
+ * <p>
+ * Behind the text a wall of blocks is built while the game loads. Once it has loaded, {@link #renderOutro} finishes the
+ * wall, fades the text out and lets the wall crumble down over the main menu.
  */
 public final class LoadingScreenRenderer {
+
+    /** Launch time the wall is built for when neither the previous launch nor the progress is known. */
+    private static final float UNKNOWN_LOAD_MS = 4 * 60_000;
+    private static final int FILL_MS = 450;
+    private static final int FADE_MS = 500;
+
+    private static List<ProgressLine> lastLines = Collections.emptyList();
+    private static float wallProgress;
+    private static long fadeAt = -1, collapseAt = -1;
 
     private LoadingScreenRenderer() {}
 
     public static synchronized void render(List<ProgressLine> lines) {
-        int width = Display.getWidth();
-        int height = Display.getHeight();
+        lastLines = lines;
+        long now = System.currentTimeMillis();
+        if (LoadingScreenModule.wall) {
+            WallTextures.start();
+            wallProgress = Math.max(wallProgress, Math.min(0.97F, loadedShare(lines)));
+        }
+        draw(Display.getWidth(), Display.getHeight(), (width, height) -> {
+            if (LoadingScreenModule.wall)
+                BlockWall.build(width, height, LoadingScreenModule.wallRows, wallProgress, now);
+            drawScreen(width, height, lastLines, LoadingScreenModule.style, now);
+        });
+    }
+
+    /** How much of the loading is done, from 0 to 1, for the wall. */
+    private static float loadedShare(List<ProgressLine> lines) {
+        long elapsed = LoadingTimer.getElapsedMs();
+        long previous = LoadingTimer.getPreviousMs();
+        if (previous > 0) return (float) elapsed / previous;
+        // The first line is the overall progress of Forge or BetterLoadingScreen
+        if (!lines.isEmpty() && !Float.isNaN(lines.get(0).progress)) return lines.get(0).progress;
+        return 1 - (float) Math.exp(-2 * elapsed / UNKNOWN_LOAD_MS);
+    }
+
+    /**
+     * Draws a frame of the end of the loading screen over the main menu: the rest of the wall is laid, the text fades
+     * out and the wall crumbles. Must be called on the main thread once the game has started, every frame until it
+     * returns false.
+     */
+    public static synchronized boolean renderOutro(int width, int height) {
+        long now = System.currentTimeMillis();
+        if (collapseAt < 0) {
+            if (!LoadingScreenModule.wall || BlockWall.isEmpty()) return false;
+            fadeAt = BlockWall.fill(width, height, LoadingScreenModule.wallRows, now, FILL_MS) + 100;
+            collapseAt = fadeAt + FADE_MS + 150;
+        }
+        if (now >= collapseAt) BlockWall.collapse(now);
+        draw(width, height, (w, h) -> {
+            if (now < collapseAt) {
+                drawScreen(w, h, lastLines, LoadingScreenModule.style, now);
+                // the finished wall covers the whole screen, drawing it over the text fades the text out
+                BlockWall.draw(now, Math.max(0F, Math.min(1F, (now - fadeAt) / (float) FADE_MS)));
+            } else {
+                BlockWall.draw(now, 1F);
+            }
+        });
+        if (now < collapseAt || BlockWall.isStanding(now)) return true;
+        BlockWall.reset();
+        dispose();
+        return false;
+    }
+
+    /** Whether the wall has started to crumble. */
+    public static synchronized boolean isCollapsing() {
+        return collapseAt >= 0 && System.currentTimeMillis() >= collapseAt;
+    }
+
+    private interface Painter {
+
+        void paint(int width, int height);
+    }
+
+    private static void draw(int width, int height, Painter painter) {
         if (width <= 0 || height <= 0) return;
 
         glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -51,7 +124,7 @@ public final class LoadingScreenRenderer {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glShadeModel(GL_SMOOTH);
             glColorMask(true, true, true, true);
-            drawScreen(width, height, lines, LoadingScreenModule.style);
+            painter.paint(width, height);
         } finally {
             glMatrixMode(GL_MODELVIEW);
             glPopMatrix();
@@ -64,11 +137,13 @@ public final class LoadingScreenRenderer {
         }
     }
 
+    /** Frees the textures. The pixels of the wall blocks are kept, the outro uploads them again. */
     public static void dispose() {
         SplashFont.dispose();
+        WallTextures.dispose();
     }
 
-    private static void drawScreen(int width, int height, List<ProgressLine> lines, GTNHTheme theme) {
+    private static void drawScreen(int width, int height, List<ProgressLine> lines, GTNHTheme theme, long now) {
         float ui = Math.max(1F, Math.min(width / 640F, height / 480F));
         int textScale = Math.max(1, Math.round(1.5F * ui));
         int titleScale = Math.max(1, Math.round(2F * ui));
@@ -76,6 +151,18 @@ public final class LoadingScreenRenderer {
         int gap = Math.max(2, Math.round(4 * ui));
 
         GLDraw.verticalGradient(0, 0, width, height, theme.backgroundTop, theme.backgroundBottom);
+        if (LoadingScreenModule.wall) {
+            BlockWall.draw(now, 1F);
+            // the background color over the wall keeps the text readable
+            int veil = Math.round(LoadingScreenModule.wallVeil * 255F) << 24;
+            GLDraw.verticalGradient(
+                0,
+                0,
+                width,
+                height,
+                theme.backgroundTop & 0xFFFFFF | veil,
+                theme.backgroundBottom & 0xFFFFFF | veil);
+        }
 
         // logo
         int cell = Math.max(3, Math.round(9 * ui));
