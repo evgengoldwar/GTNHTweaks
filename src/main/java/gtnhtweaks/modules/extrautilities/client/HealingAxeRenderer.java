@@ -44,8 +44,11 @@ public final class HealingAxeRenderer implements IItemRenderer {
     private static final float ON_HAND_SINK = 0.04F;
     /** The lantern hangs a little smaller, from a little above the middle of the held block in third person. */
     private static final float LANTERN_SCALE = 0.8F, LANTERN_HELD_Y = 0.2F;
-    /** Size of the lantern on the hand, and where it hangs from the hand, in the eye space. */
-    private static final float LANTERN_ON_HAND_SCALE = 0.3F, LANTERN_INWARD = 0.04F, LANTERN_FORWARD = 0.1F;
+    /**
+     * Size of the lantern on the hand, and where it hangs from the hand, in the eye space: from the tip of the fist on
+     * the side of the middle of the screen (the fist is 0.25 wide), so it is seen beside the arm, not hidden under it.
+     */
+    private static final float LANTERN_ON_HAND_SCALE = 0.3F, LANTERN_INWARD = 0.15F, LANTERN_FORWARD = 0.1F;
 
     /** The plane the arm is cut by, set in the space of the companion. */
     private static final DoubleBuffer BOTTOM = BufferUtils.createDoubleBuffer(4);
@@ -253,7 +256,8 @@ public final class HealingAxeRenderer implements IItemRenderer {
     private static void holdLantern(AbstractClientPlayer player, boolean offhand, double time) {
         EyeSpace eye = EyeSpace.current();
         float[] hand = HoldingArm.hand(player);
-        // from the fingers: a little toward the middle of the screen and toward the eye
+        // from the tip of the fist toward the middle of the screen: the right tip in the left hand, the left tip in the
+        // right hand; and a little toward the eye
         float[] fingers = eye.direction(eye.mirrored() ? LANTERN_INWARD : -LANTERN_INWARD, 0, LANTERN_FORWARD);
 
         HoldingArm.render(player);
