@@ -11,8 +11,9 @@ import gtnhtweaks.common.render.GTNHTheme;
 
 /**
  * Animated circuit board behind the main menu: copper traces with 45 degree bends and chips stamped with a GregTech
- * gear, with pulses of current running along the traces. The board is laid out once per window size; only the pulses change from frame to frame.
- * Everything is in GUI coordinates, so the board gets the blocky look of the rest of the GUI.
+ * gear, with pulses of current running along the traces. The board is laid out once per window size; only the pulses
+ * change from frame to frame. Everything is in GUI coordinates, so the board gets the blocky look of the rest of the
+ * GUI.
  */
 final class CircuitBackground {
 
