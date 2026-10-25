@@ -6,14 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import net.minecraft.client.gui.FontRenderer;
-
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHTheme;
 
 /**
- * Animated circuit board behind the main menu: copper traces with 45 degree bends and chips, with pulses of current
- * running along the traces. The board is laid out once per window size; only the pulses change from frame to frame.
+ * Animated circuit board behind the main menu: copper traces with 45 degree bends and chips stamped with a GregTech
+ * gear, with pulses of current running along the traces. The board is laid out once per window size; only the pulses change from frame to frame.
  * Everything is in GUI coordinates, so the board gets the blocky look of the rest of the GUI.
  */
 final class CircuitBackground {
@@ -23,11 +21,13 @@ final class CircuitBackground {
     /** Cells around the screen, so the parallax never shows the edge of the board. */
     private static final int MARGIN = 2;
 
-    /** GregTech voltage tiers: name, color and how common they are on the board. */
-    private static final String[] TIER_NAMES = { "LV", "MV", "HV", "EV", "IV", "LuV", "ZPM", "UV", "UHV", "UEV" };
+    /** GregTech voltage tiers: color and how common they are on the board. */
     private static final int[] TIER_COLORS = { 0xFFDCDCDC, 0xFFFFAA00, 0xFFFFFF55, 0xFFC25CFF, 0xFF6F7DFF, 0xFFFF55FF,
         0xFFFF5555, 0xFF22D3D3, 0xFFE03030, 0xFF55FF55 };
     private static final int[] TIER_WEIGHTS = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 1 };
+    /** The gear stamped on every chip, 11 by 11 pixels of a seventh of a cell; its hole shows the tier color. */
+    private static final String[] GEAR = { "...#.#.#...", "..#######..", ".#########.", "###.....###", ".##.....##.",
+        "###.....###", ".##.....##.", "###.....###", ".#########.", "..#######..", "...#.#.#..." };
 
     private static final class Trace {
 
@@ -142,28 +142,6 @@ final class CircuitBackground {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         drawVignette(width, height, light ? 0x8CFFFFFF : 0x8C000000);
-    }
-
-    /** Names of the chips, in a small font. GL_TEXTURE_2D must be enabled. */
-    static void drawLabels(FontRenderer font, GTNHTheme theme) {
-        if (cell < 9) return;
-        int color = withAlpha(theme.textDisabled, 0.9F);
-        glPushMatrix();
-        glScalef(0.5F, 0.5F, 1);
-        for (Chip chip : chips) {
-            String label = MainMenuModule.circuitTierColors ? TIER_NAMES[chip.tier] + " circuit"
-                : "GT-" + (100 + (chip.x * 7 + chip.y * 13) % 900);
-            float centerX = x(chip.x) - cell / 2 + chip.w * cell / 2;
-            float centerY = y(chip.y) - cell / 2 + chip.h * cell / 2;
-            if (font.getStringWidth(label) / 2F > chip.w * cell - cell * 0.4F) continue;
-            font.drawString(
-                label,
-                Math.round(centerX * 2 - font.getStringWidth(label) / 2F),
-                Math.round(centerY * 2 - font.FONT_HEIGHT / 2F),
-                color,
-                false);
-        }
-        glPopMatrix();
     }
 
     // ---- layout
@@ -305,6 +283,28 @@ final class CircuitBackground {
             GLDraw.rect(left, top, w, h, edge);
             GLDraw.rect(left + 1, top + 1, w - 2, h - 2, body);
             disc(left + cell * 0.35F, top + cell * 0.35F, cell * 0.1F, edge, edge);
+            drawGear(chip, theme, alpha, 0.45F * MainMenuModule.circuitBrightness);
+        }
+    }
+
+    /** The stamped gear in the middle of a chip, with the tier color in its hole at {@code glow} strength. */
+    private static void drawGear(Chip chip, GTNHTheme theme, float alpha, float glow) {
+        float unit = cell / 7;
+        float left = x(chip.x) - cell / 2 + chip.w * cell / 2 - unit * 5.5F;
+        float top = y(chip.y) - cell / 2 + chip.h * cell / 2 - unit * 5.5F;
+        int gear = withAlpha(theme.textDisabled, 0.6F * alpha);
+        int edge = withAlpha(theme.textDisabled, 0.9F * alpha);
+        for (int row = 0; row < GEAR.length; row++) {
+            for (int column = 0; column < GEAR[row].length(); column++) {
+                if (GEAR[row].charAt(column) != '#') continue;
+                float x = left + column * unit, y = top + row * unit;
+                GLDraw.rect(x, y, unit, unit, gear);
+                // light falls from above: the top edges of the stamp catch it
+                if (row == 0 || GEAR[row - 1].charAt(column) != '#') GLDraw.rect(x, y, unit, unit * 0.3F, edge);
+            }
+        }
+        if (glow > 0) {
+            GLDraw.rect(left + unit * 4, top + unit * 4, unit * 3, unit * 3, withAlpha(color(chip.tier, theme), glow));
         }
     }
 
@@ -364,12 +364,16 @@ final class CircuitBackground {
                 Math.max(1F, cell * 0.1F),
                 withAlpha(f.color, f.life * brightness));
         }
-        // a small LED on each chip blinks when it sends a pulse
+        // a small LED on each chip blinks when it sends a pulse, and the hole of its gear lights up
         for (Chip chip : chips) {
             if (chip.lit <= 0) continue;
             float left = x(chip.x) - cell / 2 + cell * 0.1F, top = y(chip.y) - cell / 2 + cell * 0.1F;
             int color = withAlpha(color(chip.tier, theme), chip.lit * brightness);
             disc(left + cell * 0.35F, top + cell * 0.35F, cell * 0.12F, color, color);
+            float unit = cell / 7;
+            float holeX = x(chip.x) - cell / 2 + chip.w * cell / 2 - unit * 1.5F;
+            float holeY = y(chip.y) - cell / 2 + chip.h * cell / 2 - unit * 1.5F;
+            GLDraw.rect(holeX, holeY, unit * 3, unit * 3, withAlpha(color, 0.55F));
             chip.lit = Math.max(0, chip.lit - dt * 1.5F);
         }
     }

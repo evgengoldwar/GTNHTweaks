@@ -83,12 +83,7 @@ public final class MainMenuRenderer {
 
         beginShapes();
         GLDraw.verticalGradient(0, 0, width, height, theme.backgroundTop, theme.backgroundBottom);
-        if (MainMenuModule.circuit) {
-            CircuitBackground.draw(width, height, mouseX, mouseY, theme);
-            endShapes();
-            CircuitBackground.drawLabels(font, theme);
-            beginShapes();
-        }
+        if (MainMenuModule.circuit) CircuitBackground.draw(width, height, mouseX, mouseY, theme);
 
         // logo with the subtitle and the splash text, centered in the space above the buttons
         int buttonsTop = MainMenuLayout.buttonsTop >= 0 ? MainMenuLayout.buttonsTop : height / 4 + 48;
