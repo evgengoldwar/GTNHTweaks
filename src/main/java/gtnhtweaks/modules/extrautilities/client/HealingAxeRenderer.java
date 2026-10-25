@@ -49,7 +49,7 @@ public final class HealingAxeRenderer implements IItemRenderer {
      * on the side of the middle of the screen, a little farther from the eye than the arm, so the arm is in front of it
      * where they meet.
      */
-    private static final float LANTERN_ON_HAND_SCALE = 0.34F, LANTERN_INWARD = 0.21F, LANTERN_UP = 0.07F,
+    private static final float LANTERN_ON_HAND_SCALE = 0.34F, LANTERN_INWARD = 0.18F, LANTERN_UP = 0.03F,
         LANTERN_FORWARD = -0.05F;
 
     /** The plane the arm is cut by, set in the space of the companion. */
