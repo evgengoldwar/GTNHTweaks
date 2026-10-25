@@ -43,9 +43,9 @@ final class WallTextures {
         "redstone_ore", "lapis_ore", "emerald_ore", "quartz_ore", "iron_block", "gold_block", "diamond_block",
         "emerald_block", "lapis_block", "redstone_block", "coal_block", "obsidian", "bookshelf", "crafting_table_front",
         "furnace_front_off", "sandstone_normal", "sandstone_carved", "netherrack", "nether_brick", "end_stone",
-        "quartz_block_chiseled", "glowstone", "pumpkin_face_off", "melon_side", "tnt_side", "noteblock", "hay_block_side",
-        "hardened_clay", "hardened_clay_stained_orange", "hardened_clay_stained_cyan", "wool_colored_red",
-        "wool_colored_blue", "wool_colored_lime" };
+        "quartz_block_chiseled", "glowstone", "pumpkin_face_off", "melon_side", "tnt_side", "noteblock",
+        "hay_block_side", "hardened_clay", "hardened_clay_stained_orange", "hardened_clay_stained_cyan",
+        "wool_colored_red", "wool_colored_blue", "wool_colored_lime" };
 
     /** Parts of texture paths that are almost never a full opaque block face. */
     private static final String[] SKIPPED = { "overlay", "ctm", "glass", "leaves", "leaf", "fluid", "_still", "_flow",
@@ -87,7 +87,8 @@ final class WallTextures {
         int vanillaCount = vanilla.size(), modCount = mods.size();
         if (vanillaCount + modCount == 0) return -1;
         // Even ids are vanilla textures, odd ones mod textures
-        if (modCount > 0 && (vanillaCount == 0 || random.nextFloat() < LoadingScreenModule.wallModBlockShare)) return random.nextInt(modCount) * 2 + 1;
+        if (modCount > 0 && (vanillaCount == 0 || random.nextFloat() < LoadingScreenModule.wallModBlockShare))
+            return random.nextInt(modCount) * 2 + 1;
         return random.nextInt(vanillaCount) * 2;
     }
 

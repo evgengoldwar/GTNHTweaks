@@ -47,8 +47,8 @@ final class LanternSwing {
     /**
      * Turns the current space so that a model hanging from its top, (0, 0.5, 0), hangs from the current origin.
      *
-     * @param holder  whose hand it is in, or null for no swing
-     * @param offhand in the off hand of Backhand: it swings on its own
+     * @param holder      whose hand it is in, or null for no swing
+     * @param offhand     in the off hand of Backhand: it swings on its own
      * @param time        seconds, for a gentle sway at rest
      * @param firstPerson held by the player in first person: looking up, it does not hang quite straight down, which
      *                    would bring it at the eye, but only a little toward it; looking down it hangs straight down

@@ -82,7 +82,8 @@ public final class LoadingScreenModule extends TweakModule {
         for (String old : new String[] { "enabled", "veil", "collapse", "collapseSound" }) {
             removeKey(config, CATEGORY_WALL, old);
         }
-        wall = config.getBoolean("buildWall", CATEGORY_WALL, wall, "Build the wall of blocks behind the loading screen");
+        wall = config
+            .getBoolean("buildWall", CATEGORY_WALL, wall, "Build the wall of blocks behind the loading screen");
         wallModBlocks = config.getBoolean(
             "modBlocks",
             CATEGORY_WALL,

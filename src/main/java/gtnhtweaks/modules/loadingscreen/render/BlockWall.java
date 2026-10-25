@@ -131,7 +131,8 @@ final class BlockWall {
         spin = new float[cells];
         gravity = layoutHeight * 3.2F * speed * speed;
         float centerX = layoutWidth / 2F, centerY = layoutHeight * 0.55F;
-        float reach = (float) Math.hypot(Math.max(centerX, layoutWidth - centerX), Math.max(centerY, layoutHeight - centerY));
+        float reach = (float) Math
+            .hypot(Math.max(centerX, layoutWidth - centerX), Math.max(centerY, layoutHeight - centerY));
         for (int cell = 0; cell < cells; cell++) {
             float dx = x(cell) + size / 2 - centerX, dy = y(cell) + size / 2 - centerY;
             float distance = (float) Math.hypot(dx, dy) / reach;
