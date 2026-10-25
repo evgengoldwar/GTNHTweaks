@@ -24,7 +24,7 @@ final class LanternSwing {
      * against it, and how much of its speed it keeps bouncing back.
      */
     private static final float ARM_WALL = 0.04F, BOUNCE = 0.35F;
-    /** In first person, the part of the pitch of the camera the lantern follows, and the most it follows (degrees). */
+    /** In first person looking up, the part of the pitch of the camera the lantern follows, and the most (degrees). */
     private static final float FIRST_PERSON_TILT = 0.3F, FIRST_PERSON_PITCH = 15;
     /** How hard the lantern is pulled back under its hand, and how fast its swing dies down. */
     private static final float STIFFNESS = 55, DAMPING = 3.2F;
@@ -50,8 +50,8 @@ final class LanternSwing {
      * @param holder  whose hand it is in, or null for no swing
      * @param offhand in the off hand of Backhand: it swings on its own
      * @param time        seconds, for a gentle sway at rest
-     * @param firstPerson held by the player in first person: looking up or down, it does not hang quite straight
-     *                    down, which would bring it at the eye or out of sight, but only a little toward it
+     * @param firstPerson held by the player in first person: looking up, it does not hang quite straight down, which
+     *                    would bring it at the eye, but only a little toward it; looking down it hangs straight down
      * @param armSide     where the arm holding the lantern is, beside it, which it knocks against instead of going
      *                    through: -1 to the left of its holder, 1 to the right, 0 for no arm
      */
@@ -74,7 +74,8 @@ final class LanternSwing {
         // into the eye space, as the camera turns the world: glRotatef(pitch, 1, 0, 0), glRotatef(yaw + 180, 0, 1, 0)
         double cameraYaw = Math.toRadians(RenderManager.instance.playerViewY + 180);
         float pitch = RenderManager.instance.playerViewX;
-        if (firstPerson) pitch = Math.max(-FIRST_PERSON_PITCH, Math.min(FIRST_PERSON_PITCH, pitch * FIRST_PERSON_TILT));
+        // the pitch is negative looking up
+        if (firstPerson && pitch < 0) pitch = Math.max(-FIRST_PERSON_PITCH, pitch * FIRST_PERSON_TILT);
         double cameraPitch = Math.toRadians(pitch);
         float ex = (float) (x * Math.cos(cameraYaw) + z * Math.sin(cameraYaw));
         float ez = (float) (-x * Math.sin(cameraYaw) + z * Math.cos(cameraYaw));
