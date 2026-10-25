@@ -270,7 +270,9 @@ public final class HealingAxeRenderer implements IItemRenderer {
 
         GL11.glTranslatef(hand[0] + at[0], hand[1] + at[1], hand[2] + at[2]);
         GL11.glScalef(LANTERN_ON_HAND_SCALE, LANTERN_ON_HAND_SCALE, LANTERN_ON_HAND_SCALE);
-        LanternSwing.hang(player, offhand, time);
+        // the arm is beside the lantern toward the edge of the screen: to the left of the left hand, the right of the
+        // right hand
+        LanternSwing.hang(player, offhand, time, offhand ? -1 : 1);
         GL11.glTranslatef(0, ON_HAND_SINK, 0);
     }
 

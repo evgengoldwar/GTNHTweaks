@@ -19,6 +19,11 @@ import net.minecraft.util.MathHelper;
  */
 final class LanternSwing {
 
+    /**
+     * How far the lantern may swing toward the arm holding it, as a fraction of its hanging length, before it knocks
+     * against it, and how much of its speed it keeps bouncing back.
+     */
+    private static final float ARM_WALL = 0.04F, BOUNCE = 0.35F;
     /** How hard the lantern is pulled back under its hand, and how fast its swing dies down. */
     private static final float STIFFNESS = 55, DAMPING = 3.2F;
 
@@ -45,14 +50,23 @@ final class LanternSwing {
      * @param time    seconds, for a gentle sway at rest
      */
     static void hang(Entity holder, boolean offhand, double time) {
+        hang(holder, offhand, time, 0);
+    }
+
+    /**
+     * @param armSide where the arm holding the lantern is, beside it, which it knocks against instead of going
+     *                through: -1 to the left of its holder, 1 to the right, 0 for no arm
+     */
+    static void hang(Entity holder, boolean offhand, double time, int armSide) {
         float side = 0.025F * (float) Math.sin(time * 1.3), back = 0.02F * (float) Math.sin(time * 0.9 + 1);
         float yaw = 0;
         if (holder != null) {
-            Swing swing = update(holder, offhand);
+            Swing swing = update(holder, offhand, armSide);
             side += swing.side;
             back += swing.back;
             yaw = holder.rotationYaw;
         }
+        if (armSide != 0 && side * armSide > ARM_WALL) side = ARM_WALL * armSide;
         // down in the world, pulled toward the right and the back of the holder
         double yawRadians = Math.toRadians(yaw);
         float rightX = (float) -Math.cos(yawRadians), rightZ = (float) -Math.sin(yawRadians);
@@ -83,7 +97,7 @@ final class LanternSwing {
         glTranslatef(0, -0.5F, 0);
     }
 
-    private static Swing update(Entity holder, boolean offhand) {
+    private static Swing update(Entity holder, boolean offhand, int armSide) {
         long key = holder.getEntityId() * 2L + (offhand ? 1 : 0);
         long now = System.nanoTime();
         Swing swing = SWINGS.get(key);
@@ -123,6 +137,11 @@ final class LanternSwing {
         swing.sideSpeed += ((wantedSide - swing.side) * STIFFNESS - swing.sideSpeed * DAMPING) * dt;
         swing.back += swing.backSpeed * dt;
         swing.side += swing.sideSpeed * dt;
+        // the arm stops it, and it bounces back off it
+        if (armSide != 0 && swing.side * armSide > ARM_WALL) {
+            swing.side = ARM_WALL * armSide;
+            if (swing.sideSpeed * armSide > 0) swing.sideSpeed *= -BOUNCE;
+        }
         return swing;
     }
 
