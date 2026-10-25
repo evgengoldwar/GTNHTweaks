@@ -1,6 +1,7 @@
 package gtnhtweaks.modules.extrautilities.client;
 
 import static org.lwjgl.opengl.GL11.GL_BLEND;
+import static org.lwjgl.opengl.GL11.GL_LIGHTING;
 import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
 import static org.lwjgl.opengl.GL11.GL_QUADS;
 import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
@@ -11,13 +12,35 @@ import static org.lwjgl.opengl.GL11.glDepthMask;
 import static org.lwjgl.opengl.GL11.glDisable;
 import static org.lwjgl.opengl.GL11.glEnable;
 import static org.lwjgl.opengl.GL11.glEnd;
+import static org.lwjgl.opengl.GL11.glIsEnabled;
 import static org.lwjgl.opengl.GL11.glNormal3f;
 import static org.lwjgl.opengl.GL11.glVertex3f;
 
 /** Untextured boxes and flat faces the companion models are made of, and the little maths they share. */
 final class Shapes {
 
+    private static final Runnable NOTHING = () -> {};
+    /** Set by the item renderer: light at full brightness for what glows, and the light as it was after. */
+    static Runnable fullBright = NOTHING, usualLight = NOTHING;
+
     private Shapes() {}
+
+    /**
+     * Starts drawing what glows by itself: unlit, at full brightness, not darker at night.
+     *
+     * @return whether the lighting was on, for {@link #endGlow}
+     */
+    static boolean glow() {
+        boolean lit = glIsEnabled(GL_LIGHTING);
+        fullBright.run();
+        glDisable(GL_LIGHTING);
+        return lit;
+    }
+
+    static void endGlow(boolean lit) {
+        if (lit) glEnable(GL_LIGHTING);
+        usualLight.run();
+    }
 
     /** A box with outward facing quads and their normals. */
     static void box(float x0, float y0, float z0, float x1, float y1, float z1, int rgb) {

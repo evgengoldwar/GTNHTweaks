@@ -50,16 +50,16 @@ public final class HealingAxeRenderer implements IItemRenderer {
     /** The plane the arm is cut by, set in the space of the companion. */
     private static final DoubleBuffer BOTTOM = BufferUtils.createDoubleBuffer(4);
 
-    /** The light the lantern spirit was drawn in, before its full brightness. */
+    /** The light what glows was drawn in, before its full brightness. */
     private static float brightnessX, brightnessY;
 
     static {
-        LanternModel.fullBright = () -> {
+        Shapes.fullBright = () -> {
             brightnessX = OpenGlHelper.lastBrightnessX;
             brightnessY = OpenGlHelper.lastBrightnessY;
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
         };
-        LanternModel.usualLight = () -> OpenGlHelper
+        Shapes.usualLight = () -> OpenGlHelper
             .setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, brightnessX, brightnessY);
     }
 
@@ -279,6 +279,8 @@ public final class HealingAxeRenderer implements IItemRenderer {
                 return LanternModel.INSTANCE;
             case PEASHOOTER:
                 return PeashooterModel.INSTANCE;
+            case SUNFLOWER:
+                return SunflowerModel.INSTANCE;
             default:
                 return PottedPlantModel.INSTANCE;
         }

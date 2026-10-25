@@ -9,10 +9,6 @@ import static gtnhtweaks.modules.extrautilities.client.Shapes.mix;
 import static gtnhtweaks.modules.extrautilities.client.Shapes.pulse;
 import static gtnhtweaks.modules.extrautilities.client.Shapes.rand;
 import static gtnhtweaks.modules.extrautilities.client.Shapes.translucent;
-import static org.lwjgl.opengl.GL11.GL_LIGHTING;
-import static org.lwjgl.opengl.GL11.glDisable;
-import static org.lwjgl.opengl.GL11.glEnable;
-import static org.lwjgl.opengl.GL11.glIsEnabled;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
 import static org.lwjgl.opengl.GL11.glRotatef;
@@ -30,10 +26,6 @@ import static org.lwjgl.opengl.GL11.glTranslatef;
 public final class LanternModel implements CompanionModel {
 
     public static final LanternModel INSTANCE = new LanternModel();
-
-    private static final Runnable NOTHING = () -> {};
-    /** Set by the item renderer: light at full brightness for the glowing spirit, and the light as it was after. */
-    static Runnable fullBright = NOTHING, usualLight = NOTHING;
 
     private static final int IRON = 0x3B3C42;
     private static final int IRON_LIGHT = 0x5A5C66;
@@ -88,12 +80,9 @@ public final class LanternModel implements CompanionModel {
         Fire c = mood.nether ? SOUL : WARM;
         drawIron();
 
-        boolean lit = glIsEnabled(GL_LIGHTING);
-        fullBright.run();
-        glDisable(GL_LIGHTING);
+        boolean lit = Shapes.glow();
         drawSpirit(t, seed, faceYaw, facePitch, mood, c);
-        if (lit) glEnable(GL_LIGHTING);
-        usualLight.run();
+        Shapes.endGlow(lit);
 
         translucent(true);
         box(-HALF, BOTTOM, -HALF, HALF, TOP, HALF, c.glass, 0.1F);

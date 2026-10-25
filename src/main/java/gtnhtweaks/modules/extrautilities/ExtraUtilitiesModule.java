@@ -27,7 +27,9 @@ public final class ExtraUtilitiesModule extends TweakModule {
         /** An iron lantern with a fire spirit, hanging from the hand. */
         LANTERN,
         /** A peashooter in the clay pot, shooting peas. */
-        PEASHOOTER
+        PEASHOOTER,
+        /** A sunflower in the clay pot, making suns. */
+        SUNFLOWER
     }
 
     public static Companion companion = Companion.PLANT;
@@ -61,7 +63,8 @@ public final class ExtraUtilitiesModule extends TweakModule {
                             + "SLIME: a slime in a jar, hopping about and bumping the lid.\n"
                             + "LANTERN: an iron lantern with a fire spirit in it, hanging from the hand and swinging "
                             + "as you turn and walk.\n"
-                            + "PEASHOOTER: a peashooter in the clay pot, shooting a pea every few seconds",
+                            + "PEASHOOTER: a peashooter in the clay pot, shooting a pea every few seconds.\n"
+                            + "SUNFLOWER: a sunflower in the clay pot, swaying its head and making a sun now and then",
                         names)
                     .trim()
                     .toUpperCase(Locale.ROOT));
