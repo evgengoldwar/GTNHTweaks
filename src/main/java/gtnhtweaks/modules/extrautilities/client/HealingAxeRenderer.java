@@ -45,13 +45,12 @@ public final class HealingAxeRenderer implements IItemRenderer {
     /** The lantern hangs a little smaller, from a little above the middle of the held block in third person. */
     private static final float LANTERN_SCALE = 0.8F, LANTERN_HELD_Y = 0.2F;
     /**
-     * Size of the lantern on the hand, and where it hangs from the hand, in the eye space: from the tip of the fist on
-     * the side of the middle of the screen (the fist is 0.25 wide), so it is seen beside the arm, not hidden under it.
+     * Size of the lantern on the hand, and where it hangs from the hand, in the eye space: a little toward the middle
+     * of the screen and toward the eye, and so much higher than the hand that it is seen whole, beside the top of the
+     * arm.
      */
-    private static final float LANTERN_ON_HAND_SCALE = 0.3F, LANTERN_INWARD = 0.27F, LANTERN_UP = 0.12F,
-        LANTERN_FORWARD = 0.15F;
-    /** Where the chain of the lantern comes out of the fist: its upper corner on the side of the lantern. */
-    private static final float CHAIN_INWARD = 0.11F, CHAIN_UP = 0.16F, CHAIN_FORWARD = 0.07F;
+    private static final float LANTERN_ON_HAND_SCALE = 0.3F, LANTERN_INWARD = 0.04F, LANTERN_UP = 0.2F,
+        LANTERN_FORWARD = 0.1F;
 
     /** The plane the arm is cut by, set in the space of the companion. */
     private static final DoubleBuffer BOTTOM = BufferUtils.createDoubleBuffer(4);
@@ -253,32 +252,26 @@ public final class HealingAxeRenderer implements IItemRenderer {
 
     /**
      * The bare arm of vanilla, just where vanilla has it, so it is the size of the other, empty hand, and the lantern
-     * hanging from a chain held in its fist, beside the arm toward the middle of the screen. Where the arm is in front
-     * of the lantern or the chain it hides them. Leaves the space of the lantern.
+     * hanging above its hand, beside the top of the arm. Where the arm is in front of the lantern it hides it. Leaves
+     * the space of the lantern.
      */
     private static void holdLantern(AbstractClientPlayer player, boolean offhand, double time) {
         EyeSpace eye = EyeSpace.current();
         float[] hand = HoldingArm.hand(player);
-        // toward the middle of the screen: to the right in the left hand, to the left in the right hand
-        float inward = eye.mirrored() ? 1 : -1;
-        // the chain comes out of the upper corner of the fist, the lantern hangs from it lower down, beside the arm and
-        // a little toward the eye, so it is seen and not below the screen
-        float[] out = eye.direction(inward * CHAIN_INWARD, CHAIN_UP, CHAIN_FORWARD);
-        float[] at = eye.direction(inward * LANTERN_INWARD, LANTERN_UP, LANTERN_FORWARD);
-        float[] chainTop = { hand[0] + out[0], hand[1] + out[1], hand[2] + out[2] };
-        float[] handle = { hand[0] + at[0], hand[1] + at[1], hand[2] + at[2] };
+        // toward the middle of the screen (to the right in the left hand, to the left in the right hand), up and
+        // toward the eye
+        float[] at = eye.direction(eye.mirrored() ? LANTERN_INWARD : -LANTERN_INWARD, LANTERN_UP, LANTERN_FORWARD);
 
         HoldingArm.render(player);
         // the items texture back for what the item renderer draws next
         Minecraft.getMinecraft()
             .getTextureManager()
             .bindTexture(TextureMap.locationItemsTexture);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        Chain.draw(chainTop, handle);
 
-        GL11.glTranslatef(handle[0], handle[1], handle[2]);
+        GL11.glTranslatef(hand[0] + at[0], hand[1] + at[1], hand[2] + at[2]);
         GL11.glScalef(LANTERN_ON_HAND_SCALE, LANTERN_ON_HAND_SCALE, LANTERN_ON_HAND_SCALE);
         LanternSwing.hang(player, offhand, time);
+        GL11.glTranslatef(0, ON_HAND_SINK, 0);
     }
 
     private static CompanionModel model() {
