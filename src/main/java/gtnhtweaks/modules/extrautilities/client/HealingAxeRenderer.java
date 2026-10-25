@@ -183,7 +183,7 @@ public final class HealingAxeRenderer implements IItemRenderer {
                 if (lantern) {
                     GL11.glTranslatef(0, LANTERN_HELD_Y, 0);
                     GL11.glScalef(LANTERN_SCALE, LANTERN_SCALE, LANTERN_SCALE);
-                    LanternSwing.hang(entity, offhand, time);
+                    LanternSwing.hang(entity, offhand, time, false, 0);
                 }
                 break;
             case EQUIPPED_FIRST_PERSON:
@@ -226,7 +226,7 @@ public final class HealingAxeRenderer implements IItemRenderer {
                     if (lantern) {
                         // hanging by its handle from where the top of the item is
                         GL11.glTranslatef(0, 0.5F, 0);
-                        LanternSwing.hang(entity, offhand, time);
+                        LanternSwing.hang(entity, offhand, time, true, 0);
                     }
                 }
                 break;
@@ -272,7 +272,7 @@ public final class HealingAxeRenderer implements IItemRenderer {
         GL11.glScalef(LANTERN_ON_HAND_SCALE, LANTERN_ON_HAND_SCALE, LANTERN_ON_HAND_SCALE);
         // the arm is beside the lantern toward the edge of the screen: to the left of the left hand, the right of the
         // right hand
-        LanternSwing.hang(player, offhand, time, offhand ? -1 : 1);
+        LanternSwing.hang(player, offhand, time, true, offhand ? -1 : 1);
         GL11.glTranslatef(0, ON_HAND_SINK, 0);
     }
 
