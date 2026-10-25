@@ -277,6 +277,8 @@ public final class HealingAxeRenderer implements IItemRenderer {
                 return SlimeJarModel.INSTANCE;
             case LANTERN:
                 return LanternModel.INSTANCE;
+            case PEASHOOTER:
+                return PeashooterModel.INSTANCE;
             default:
                 return PottedPlantModel.INSTANCE;
         }

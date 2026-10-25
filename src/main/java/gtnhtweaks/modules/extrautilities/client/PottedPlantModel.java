@@ -33,7 +33,7 @@ public final class PottedPlantModel implements CompanionModel {
     private static final int RIM = 0xCF7446;
     private static final int SOIL = 0x4A2F1F;
     private static final int SOIL_DARK = 0x372215;
-    private static final int STEM = 0x3E8E3A;
+    static final int STEM = 0x3E8E3A;
     private static final int LEAF = 0x5DBB4A;
     private static final int LEAF_RIB = 0x3F8F35;
     private static final int LEAF_DRY = 0xD1A73A;
@@ -48,7 +48,7 @@ public final class PottedPlantModel implements CompanionModel {
     private static final int SLEEP_Z = 0xE6EEFF;
     private static final int WATER = 0x7FB8FF;
 
-    private static final float SOIL_Y = -0.15F;
+    static final float SOIL_Y = -0.15F;
     private static final float SEGMENT = 0.11F;
     private static final int SEGMENTS = 3;
     private static final float GROUND_Y = -0.5F;
@@ -86,7 +86,8 @@ public final class PottedPlantModel implements CompanionModel {
 
     // ---- pot ----
 
-    private static void drawPot() {
+    /** The clay pot with its soil, the top of the soil at {@link #SOIL_Y}. Also the pot of the peashooter. */
+    static void drawPot() {
         box(-0.17F, -0.5F, -0.17F, 0.17F, -0.44F, 0.17F, POT_FOOT);
         box(-0.2F, -0.44F, -0.2F, 0.2F, -0.22F, 0.2F, POT);
         box(-0.205F, -0.36F, -0.205F, 0.205F, -0.33F, 0.205F, POT_BAND);
@@ -204,7 +205,7 @@ public final class PottedPlantModel implements CompanionModel {
     }
 
     /** A leaf lying flat, from its stalk at the origin along +x. */
-    private static void leaf(int color) {
+    static void leaf(int color) {
         box(0, -0.007F, -0.01F, 0.03F, 0.007F, 0.01F, mix(color, STEM, 0.4F));
         box(0.025F, -0.006F, -0.032F, 0.115F, 0.006F, 0.032F, color);
         box(0.04F, -0.006F, -0.04F, 0.095F, 0.006F, 0.04F, color);

@@ -25,7 +25,9 @@ public final class ExtraUtilitiesModule extends TweakModule {
         /** A slime in a glass jar. */
         SLIME,
         /** An iron lantern with a fire spirit, hanging from the hand. */
-        LANTERN
+        LANTERN,
+        /** A peashooter in the clay pot, shooting peas. */
+        PEASHOOTER
     }
 
     public static Companion companion = Companion.PLANT;
@@ -58,7 +60,8 @@ public final class ExtraUtilitiesModule extends TweakModule {
                             + "AQUARIUM: a glass tank with a goldfish swimming round, seaweed and bubbles.\n"
                             + "SLIME: a slime in a jar, hopping about and bumping the lid.\n"
                             + "LANTERN: an iron lantern with a fire spirit in it, hanging from the hand and swinging "
-                            + "as you turn and walk",
+                            + "as you turn and walk.\n"
+                            + "PEASHOOTER: a peashooter in the clay pot, shooting a pea every few seconds",
                         names)
                     .trim()
                     .toUpperCase(Locale.ROOT));
