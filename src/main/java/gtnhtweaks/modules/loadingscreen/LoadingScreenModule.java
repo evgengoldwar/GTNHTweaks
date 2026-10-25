@@ -32,9 +32,11 @@ public final class LoadingScreenModule extends TweakModule {
 
     public static boolean wall = true;
     public static boolean wallModBlocks = true;
+    public static float wallModBlockShare = 0.6F;
     public static int wallRows = 9;
     public static float wallVeil = 0.7F;
     public static boolean wallCollapse = true;
+    public static float wallCollapseSpeed = 1F;
     public static boolean wallCollapseSound = true;
 
     public static boolean replaceVanillaScreen = true;
@@ -74,28 +76,49 @@ public final class LoadingScreenModule extends TweakModule {
 
         config.addCustomCategoryComment(
             CATEGORY_WALL,
-            "A wall of vanilla and mod blocks that is built behind the loading screen while the game loads");
-        wall = config.getBoolean("enabled", CATEGORY_WALL, wall, "Build the wall of blocks behind the loading screen");
+            "A wall of vanilla and mod blocks that is built behind the loading screen while the game loads, "
+                + "then crumbles over the main menu. The wall settings apply from the next launch, "
+                + "the crumbling ones at once");
+        for (String old : new String[] { "enabled", "veil", "collapse", "collapseSound" }) {
+            removeKey(config, CATEGORY_WALL, old);
+        }
+        wall = config.getBoolean("buildWall", CATEGORY_WALL, wall, "Build the wall of blocks behind the loading screen");
         wallModBlocks = config.getBoolean(
             "modBlocks",
             CATEGORY_WALL,
             wallModBlocks,
             "Mix in block textures of the mods in the mods folder, not only vanilla blocks");
+        wallModBlockShare = config.getInt(
+            "modBlockShare",
+            CATEGORY_WALL,
+            Math.round(wallModBlockShare * 100),
+            0,
+            100,
+            "Share of mod blocks in the wall, in percent; the rest are vanilla blocks") / 100F;
         wallRows = config.getInt("rows", CATEGORY_WALL, wallRows, 4, 30, "Rows of blocks that fill the screen height");
         wallVeil = config.getInt(
-            "veil",
+            "textVeil",
             CATEGORY_WALL,
             Math.round(wallVeil * 100),
             0,
             100,
-            "How much the background color covers the wall, in percent, so the text stays readable") / 100F;
+            "How much the background color covers the wall while loading, in percent, so the text stays readable")
+            / 100F;
         wallCollapse = config.getBoolean(
-            "collapse",
+            "crumbleAtEnd",
             CATEGORY_WALL,
             wallCollapse,
-            "When the game has loaded, fade the text out and let the wall crumble down, uncovering the main menu");
+            "When the game has loaded, fade the text out and let the wall crumble down, uncovering the main menu. "
+                + "Off: the loading screen just ends as before");
+        wallCollapseSpeed = config.getInt(
+            "crumbleSpeed",
+            CATEGORY_WALL,
+            Math.round(wallCollapseSpeed * 100),
+            25,
+            400,
+            "Speed of the end animation, in percent: 200 is twice as fast") / 100F;
         wallCollapseSound = config
-            .getBoolean("collapseSound", CATEGORY_WALL, wallCollapseSound, "Play a sound when the wall crumbles");
+            .getBoolean("crumbleSound", CATEGORY_WALL, wallCollapseSound, "Play a sound when the wall crumbles");
 
         config.addCustomCategoryComment(CATEGORY_INTEGRATION, "Which loading screens are replaced");
         replaceVanillaScreen = config.getBoolean(
@@ -145,7 +168,8 @@ public final class LoadingScreenModule extends TweakModule {
         if (showLoadTimeInMainMenu) {
             MinecraftForge.EVENT_BUS.register(new MainMenuLoadTimeOverlay());
         }
-        if (wall && wallCollapse) {
+        if (wall) {
+            // registered even with crumbling off, so it can be switched on and off in game
             FMLCommonHandler.instance()
                 .bus()
                 .register(new WallCollapse());

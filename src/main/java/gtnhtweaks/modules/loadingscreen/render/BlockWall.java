@@ -116,8 +116,12 @@ final class BlockWall {
         while (laid < kept && lay(0)) {}
     }
 
-    /** Starts the collapse: blocks break away from the middle outwards and fall off the screen. */
-    static void collapse(long now) {
+    /**
+     * Starts the collapse: blocks break away from the middle outwards and fall off the screen.
+     *
+     * @param speed 1 for the normal speed, 2 for twice as fast
+     */
+    static void collapse(long now, float speed) {
         if (collapseAt >= 0) return;
         collapseAt = now;
         int cells = order.length;
@@ -125,17 +129,18 @@ final class BlockWall {
         velocityX = new float[cells];
         velocityY = new float[cells];
         spin = new float[cells];
-        gravity = layoutHeight * 3.2F;
+        gravity = layoutHeight * 3.2F * speed * speed;
         float centerX = layoutWidth / 2F, centerY = layoutHeight * 0.55F;
         float reach = (float) Math.hypot(Math.max(centerX, layoutWidth - centerX), Math.max(centerY, layoutHeight - centerY));
         for (int cell = 0; cell < cells; cell++) {
             float dx = x(cell) + size / 2 - centerX, dy = y(cell) + size / 2 - centerY;
             float distance = (float) Math.hypot(dx, dy) / reach;
-            delay[cell] = distance * 650 + random.nextFloat() * 220;
+            delay[cell] = (distance * 650 + random.nextFloat() * 220) / speed;
             float push = (1.2F - distance) * layoutHeight;
-            velocityX[cell] = dx / reach * layoutHeight * 0.9F + (random.nextFloat() - 0.5F) * layoutHeight * 0.35F;
-            velocityY[cell] = -random.nextFloat() * push * 0.6F;
-            spin[cell] = (random.nextFloat() - 0.5F) * 9F;
+            velocityX[cell] = (dx / reach * layoutHeight * 0.9F + (random.nextFloat() - 0.5F) * layoutHeight * 0.35F)
+                * speed;
+            velocityY[cell] = -random.nextFloat() * push * 0.6F * speed;
+            spin[cell] = (random.nextFloat() - 0.5F) * 9F * speed;
         }
     }
 

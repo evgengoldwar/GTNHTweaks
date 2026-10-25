@@ -32,6 +32,7 @@ public final class LoadingScreenRenderer {
     private static List<ProgressLine> lastLines = Collections.emptyList();
     private static float wallProgress;
     private static long fadeAt = -1, collapseAt = -1;
+    private static int fadeMs = FADE_MS;
 
     private LoadingScreenRenderer() {}
 
@@ -67,24 +68,36 @@ public final class LoadingScreenRenderer {
     public static synchronized boolean renderOutro(int width, int height) {
         long now = System.currentTimeMillis();
         if (collapseAt < 0) {
-            if (!LoadingScreenModule.wall || BlockWall.isEmpty()) return false;
-            fadeAt = BlockWall.fill(width, height, LoadingScreenModule.wallRows, now, FILL_MS) + 100;
-            collapseAt = fadeAt + FADE_MS + 150;
+            if (!LoadingScreenModule.wall || !LoadingScreenModule.wallCollapse || BlockWall.isEmpty()) {
+                forgetWall();
+                return false;
+            }
+            float speed = LoadingScreenModule.wallCollapseSpeed;
+            fadeAt = BlockWall.fill(width, height, LoadingScreenModule.wallRows, now, Math.round(FILL_MS / speed))
+                + Math.round(100 / speed);
+            fadeMs = Math.round(FADE_MS / speed);
+            collapseAt = fadeAt + fadeMs + Math.round(150 / speed);
         }
-        if (now >= collapseAt) BlockWall.collapse(now);
+        if (now >= collapseAt) BlockWall.collapse(now, LoadingScreenModule.wallCollapseSpeed);
         draw(width, height, (w, h) -> {
             if (now < collapseAt) {
                 drawScreen(w, h, lastLines, LoadingScreenModule.style, now);
                 // the finished wall covers the whole screen, drawing it over the text fades the text out
-                BlockWall.draw(now, Math.max(0F, Math.min(1F, (now - fadeAt) / (float) FADE_MS)));
+                BlockWall.draw(now, Math.max(0F, Math.min(1F, (now - fadeAt) / (float) fadeMs)));
             } else {
                 BlockWall.draw(now, 1F);
             }
         });
         if (now < collapseAt || BlockWall.isStanding(now)) return true;
-        BlockWall.reset();
-        dispose();
+        forgetWall();
         return false;
+    }
+
+    /** Frees the wall and its textures. Must be called on the main thread once the game has started. */
+    private static void forgetWall() {
+        BlockWall.reset();
+        WallTextures.clear();
+        dispose();
     }
 
     /** Whether the wall has started to crumble. */

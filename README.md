@@ -57,12 +57,14 @@
 | `general/showPreviousLaunch` | `true` | время предыдущего запуска |
 | `general/showMemory` | `true` | использование памяти |
 | `general/showLoadTimeInMainMenu` | `true` | время загрузки в главном меню |
-| `wall/enabled` | `true` | стена из блоков на фоне экрана загрузки |
+| `wall/buildWall` | `true` | стена из блоков на фоне экрана загрузки |
 | `wall/modBlocks` | `true` | брать в стену и блоки модов, а не только ванильные |
+| `wall/modBlockShare` | `60` | доля блоков модов в стене, в процентах |
 | `wall/rows` | `9` | сколько рядов блоков по высоте экрана (4–30) |
-| `wall/veil` | `70` | насколько фон перекрывает стену, в процентах, чтобы текст читался |
-| `wall/collapse` | `true` | в конце загрузки текст гаснет, а стена рушится, открывая главное меню |
-| `wall/collapseSound` | `true` | звук обрушения стены |
+| `wall/textVeil` | `70` | насколько фон перекрывает стену во время загрузки, в процентах, чтобы текст читался |
+| `wall/crumbleAtEnd` | `true` | в конце загрузки текст гаснет, а стена рушится, открывая главное меню |
+| `wall/crumbleSpeed` | `100` | скорость финальной анимации в процентах (25–400, `200` — вдвое быстрее) |
+| `wall/crumbleSound` | `true` | звук обрушения стены |
 | `integration/replaceVanillaScreen` | `true` | заменять экран с логотипом Mojang |
 | `integration/replaceForgeSplash` | `true` | рисовать поверх сплэша Forge |
 | `integration/drawOverBetterLoadingScreen` | `true` | рисовать поверх BetterLoadingScreen |

@@ -82,12 +82,12 @@ final class WallTextures {
         loader.start();
     }
 
-    /** A random texture id for a new block, mostly from mods once there are some, or -1 if none is read yet. */
+    /** A random texture id for a new block, a configured share of them from mods, or -1 if none is read yet. */
     static synchronized int pick(Random random) {
         int vanillaCount = vanilla.size(), modCount = mods.size();
         if (vanillaCount + modCount == 0) return -1;
         // Even ids are vanilla textures, odd ones mod textures
-        if (modCount > 0 && (vanillaCount == 0 || random.nextFloat() < 0.6F)) return random.nextInt(modCount) * 2 + 1;
+        if (modCount > 0 && (vanillaCount == 0 || random.nextFloat() < LoadingScreenModule.wallModBlockShare)) return random.nextInt(modCount) * 2 + 1;
         return random.nextInt(vanillaCount) * 2;
     }
 
@@ -118,6 +118,13 @@ final class WallTextures {
                 entry.texture = -1;
             }
         }
+    }
+
+    /** Frees the GL textures and forgets the pixels; nothing draws the wall anymore. */
+    static synchronized void clear() {
+        dispose();
+        vanilla.clear();
+        mods.clear();
     }
 
     private static void load() {
