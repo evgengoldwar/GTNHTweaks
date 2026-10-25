@@ -45,11 +45,10 @@ public final class HealingAxeRenderer implements IItemRenderer {
     /** The lantern hangs a little smaller, from a little above the middle of the held block in third person. */
     private static final float LANTERN_SCALE = 0.8F, LANTERN_HELD_Y = 0.2F;
     /**
-     * Size of the lantern on the hand, and where it hangs from the hand, in the eye space: a little toward the middle
-     * of the screen and toward the eye, and so much higher than the hand that it is seen whole, beside the top of the
-     * arm.
+     * Size of the lantern on the hand, and where it hangs from the hand, in the eye space: beside the end of the arm,
+     * on the side of the middle of the screen, a little toward the eye, the arm hiding only its edge.
      */
-    private static final float LANTERN_ON_HAND_SCALE = 0.3F, LANTERN_INWARD = 0.04F, LANTERN_UP = 0.2F,
+    private static final float LANTERN_ON_HAND_SCALE = 0.3F, LANTERN_INWARD = 0.25F, LANTERN_UP = 0.07F,
         LANTERN_FORWARD = 0.1F;
 
     /** The plane the arm is cut by, set in the space of the companion. */
@@ -252,8 +251,8 @@ public final class HealingAxeRenderer implements IItemRenderer {
 
     /**
      * The bare arm of vanilla, just where vanilla has it, so it is the size of the other, empty hand, and the lantern
-     * hanging above its hand, beside the top of the arm. Where the arm is in front of the lantern it hides it. Leaves
-     * the space of the lantern.
+     * hanging beside the end of the arm. Where the arm is in front of the lantern it hides it. Leaves the space of the
+     * lantern.
      */
     private static void holdLantern(AbstractClientPlayer player, boolean offhand, double time) {
         EyeSpace eye = EyeSpace.current();
