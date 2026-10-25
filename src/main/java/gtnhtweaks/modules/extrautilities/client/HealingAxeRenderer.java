@@ -46,11 +46,11 @@ public final class HealingAxeRenderer implements IItemRenderer {
     private static final float LANTERN_SCALE = 0.8F, LANTERN_HELD_Y = 0.2F;
     /**
      * Size of the lantern on the hand, and where it hangs from the hand, in the eye space: beside the end of the arm,
-     * on the side of the middle of the screen, a little lower than the hand, as far from the eye as the arm, so it is
-     * not in front of it.
+     * on the side of the middle of the screen, a little farther from the eye than the arm, so the arm is in front of it
+     * where they meet.
      */
-    private static final float LANTERN_ON_HAND_SCALE = 0.4F, LANTERN_INWARD = 0.28F, LANTERN_UP = -0.03F,
-        LANTERN_FORWARD = 0;
+    private static final float LANTERN_ON_HAND_SCALE = 0.34F, LANTERN_INWARD = 0.21F, LANTERN_UP = 0.07F,
+        LANTERN_FORWARD = -0.05F;
 
     /** The plane the arm is cut by, set in the space of the companion. */
     private static final DoubleBuffer BOTTOM = BufferUtils.createDoubleBuffer(4);
