@@ -94,8 +94,19 @@ public final class ItemPhysicsRenderer {
      */
     private static final float TUMBLE_SPEED = 0.15F;
     private static final float TUMBLE_AIR_TICKS = 6F;
-    /** Part per tick of what is left of a correction of the server that the drawn item moves on. */
+    /** Part per tick of what is left of a place taken from the server that the drawn item moves on. */
     private static final float GLIDE_RATE = 0.3F;
+    /**
+     * How far, along each axis, the server may put an item lying on the client before the client takes that place.
+     * Closer, the item stays where it fell on the client: the server picks it up from its own place anyway, and the
+     * player picks up items in a box one block wider than the player.
+     */
+    private static final double KEEP_DISTANCE = 0.75;
+    private static final double KEEP_HEIGHT = 0.6;
+    /** Speeds sent by the server that an item lying on the client does not take: the small moves of its own landing. */
+    private static final double KEEP_SPEED = 0.15;
+    /** Farther moves are teleports: taken at once, without gliding. */
+    private static final double TELEPORT_DISTANCE = 2;
     /** Most copies of a pile: the layout is made for all of them, so a pile keeps its look when it grows. */
     private static final int MAX_COPIES = 5;
 
@@ -103,6 +114,7 @@ public final class ItemPhysicsRenderer {
     private static final Random RANDOM = new Random();
     private static final List<AxisAlignedBB> BOXES = new ArrayList<>();
     private static RenderBlocks renderBlocks;
+    private static double placeX, placeY, placeZ;
 
     private ItemPhysicsRenderer() {}
 
@@ -146,12 +158,7 @@ public final class ItemPhysicsRenderer {
             state.layout(entity, kind, copies, scale);
         }
         float dt = state.update(entity, partialTicks, solid ? 90F : 180F);
-        state.glide(
-            entity,
-            x + RenderManager.renderPosX,
-            y + RenderManager.renderPosY,
-            z + RenderManager.renderPosZ,
-            dt);
+        state.glide(dt);
         x += state.glideX;
         y += state.glideY;
         z += state.glideZ;
@@ -203,6 +210,63 @@ public final class ItemPhysicsRenderer {
         textures.bindTexture(atlas);
         TextureUtil.func_147945_b();
         return true;
+    }
+
+    /**
+     * Called when the server sends where a dropped item is, before the client moves it there.
+     * <p>
+     * The client moves a dropped item on its own and the server corrects it now and then, so an item that has just
+     * landed jumps to another place, or is put a hair above the ground and falls again. An item lying on the client
+     * keeps its place when the server puts it close by.
+     *
+     * @return true to keep the item where it is
+     */
+    public static boolean keepPlace(EntityItem entity, double x, double y, double z) {
+        if (isLying(entity) && Math.abs(x - entity.posX) <= KEEP_DISTANCE
+            && Math.abs(z - entity.posZ) <= KEEP_DISTANCE
+            && Math.abs(y - entity.posY) <= KEEP_HEIGHT) {
+            return true;
+        }
+        placeX = entity.posX;
+        placeY = entity.posY;
+        placeZ = entity.posZ;
+        return false;
+    }
+
+    /**
+     * Called after the item took a place sent by the server: the drawn item glides there instead of jumping. The
+     * last place of the tick moves along, so the entity is not drawn moving there over a tick either.
+     */
+    public static void tookPlace(EntityItem entity) {
+        State state = STATES.get(entity);
+        if (state == null) return;
+        double dx = entity.posX - placeX, dy = entity.posY - placeY, dz = entity.posZ - placeZ;
+        if (dx * dx + dy * dy + dz * dz > TELEPORT_DISTANCE * TELEPORT_DISTANCE) {
+            state.glideX = state.glideY = state.glideZ = 0;
+            return;
+        }
+        entity.lastTickPosX += dx;
+        entity.lastTickPosY += dy;
+        entity.lastTickPosZ += dz;
+        entity.prevPosX += dx;
+        entity.prevPosY += dy;
+        entity.prevPosZ += dz;
+        state.glideX -= dx;
+        state.glideY -= dy;
+        state.glideZ -= dz;
+    }
+
+    /**
+     * Called when the server sends the speed of a dropped item.
+     *
+     * @return true to keep an item lying on the client still, instead of the small moves of the landing on the server
+     */
+    public static boolean keepSpeed(EntityItem entity, double motionX, double motionY, double motionZ) {
+        return isLying(entity) && motionX * motionX + motionY * motionY + motionZ * motionZ < KEEP_SPEED * KEEP_SPEED;
+    }
+
+    private static boolean isLying(EntityItem entity) {
+        return entity.onGround && entity.motionX * entity.motionX + entity.motionZ * entity.motionZ < 1.0E-4;
     }
 
     /** Copies drawn for a stack, as in vanilla. */
@@ -366,10 +430,8 @@ public final class ItemPhysicsRenderer {
         float airTicks;
         float time = Float.NaN;
 
-        /** What is left to move of the last correction of the server, in blocks. */
+        /** What is left to move of the last place taken from the server, in blocks. */
         double glideX, glideY, glideZ;
-        double lastX = Double.NaN, lastY, lastZ;
-        boolean wasResting;
 
         double pushX, pushZ, targetPushX, targetPushZ;
         boolean pushSet;
@@ -481,33 +543,8 @@ public final class ItemPhysicsRenderer {
             return dt;
         }
 
-        /**
-         * Smooths the corrections of the server. The client moves a dropped item on its own and the server sends where
-         * the item really is now and then, so an item that has just landed jumps to another place. While the item lies
-         * still, such a jump is taken back and the drawn item moves on to the new place over a few ticks.
-         *
-         * @param x where the entity is drawn this frame, in the world
-         * @param y where the entity is drawn this frame, in the world
-         * @param z where the entity is drawn this frame, in the world
-         */
-        void glide(EntityItem entity, double x, double y, double z, float dt) {
-            boolean resting = entity.onGround
-                && entity.motionX * entity.motionX + entity.motionZ * entity.motionZ < 1.0E-4;
-            if (!Double.isNaN(lastX)) {
-                double dx = x - lastX, dy = y - lastY, dz = z - lastZ;
-                if (dx * dx + dy * dy + dz * dz > 4) {
-                    // teleported: no gliding over that
-                    glideX = glideY = glideZ = 0;
-                } else if (resting && wasResting) {
-                    glideX -= dx;
-                    glideY -= dy;
-                    glideZ -= dz;
-                }
-            }
-            lastX = x;
-            lastY = y;
-            lastZ = z;
-            wasResting = resting;
+        /** The drawn item moves on to the last place taken from the server. */
+        void glide(float dt) {
             double keep = Math.exp(-dt * GLIDE_RATE);
             glideX = clamp(glideX * keep, 1.5);
             glideY = clamp(glideY * keep, 1.5);

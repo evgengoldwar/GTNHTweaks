@@ -66,7 +66,7 @@ public enum Mixins implements IMixins {
     // Item physics module
     ITEM_PHYSICS(new MixinBuilder("Dropped items lie on the ground and tumble when they fall").setPhase(Phase.EARLY)
         .setApplyIf(ItemPhysicsModule.INSTANCE::isEnabled)
-        .addClientMixins("itemphysics.MixinRenderItem_ItemPhysics")),
+        .addClientMixins("itemphysics.MixinRenderItem_ItemPhysics", "itemphysics.MixinEntity_ItemPhysics")),
 
     // GregTech module
     GREGTECH_HIDE_CABLE_INSULATION(
