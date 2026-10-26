@@ -18,7 +18,7 @@ public final class ItemPhysicsModule extends TweakModule {
     public static boolean tumbleInAir = true;
     /** Speed of the tumbling, 1 is the normal one. */
     public static float tumbleSpeed = 1F;
-    /** A stack lies as a pile of up to five items, like the vanilla stacks of up to five copies. */
+    /** A stack lies as a pile of up to five flat items or three blocks, on top of each other. */
     public static boolean piles = true;
     /** Items next to a wall are moved away from it, so they do not go into the blocks around them. */
     public static boolean keepOutOfBlocks = true;
@@ -47,7 +47,8 @@ public final class ItemPhysicsModule extends TweakModule {
             "piles",
             CATEGORY_ITEMS,
             true,
-            "A stack lies as a pile of up to five items: flat items on top of each other, blocks side by side");
+            "A stack lies as a pile of up to five flat items or three blocks on top of each other, each moved and "
+                + "turned a bit");
         keepOutOfBlocks = config.getBoolean(
             "keepOutOfBlocks",
             CATEGORY_ITEMS,

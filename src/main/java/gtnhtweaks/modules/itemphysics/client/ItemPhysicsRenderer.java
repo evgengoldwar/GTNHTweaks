@@ -66,9 +66,13 @@ public final class ItemPhysicsRenderer {
     private static final float PILE_SPREAD = 0.12F;
     /** The items of a pile are turned by up to this many degrees from each other. */
     private static final float PILE_TURN = 25F;
-    /** How far the blocks of a pile lie from the middle: a bit more than half a block, so they do not overlap. */
-    private static final float BLOCK_GAP = 0.6F;
-    private static final float BLOCK_TURN = 8F;
+    /**
+     * Blocks of a pile lie one on top of the other like the flat items, a hair apart so their faces do not flicker,
+     * moved and turned a bit from the block under them.
+     */
+    private static final float BLOCK_STEP = 1.002F;
+    private static final float BLOCK_SPREAD = 0.18F;
+    private static final float BLOCK_TURN = 35F;
     /**
      * A flat item of a mod renderer is drawn as the vanilla dropped items: from -0.25 to 0.75 high and about 0.04 thick
      * on both sides of its middle.
@@ -146,7 +150,7 @@ public final class ItemPhysicsRenderer {
             kind = block3D && stack.getItemSpriteNumber() == 0 ? BLOCK : ITEM;
         }
         boolean solid = kind == BLOCK || kind == CUSTOM_3D;
-        int copies = ItemPhysicsModule.piles ? copiesOf(stack.stackSize) : 1;
+        int copies = !ItemPhysicsModule.piles ? 1 : solid ? blockCopiesOf(stack.stackSize) : copiesOf(stack.stackSize);
         float scale = solid ? blockScale(block) : 0.5F;
 
         State state = STATES.get(entity);
@@ -157,7 +161,8 @@ public final class ItemPhysicsRenderer {
         if (state.kind != kind || state.copies != copies || state.scale != scale) {
             state.layout(entity, kind, copies, scale);
         }
-        float dt = state.update(entity, partialTicks, solid ? 90F : 180F);
+        // a lone block lies on any face, a pile only right side up or upside down
+        float dt = state.update(entity, partialTicks, solid && copies == 1 ? 90F : 180F);
         state.glide(dt);
         x += state.glideX;
         y += state.glideY;
@@ -272,6 +277,11 @@ public final class ItemPhysicsRenderer {
     /** Copies drawn for a stack, as in vanilla. */
     private static int copiesOf(int size) {
         return size > 40 ? 5 : size > 20 ? 4 : size > 5 ? 3 : size > 1 ? 2 : 1;
+    }
+
+    /** Blocks drawn for a stack: at most three, so the pile does not grow into a tower. */
+    private static int blockCopiesOf(int size) {
+        return size > 20 ? 3 : size > 1 ? 2 : 1;
     }
 
     /** Scale of a dropped block, as in vanilla: crossed squares and the like are drawn twice as big. */
@@ -453,27 +463,13 @@ public final class ItemPhysicsRenderer {
             RANDOM.setSeed(Float.floatToIntBits(entity.hoverStart) * 31L);
             float localHeight;
             if (kind == BLOCK || kind == CUSTOM_3D) {
-                if (copies > 1) {
-                    // up to four side by side on the ground and the fifth on top of them
-                    float[][] places = { { -1, -1 }, { 1, 1 }, { 1, -1 }, { -1, 1 } };
-                    int ground = Math.min(copies, 4);
-                    float middleX = 0, middleZ = 0;
-                    for (int i = 0; i < ground; i++) {
-                        middleX += places[i][0] * BLOCK_GAP / ground;
-                        middleZ += places[i][1] * BLOCK_GAP / ground;
-                    }
-                    for (int i = 0; i < 4; i++) {
-                        offX[i] = places[i][0] * BLOCK_GAP - middleX;
-                        offZ[i] = places[i][1] * BLOCK_GAP - middleZ;
-                        turns[i] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_TURN;
-                    }
-                    offX[4] = -middleX;
-                    offZ[4] = -middleZ;
-                    // a hair above the blocks under it, so their faces do not flicker
-                    offY[4] = 1.002F;
-                    turns[4] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_TURN * 2F;
+                for (int i = 1; i < MAX_COPIES; i++) {
+                    offX[i] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_SPREAD;
+                    offZ[i] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_SPREAD;
+                    offY[i] = i * BLOCK_STEP;
+                    turns[i] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_TURN;
                 }
-                localHeight = copies == 5 ? 2.002F : 1F;
+                localHeight = (copies - 1) * BLOCK_STEP + 1F;
             } else {
                 for (int i = 1; i < MAX_COPIES; i++) {
                     offX[i] = (RANDOM.nextFloat() * 2F - 1F) * PILE_SPREAD;
@@ -499,7 +495,7 @@ public final class ItemPhysicsRenderer {
         /**
          * Moves the tilt on to the time of this frame.
          *
-         * @param restStep degrees between the sides the item can lie on: 180 for flat items, 90 for blocks
+         * @param restStep degrees between the sides the item can lie on: 180 for flat items and piles, 90 for a block
          * @return ticks since the last frame
          */
         float update(EntityItem entity, float partialTicks, float restStep) {
