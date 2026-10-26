@@ -1,9 +1,7 @@
 package gtnhtweaks.modules.bees.client;
 
-import static gtnhtweaks.common.model.Shapes.box;
 import static gtnhtweaks.common.model.Shapes.mix;
-
-import gtnhtweaks.common.model.Shapes;
+import static gtnhtweaks.modules.bees.client.BeeMesh.box;
 
 /**
  * What a bee wears on its face. Drawn in pixels from the middle of the face: x and y as on the body, the eyes at x =
@@ -52,12 +50,12 @@ enum FaceGear {
                     temple(side, 0x5A3E26);
                 }
                 box(-0.8F, 0.3F, 0, 0.8F, 0.8F, 0.4F, color);
-                boolean lit = Shapes.glow();
+                boolean lit = BeeMesh.glow();
                 float pulse = 0.25F + 0.2F * (float) Math.sin(time * 2.2);
                 for (int side = -1; side <= 1; side += 2) {
                     box(side * 2.1F - 1.0F, -0.5F, 0.3F, side * 2.1F + 1.0F, 1.5F, 0.35F, mix(lens, 0xFFFFFF, pulse));
                 }
-                Shapes.endGlow(lit);
+                BeeMesh.endGlow(lit);
                 break;
             }
             case MONOCLE:
@@ -120,7 +118,7 @@ enum FaceGear {
 
     /** The glass of the diving mask, drawn with what is translucent. */
     static void maskGlass() {
-        Shapes.box(-3.5F, -1.0F, 0.42F, 3.5F, 2.0F, 0.47F, 0xBFE4FF, 0.3F);
+        BeeMesh.box(-3.5F, -1.0F, 0.42F, 3.5F, 2.0F, 0.47F, 0xBFE4FF, 0.3F);
     }
 
     /** A frame of the given half sizes round (x, y), standing out of the face. */

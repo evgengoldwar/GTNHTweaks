@@ -4,6 +4,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -42,6 +43,10 @@ public final class BeeRenderer implements IItemRenderer {
     private static Entity lastDropped;
     private static long lastDroppedTime;
     private static int copy;
+
+    /** The facing of the bees in the slots, and when it was read. */
+    private static float[] slotFacing;
+    private static long slotFacingTime;
 
     /** Renderers the item had before, by the render type they handled. */
     private final Map<ItemRenderType, IItemRenderer> previous = new EnumMap<>(ItemRenderType.class);
@@ -180,9 +185,12 @@ public final class BeeRenderer implements IItemRenderer {
             default:
                 break;
         }
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        float[] facing = EyeSpace.current()
-            .facing(type != ItemRenderType.INVENTORY);
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        float[] facing = facing(type);
+        // in the hands the view bobs and sways: turning to it at once, the bee jittered
+        if (type == ItemRenderType.EQUIPPED || type == ItemRenderType.EQUIPPED_FIRST_PERSON) {
+            facing = bee.smoothFacing(facing[0], facing[1]);
+        }
         BeeModel.render(
             bee,
             time,
@@ -191,8 +199,30 @@ public final class BeeRenderer implements IItemRenderer {
             facing[1],
             BeesModule.accessories,
             BeesModule.carryProduct);
+        // the items texture back for what the item renderer draws next
+        Minecraft.getMinecraft()
+            .getTextureManager()
+            .bindTexture(TextureMap.locationItemsTexture);
         GL11.glPopMatrix();
         GL11.glPopAttrib();
+    }
+
+    /**
+     * The yaw and pitch that turn the face to the viewer. In the slots they are the same for every slot, read from the
+     * GL now and then rather than for each bee of a page of NEI: reading the GL stalls it.
+     */
+    private static float[] facing(ItemRenderType type) {
+        if (type != ItemRenderType.INVENTORY) {
+            return EyeSpace.current()
+                .facing(true);
+        }
+        long now = Minecraft.getSystemTime();
+        if (slotFacing == null || now - slotFacingTime > 500) {
+            slotFacing = EyeSpace.current()
+                .facing(false);
+            slotFacingTime = now;
+        }
+        return slotFacing;
     }
 
     /**

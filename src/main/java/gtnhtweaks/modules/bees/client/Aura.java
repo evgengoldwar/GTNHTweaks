@@ -1,17 +1,15 @@
 package gtnhtweaks.modules.bees.client;
 
-import static gtnhtweaks.common.model.Shapes.box;
-import static gtnhtweaks.common.model.Shapes.cube;
 import static gtnhtweaks.common.model.Shapes.frac;
 import static gtnhtweaks.common.model.Shapes.mix;
 import static gtnhtweaks.common.model.Shapes.rand;
-import static org.lwjgl.opengl.GL11.glPopMatrix;
-import static org.lwjgl.opengl.GL11.glPushMatrix;
-import static org.lwjgl.opengl.GL11.glRotatef;
-import static org.lwjgl.opengl.GL11.glScalef;
-import static org.lwjgl.opengl.GL11.glTranslatef;
-
-import gtnhtweaks.common.model.Shapes;
+import static gtnhtweaks.modules.bees.client.BeeMesh.box;
+import static gtnhtweaks.modules.bees.client.BeeMesh.cube;
+import static gtnhtweaks.modules.bees.client.BeeMesh.pop;
+import static gtnhtweaks.modules.bees.client.BeeMesh.push;
+import static gtnhtweaks.modules.bees.client.BeeMesh.rotate;
+import static gtnhtweaks.modules.bees.client.BeeMesh.scale;
+import static gtnhtweaks.modules.bees.client.BeeMesh.translate;
 
 /**
  * Little things around a bee: sparks, flakes, bubbles and so on. Drawn in pixels round the middle of its body, in the
@@ -59,7 +57,7 @@ enum Aura {
     void draw(double time, int seed) {
         switch (this) {
             case SPARKLES: {
-                boolean lit = Shapes.glow();
+                boolean lit = BeeMesh.glow();
                 for (int i = 0; i < 5; i++) {
                     double p = frac(time / (1.6 + rand(seed, 10 + i)) + rand(seed, 20 + i));
                     // a new place for every twinkle
@@ -67,29 +65,29 @@ enum Aura {
                     float s = (float) Math.sin(Math.PI * p) * 0.55F;
                     float x = around(seed, 30 + i * 7 + n, 7), y = around(seed, 31 + i * 7 + n, 6);
                     float z = around(seed, 32 + i * 7 + n, 7);
-                    glPushMatrix();
-                    glTranslatef(x, y, z);
-                    glRotatef((float) (time * 90), 0, 1, 0);
+                    push();
+                    translate(x, y, z);
+                    rotate((float) (time * 90), 0, 1, 0);
                     box(-s, -s * 0.3F, -s * 0.3F, s, s * 0.3F, s * 0.3F, 0xFFF6C8);
                     box(-s * 0.3F, -s, -s * 0.3F, s * 0.3F, s, s * 0.3F, 0xFFF6C8);
-                    glPopMatrix();
+                    pop();
                 }
-                Shapes.endGlow(lit);
+                BeeMesh.endGlow(lit);
                 break;
             }
             case FLAMES: {
-                boolean lit = Shapes.glow();
+                boolean lit = BeeMesh.glow();
                 for (int i = 0; i < 5; i++) {
                     double p = frac(time / (1.1 + rand(seed, 10 + i) * 0.6) + rand(seed, 20 + i));
                     float x = around(seed, 30 + i, 4) + (float) Math.sin(time * 4 + i) * 0.4F;
                     float z = around(seed, 40 + i, 5);
                     float s = 0.45F * (float) (1 - p);
-                    glPushMatrix();
-                    glTranslatef(x, -1 + (float) p * 9, z);
+                    push();
+                    translate(x, -1 + (float) p * 9, z);
                     cube(s, s, s, mix(0xFFE36A, 0xFF4A10, (float) p));
-                    glPopMatrix();
+                    pop();
                 }
-                Shapes.endGlow(lit);
+                BeeMesh.endGlow(lit);
                 break;
             }
             case SNOW:
@@ -97,12 +95,12 @@ enum Aura {
                     double p = frac(time / (2.6 + rand(seed, 10 + i)) + rand(seed, 20 + i));
                     float x = around(seed, 30 + i, 7) + (float) Math.sin(time * 1.5 + i) * 0.6F;
                     float z = around(seed, 40 + i, 7);
-                    glPushMatrix();
-                    glTranslatef(x, 8 - (float) p * 14, z);
-                    glRotatef((float) (time * 60 + i * 40), 0, 1, 0);
+                    push();
+                    translate(x, 8 - (float) p * 14, z);
+                    rotate((float) (time * 60 + i * 40), 0, 1, 0);
                     box(-0.4F, -0.12F, -0.12F, 0.4F, 0.12F, 0.12F, 0xFFFFFF);
                     box(-0.12F, -0.4F, -0.12F, 0.12F, 0.4F, 0.12F, 0xFFFFFF);
-                    glPopMatrix();
+                    pop();
                 }
                 break;
             case BUBBLES:
@@ -111,7 +109,7 @@ enum Aura {
                     float x = around(seed, 30 + i, 5) + (float) Math.sin(time * 3 + i) * 0.4F;
                     float z = 3 + around(seed, 40 + i, 2);
                     float s = 0.3F + 0.3F * (float) p;
-                    Shapes.box(
+                    BeeMesh.box(
                         x - s,
                         -2 + (float) p * 10 - s,
                         z - s,
@@ -126,50 +124,50 @@ enum Aura {
                 for (int i = 0; i < 3; i++) {
                     double p = frac(time / 2.4 + i / 3.0 + rand(seed, 10));
                     int c = new int[] { 0xFF5A8A, 0x5AC8FF, 0xFFD23C }[i];
-                    glPushMatrix();
-                    glTranslatef(
+                    push();
+                    translate(
                         around(seed, 30 + i, 6) + (float) Math.sin(time * 2 + i) * 0.8F,
                         2 + (float) p * 7,
                         around(seed, 40 + i, 4));
                     float s = (float) Math.min(1, Math.min(p * 5, (1 - p) * 4));
-                    glScalef(s, s, s);
+                    scale(s, s, s);
                     box(-0.5F, -0.4F, -0.2F, 0.4F, 0.3F, 0.2F, c);
                     box(0.15F, 0.3F, -0.1F, 0.4F, 2.0F, 0.1F, c);
                     box(0.4F, 1.5F, -0.1F, 1.0F, 2.0F, 0.1F, c);
-                    glPopMatrix();
+                    pop();
                 }
                 break;
             case ENDER: {
-                boolean lit = Shapes.glow();
+                boolean lit = BeeMesh.glow();
                 for (int i = 0; i < 6; i++) {
                     double p = frac(time / (1.4 + rand(seed, 10 + i)) + rand(seed, 20 + i));
                     float r = 8 * (float) (1 - p);
                     double a = rand(seed, 30 + i) * Math.PI * 2 + time * 0.4;
                     float s = 0.35F * (float) Math.sin(Math.PI * p);
-                    glPushMatrix();
-                    glTranslatef(
+                    push();
+                    translate(
                         (float) Math.sin(a) * r,
                         around(seed, 40 + i, 5) * (float) (1 - p),
                         (float) Math.cos(a) * r);
                     cube(s, s, s, i % 2 == 0 ? 0xCC4BFF : 0x7A2ACC);
-                    glPopMatrix();
+                    pop();
                 }
-                Shapes.endGlow(lit);
+                BeeMesh.endGlow(lit);
                 break;
             }
             case RADIATION: {
-                boolean lit = Shapes.glow();
+                boolean lit = BeeMesh.glow();
                 for (int i = 0; i < 6; i++) {
                     double a = time * (1.2 + rand(seed, 10 + i)) + rand(seed, 20 + i) * Math.PI * 2;
                     float r = 5.5F + (float) rand(seed, 30 + i) * 2;
                     float y = around(seed, 40 + i, 4) + (float) Math.sin(time * 2 + i) * 1.2F;
                     float s = 0.25F + 0.15F * (float) Math.sin(time * 7 + i * 2);
-                    glPushMatrix();
-                    glTranslatef((float) Math.sin(a) * r, y, (float) Math.cos(a) * r);
+                    push();
+                    translate((float) Math.sin(a) * r, y, (float) Math.cos(a) * r);
                     cube(s, s, s, 0x8CFF3C);
-                    glPopMatrix();
+                    pop();
                 }
-                Shapes.endGlow(lit);
+                BeeMesh.endGlow(lit);
                 break;
             }
             case SPARKS: {
@@ -180,33 +178,33 @@ enum Aura {
                     double p = frac(u);
                     if (p > 0.35) continue;
                     int n = (int) Math.floor(u);
-                    boolean lit = Shapes.glow();
-                    glPushMatrix();
-                    glTranslatef(
+                    boolean lit = BeeMesh.glow();
+                    push();
+                    translate(
                         around(seed, 30 + n * 3 + i, 6),
                         1 + around(seed, 31 + n * 3 + i, 4),
                         around(seed, 32 + n * 3 + i, 6));
-                    glRotatef((float) rand(seed, 33 + n) * 360, 0, 1, 0);
+                    rotate((float) rand(seed, 33 + n) * 360, 0, 1, 0);
                     int c = mix(0xFFFFFF, 0x7AD8FF, (float) p * 2);
                     box(-0.15F, 0.8F, -0.15F, 0.6F, 1.8F, 0.15F, c);
                     box(-0.6F, 0, -0.15F, 0.6F, 0.8F, 0.15F, c);
                     box(-0.6F, -1.0F, -0.15F, 0.15F, 0, 0.15F, c);
-                    glPopMatrix();
-                    Shapes.endGlow(lit);
+                    pop();
+                    BeeMesh.endGlow(lit);
                 }
                 break;
             }
             case LEAVES:
                 for (int i = 0; i < 2; i++) {
                     double p = frac(time / (3.5 + rand(seed, 10 + i)) + rand(seed, 20 + i));
-                    glPushMatrix();
-                    glTranslatef(
+                    push();
+                    translate(
                         around(seed, 30 + i, 6) + (float) Math.sin(time * 2 + i) * 1.5F,
                         7 - (float) p * 13,
                         around(seed, 40 + i, 6));
-                    glRotatef((float) Math.sin(time * 2.5 + i) * 40, 0, 0, 1);
+                    rotate((float) Math.sin(time * 2.5 + i) * 40, 0, 0, 1);
                     box(-0.8F, -0.08F, -0.45F, 0.8F, 0.08F, 0.45F, i == 0 ? 0x5E9F37 : 0x8CBF3F);
-                    glPopMatrix();
+                    pop();
                 }
                 break;
             case SMOKE:
@@ -216,7 +214,7 @@ enum Aura {
                     float x = around(seed, 30 + i, 1.5F) + (float) Math.sin(time + i) * 0.8F;
                     float y = (float) p * 8;
                     float z = -5.5F - (float) p * 2;
-                    Shapes.box(x - s, y - s, z - s, x + s, y + s, z + s, 0x5A5A5A, 0.45F * (float) (1 - p));
+                    BeeMesh.box(x - s, y - s, z - s, x + s, y + s, z + s, 0x5A5A5A, 0.45F * (float) (1 - p));
                 }
                 break;
             case SPORES:
@@ -224,24 +222,24 @@ enum Aura {
                     double a = time * 0.4 + rand(seed, 20 + i) * Math.PI * 2;
                     float r = 5 + (float) rand(seed, 30 + i) * 3;
                     float y = around(seed, 40 + i, 5) + (float) Math.sin(time * 0.9 + i) * 1.5F;
-                    glPushMatrix();
-                    glTranslatef((float) Math.sin(a) * r, y, (float) Math.cos(a) * r);
+                    push();
+                    translate((float) Math.sin(a) * r, y, (float) Math.cos(a) * r);
                     cube(0.18F, 0.18F, 0.18F, i % 2 == 0 ? 0xC9C27A : 0x9FBF6A);
-                    glPopMatrix();
+                    pop();
                 }
                 break;
             case CONFETTI: {
                 int[] colors = { 0xFF4A6A, 0x4AC8FF, 0xFFD23C, 0x6AE06A, 0xC86AFF };
                 for (int i = 0; i < 6; i++) {
                     double p = frac(time / (2.0 + rand(seed, 10 + i)) + rand(seed, 20 + i));
-                    glPushMatrix();
-                    glTranslatef(
+                    push();
+                    translate(
                         around(seed, 30 + i, 7) + (float) Math.sin(time * 3 + i) * 0.5F,
                         8 - (float) p * 14,
                         around(seed, 40 + i, 7));
-                    glRotatef((float) (time * 200 + i * 60), 1, 1, 0);
+                    rotate((float) (time * 200 + i * 60), 1, 1, 0);
                     box(-0.35F, -0.35F, -0.05F, 0.35F, 0.35F, 0.05F, colors[i % colors.length]);
-                    glPopMatrix();
+                    pop();
                 }
                 break;
             }
@@ -249,14 +247,14 @@ enum Aura {
                 for (int i = 0; i < 2; i++) {
                     double p = frac(time / 2.8 + i / 2.0 + rand(seed, 10));
                     float s = (float) Math.min(1, Math.min(p * 5, (1 - p) * 3)) * 0.5F;
-                    glPushMatrix();
-                    glTranslatef(around(seed, 30 + i, 5), 4 + (float) p * 6, 2 + around(seed, 40 + i, 2));
-                    glScalef(s, s, s);
+                    push();
+                    translate(around(seed, 30 + i, 5), 4 + (float) p * 6, 2 + around(seed, 40 + i, 2));
+                    scale(s, s, s);
                     box(-1.0F, 0, -0.3F, 0, 1.0F, 0.3F, 0xFF5A8A);
                     box(0, 0, -0.3F, 1.0F, 1.0F, 0.3F, 0xFF5A8A);
                     box(-0.6F, -0.6F, -0.3F, 0.6F, 0, 0.3F, 0xFF5A8A);
                     box(-0.2F, -1.0F, -0.3F, 0.2F, -0.6F, 0.3F, 0xFF5A8A);
-                    glPopMatrix();
+                    pop();
                 }
                 break;
             default:

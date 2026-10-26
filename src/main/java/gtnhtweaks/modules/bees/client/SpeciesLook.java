@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 
 import forestry.api.apiculture.IAlleleBeeSpecies;
 import forestry.api.genetics.IClassification;
@@ -59,6 +60,7 @@ final class SpeciesLook {
     final boolean eyesGlow, antennaGlow;
     /** What it produces, carried when it holds nothing else. Null if it produces nothing. */
     final ItemStack product;
+    private ResourceLocation texture, plainTexture;
 
     private SpeciesLook(IAlleleBeeSpecies species) {
         Set<String> words = words(species);
@@ -93,6 +95,18 @@ final class SpeciesLook {
         eyes = look.eyes >= 0 ? look.eyes : 0x161616;
         eyesGlow = look.eyes >= 0;
         antennaGlow = look.antennaGlow;
+    }
+
+    /** The texture of its bees, painted when first needed: with the skin of the species when dressed, else plain. */
+    ResourceLocation texture(boolean dressed) {
+        if (dressed) {
+            if (texture == null) texture = BeeTexture.create(this, skin);
+            return texture;
+        }
+        if (plainTexture == null) {
+            plainTexture = skin == Skin.NORMAL ? texture(true) : BeeTexture.create(this, Skin.NORMAL);
+        }
+        return plainTexture;
     }
 
     static SpeciesLook of(IAlleleBeeSpecies species) {

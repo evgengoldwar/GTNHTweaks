@@ -1,14 +1,12 @@
 package gtnhtweaks.modules.bees.client;
 
-import static gtnhtweaks.common.model.Shapes.box;
 import static gtnhtweaks.common.model.Shapes.mix;
-import static org.lwjgl.opengl.GL11.glPopMatrix;
-import static org.lwjgl.opengl.GL11.glPushMatrix;
-import static org.lwjgl.opengl.GL11.glRotatef;
-import static org.lwjgl.opengl.GL11.glScalef;
-import static org.lwjgl.opengl.GL11.glTranslatef;
-
-import gtnhtweaks.common.model.Shapes;
+import static gtnhtweaks.modules.bees.client.BeeMesh.box;
+import static gtnhtweaks.modules.bees.client.BeeMesh.pop;
+import static gtnhtweaks.modules.bees.client.BeeMesh.push;
+import static gtnhtweaks.modules.bees.client.BeeMesh.rotate;
+import static gtnhtweaks.modules.bees.client.BeeMesh.scale;
+import static gtnhtweaks.modules.bees.client.BeeMesh.translate;
 
 /**
  * What a bee wears on its head. Drawn in pixels, from the top of the body: the origin is on its top, above its middle,
@@ -98,12 +96,12 @@ enum Hat {
                 box(1.85F, 2.6F, 0.35F, 2.15F, 3.4F, 0.65F, 0xE0BC52);
                 break;
             case TOP_HAT:
-                glPushMatrix();
-                glRotatef(-8, 0, 0, 1);
+                push();
+                rotate(-8, 0, 0, 1);
                 box(-2.5F, 0, -0.7F, 2.5F, 0.3F, 4.3F, color);
                 box(-1.6F, 0.3F, 0.2F, 1.6F, 3.7F, 3.4F, color);
                 box(-1.7F, 0.3F, 0.1F, 1.7F, 0.95F, 3.5F, body);
-                glPopMatrix();
+                pop();
                 break;
             case HARD_HAT:
                 box(-2.5F, 0, -0.6F, 2.5F, 1.4F, 4.0F, color);
@@ -117,9 +115,9 @@ enum Hat {
                 box(-2.6F, 0, -0.7F, 2.6F, 0.4F, 4.1F, mix(color, 0x000000, 0.35F));
                 // the lamp, its lens glowing
                 box(-0.8F, 0.4F, 3.9F, 0.8F, 1.7F, 4.6F, 0x5A5F66);
-                boolean lit = Shapes.glow();
+                boolean lit = BeeMesh.glow();
                 box(-0.55F, 0.6F, 4.6F, 0.55F, 1.5F, 4.75F, 0xFFF3B0);
-                Shapes.endGlow(lit);
+                BeeMesh.endGlow(lit);
                 break;
             case KNIGHT_HELMET:
                 box(-2.7F, 0, -0.8F, 2.7F, 1.6F, 4.2F, color);
@@ -129,16 +127,16 @@ enum Hat {
                 break;
             case HORNS:
                 for (int side = -1; side <= 1; side += 2) {
-                    glPushMatrix();
-                    glTranslatef(side * 1.9F, 0, 2.4F);
-                    glRotatef(side * -18, 0, 0, 1);
+                    push();
+                    translate(side * 1.9F, 0, 2.4F);
+                    rotate(side * -18, 0, 0, 1);
                     box(-0.55F, 0, -0.55F, 0.55F, 1.2F, 0.55F, color);
-                    glTranslatef(side * 0.25F, 1.1F, -0.15F);
-                    glRotatef(side * -14, 0, 0, 1);
+                    translate(side * 0.25F, 1.1F, -0.15F);
+                    rotate(side * -14, 0, 0, 1);
                     box(-0.4F, 0, -0.4F, 0.4F, 1.0F, 0.4F, mix(color, 0x000000, 0.25F));
-                    glTranslatef(0, 0.95F, -0.1F);
+                    translate(0, 0.95F, -0.1F);
                     box(-0.22F, 0, -0.22F, 0.22F, 0.8F, 0.22F, mix(color, 0x000000, 0.55F));
-                    glPopMatrix();
+                    pop();
                 }
                 break;
             case WIZARD_HAT:
@@ -172,16 +170,16 @@ enum Hat {
                 break;
             case BUNNY_EARS:
                 for (int side = -1; side <= 1; side += 2) {
-                    glPushMatrix();
-                    glTranslatef(side * 1.2F, 0, 2.0F);
-                    glRotatef(side * -12 + (float) Math.sin(time * 2.1 + side) * 4, 0, 0, 1);
+                    push();
+                    translate(side * 1.2F, 0, 2.0F);
+                    rotate(side * -12 + (float) Math.sin(time * 2.1 + side) * 4, 0, 0, 1);
                     // the tips flop now and then
                     box(-0.6F, 0, -0.35F, 0.6F, 3.0F, 0.35F, color);
                     box(-0.35F, 0.4F, 0.35F, 0.35F, 2.7F, 0.45F, 0xF2A6B8);
-                    glTranslatef(0, 3.0F, 0);
-                    glRotatef(Math.max(0, (float) Math.sin(time * 0.9 + side * 1.3)) * 50, 1, 0, 0);
+                    translate(0, 3.0F, 0);
+                    rotate(Math.max(0, (float) Math.sin(time * 0.9 + side * 1.3)) * 50, 1, 0, 0);
                     box(-0.6F, 0, -0.35F, 0.6F, 1.2F, 0.35F, color);
-                    glPopMatrix();
+                    pop();
                 }
                 break;
             case SANTA_HAT:
@@ -195,16 +193,16 @@ enum Hat {
                 pumpkin(color);
                 break;
             case HALO: {
-                glPushMatrix();
-                glTranslatef(0, 2.4F + (float) Math.sin(time * 1.8) * 0.3F, 1.8F);
-                glRotatef((float) Math.sin(time * 0.7) * 8, 1, 0, 0);
-                boolean glow = Shapes.glow();
+                push();
+                translate(0, 2.4F + (float) Math.sin(time * 1.8) * 0.3F, 1.8F);
+                rotate((float) Math.sin(time * 0.7) * 8, 1, 0, 0);
+                boolean glow = BeeMesh.glow();
                 box(-2.2F, 0, -2.2F, 2.2F, 0.4F, -1.6F, color);
                 box(-2.2F, 0, 1.6F, 2.2F, 0.4F, 2.2F, color);
                 box(-2.2F, 0, -1.6F, -1.6F, 0.4F, 1.6F, color);
                 box(1.6F, 0, -1.6F, 2.2F, 0.4F, 1.6F, color);
-                Shapes.endGlow(glow);
-                glPopMatrix();
+                BeeMesh.endGlow(glow);
+                pop();
                 break;
             }
             case HOOD:
@@ -223,25 +221,25 @@ enum Hat {
                 box(-4.3F, 0.1F, -0.6F, 4.3F, 0.6F, 0.0F, color);
                 box(2.0F, 0.6F, -0.4F, 2.3F, 3.0F, -0.1F, 0x9AA0A8);
                 boolean on = Math.sin(time * 4) > 0;
-                boolean glowTip = on && Shapes.glow();
+                boolean glowTip = on && BeeMesh.glow();
                 box(1.85F, 3.0F, -0.55F, 2.45F, 3.5F, 0.05F, on ? 0xFF3030 : 0x7A2020);
-                if (on) Shapes.endGlow(glowTip);
+                if (on) BeeMesh.endGlow(glowTip);
                 break;
             case GRAD_CAP:
                 box(-1.8F, 0, 0.2F, 1.8F, 1.2F, 3.6F, color);
-                glPushMatrix();
-                glTranslatef(0, 1.2F, 1.9F);
-                glRotatef(45, 0, 1, 0);
+                push();
+                translate(0, 1.2F, 1.9F);
+                rotate(45, 0, 1, 0);
                 box(-2.8F, 0, -2.8F, 2.8F, 0.3F, 2.8F, color);
-                glPopMatrix();
+                pop();
                 box(-0.25F, 1.5F, 1.65F, 0.25F, 1.7F, 2.15F, 0xE8B83A);
-                glPushMatrix();
-                glTranslatef(0, 1.6F, 1.9F);
-                glRotatef(90, 0, 1, 0);
-                glRotatef((float) Math.sin(time * 1.5) * 10, 0, 0, 1);
+                push();
+                translate(0, 1.6F, 1.9F);
+                rotate(90, 0, 1, 0);
+                rotate((float) Math.sin(time * 1.5) * 10, 0, 0, 1);
                 box(-0.1F, -0.1F, 0, 0.1F, 0.1F, 3.0F, 0xE8B83A);
                 box(-0.25F, -2.0F, 2.8F, 0.25F, 0, 3.3F, 0xE8B83A);
-                glPopMatrix();
+                pop();
                 break;
             case CHEF_HAT:
                 box(-2.0F, 0, 0, 2.0F, 1.2F, 3.8F, color);
@@ -251,9 +249,9 @@ enum Hat {
                 box(0.7F, 1.3F, -0.65F, 0.9F, 3.0F, 4.45F, 0xDCDCDC);
                 break;
             case BERET:
-                glPushMatrix();
-                glTranslatef(0, 0, 1.9F);
-                glRotatef(-14, 0, 0, 1);
+                push();
+                translate(0, 0, 1.9F);
+                rotate(-14, 0, 0, 1);
                 box(-2.6F, 0, -2.4F, 2.8F, 0.9F, 2.6F, color);
                 box(-2.0F, 0.9F, -1.8F, 2.2F, 1.1F, 2.0F, color);
                 box(-0.2F, 1.1F, -0.2F, 0.2F, 1.6F, 0.2F, mix(color, 0x000000, 0.4F));
@@ -262,24 +260,24 @@ enum Hat {
                 box(0.6F, 1.1F, -1.2F, 1.3F, 1.2F, -0.5F, 0xF2D23C);
                 box(0.9F, 1.1F, 0.8F, 1.5F, 1.2F, 1.4F, 0x3C7DE0);
                 box(2.4F, 0.2F, 1.0F, 2.85F, 0.7F, 1.5F, body);
-                glPopMatrix();
+                pop();
                 break;
             case FLAME:
                 flame(time);
                 break;
             case FLOWER:
-                glPushMatrix();
-                glTranslatef(2.4F, 0.2F, 2.8F);
-                glRotatef(-35, 0, 0, 1);
-                glRotatef(20, 0, 1, 0);
+                push();
+                translate(2.4F, 0.2F, 2.8F);
+                rotate(-35, 0, 0, 1);
+                rotate(20, 0, 1, 0);
                 for (int i = 0; i < 5; i++) {
-                    glPushMatrix();
-                    glRotatef(i * 72, 0, 0, 1);
+                    push();
+                    rotate(i * 72, 0, 0, 1);
                     box(-0.55F, 0.2F, -0.15F, 0.55F, 1.7F, 0.15F, color);
-                    glPopMatrix();
+                    pop();
                 }
                 box(-0.4F, -0.4F, -0.1F, 0.4F, 0.4F, 0.4F, 0xFFD23C);
-                glPopMatrix();
+                pop();
                 break;
             default:
                 break;
@@ -288,65 +286,65 @@ enum Hat {
 
     /** The glass of the space helmet, drawn with what is translucent. */
     static void bubble() {
-        Shapes.box(-4.2F, -7.3F, -0.5F, 4.2F, 0.5F, 6.4F, 0xBFE4FF, 0.22F);
-        Shapes.box(-3.2F, -1.6F, 6.41F, -2.2F, -0.2F, 6.45F, 0xFFFFFF, 0.5F);
+        BeeMesh.box(-4.2F, -7.3F, -0.5F, 4.2F, 0.5F, 6.4F, 0xBFE4FF, 0.22F);
+        BeeMesh.box(-3.2F, -1.6F, 6.41F, -2.2F, -0.2F, 6.45F, 0xFFFFFF, 0.5F);
     }
 
     private static void leaf(int color, double time) {
-        glPushMatrix();
-        glTranslatef(0, 0, 1.8F);
-        glRotatef(8 + (float) Math.sin(time * 1.6) * 5, 1, 0, 0);
+        push();
+        translate(0, 0, 1.8F);
+        rotate(8 + (float) Math.sin(time * 1.6) * 5, 1, 0, 0);
         box(-2.3F, 0, -1.7F, 2.3F, 0.4F, 1.7F, color);
         box(-1.7F, 0, -2.4F, 1.7F, 0.4F, 2.4F, color);
         box(-0.15F, 0.4F, -2.4F, 0.15F, 0.5F, 2.4F, mix(color, 0xFFFFFF, 0.35F));
         box(-0.15F, 0.2F, -3.4F, 0.15F, 0.45F, -2.4F, 0x6B4A2B);
-        glPopMatrix();
+        pop();
     }
 
     private static void flowerCrown(int leaves) {
         int[] petals = { 0xF6A6C9, 0xFFFFFF, 0x8EC8FF, 0xFFD966, 0xF6A6C9, 0xC8A2F0 };
         for (int i = 0; i < 6; i++) {
             double a = Math.PI * 2 * i / 6;
-            glPushMatrix();
-            glTranslatef((float) Math.sin(a) * 2.5F, 0.3F, 1.8F + (float) Math.cos(a) * 2.5F);
-            glRotatef((float) Math.toDegrees(a), 0, 1, 0);
+            push();
+            translate((float) Math.sin(a) * 2.5F, 0.3F, 1.8F + (float) Math.cos(a) * 2.5F);
+            rotate((float) Math.toDegrees(a), 0, 1, 0);
             box(-0.5F, -0.3F, -0.5F, 0.5F, 0.1F, 0.5F, leaves);
             box(-0.75F, 0.1F, -0.3F, 0.75F, 0.6F, 0.3F, petals[i]);
             box(-0.3F, 0.1F, -0.75F, 0.3F, 0.6F, 0.75F, petals[i]);
             box(-0.28F, 0.6F, -0.28F, 0.28F, 0.8F, 0.28F, 0xFFC93C);
-            glPopMatrix();
+            pop();
         }
     }
 
     private static void plume(double time) {
-        glPushMatrix();
-        glTranslatef(0, 2.0F, 1.0F);
-        glRotatef(-25 + (float) Math.sin(time * 2.4) * 5, 1, 0, 0);
+        push();
+        translate(0, 2.0F, 1.0F);
+        rotate(-25 + (float) Math.sin(time * 2.4) * 5, 1, 0, 0);
         box(-0.35F, 0, -0.4F, 0.35F, 2.0F, 0.4F, 0xC8202A);
-        glTranslatef(0, 2.0F, 0);
-        glRotatef(-35, 1, 0, 0);
+        translate(0, 2.0F, 0);
+        rotate(-35, 1, 0, 0);
         box(-0.3F, 0, -0.35F, 0.3F, 1.6F, 0.35F, 0xE0353F);
-        glPopMatrix();
+        pop();
     }
 
     private static void wizardHat(int color, double time) {
         box(-2.9F, 0, -1.1F, 2.9F, 0.3F, 4.7F, color);
         box(-1.9F, 0.3F, -0.1F, 1.9F, 0.85F, 3.7F, 0xE8B83A);
-        glPushMatrix();
-        glTranslatef(0, 0.3F, 1.8F);
+        push();
+        translate(0, 0.3F, 1.8F);
         float half = 1.8F;
         for (int i = 0; i < 5; i++) {
             box(-half, 0, -half, half, 1.0F, half, color);
-            glTranslatef(0, 1.0F, -0.15F * i);
-            glRotatef(-6 - (float) Math.sin(time * 1.3) * 2, 1, 0, 0);
+            translate(0, 1.0F, -0.15F * i);
+            rotate(-6 - (float) Math.sin(time * 1.3) * 2, 1, 0, 0);
             half *= 0.74F;
         }
-        glPopMatrix();
-        boolean lit = Shapes.glow();
+        pop();
+        boolean lit = BeeMesh.glow();
         star(-1.0F, 1.6F, 3.65F, 0.35F, time);
         star(0.7F, 2.9F, 2.9F, 0.28F, time + 1.7);
         star(1.4F, 1.2F, 3.66F, 0.22F, time + 0.6);
-        Shapes.endGlow(lit);
+        BeeMesh.endGlow(lit);
     }
 
     private static void star(float x, float y, float z, float size, double time) {
@@ -357,20 +355,20 @@ enum Hat {
 
     /** A soft cone of stacked boxes, its tip falling to the side, with a pompom: the Santa hat and the party hat. */
     private static void stackedCone(int color, int other, float height, double time, boolean stripes) {
-        glPushMatrix();
-        glTranslatef(0, stripes ? 0 : 0.8F, 1.8F);
-        if (stripes) glRotatef(-10, 0, 0, 1);
+        push();
+        translate(0, stripes ? 0 : 0.8F, 1.8F);
+        if (stripes) rotate(-10, 0, 0, 1);
         int steps = 5;
         float half = stripes ? 1.9F : 2.2F;
         float step = height / steps;
         for (int i = 0; i < steps; i++) {
             box(-half, 0, -half, half, step, half, stripes && i % 2 == 1 ? other : color);
-            glTranslatef(0, step, 0);
-            if (!stripes) glRotatef(-14 - (float) Math.sin(time * 1.7) * 3, 0, 0, 1);
+            translate(0, step, 0);
+            if (!stripes) rotate(-14 - (float) Math.sin(time * 1.7) * 3, 0, 0, 1);
             half *= 0.72F;
         }
         box(-0.6F, -0.2F, -0.6F, 0.6F, 1.0F, 0.6F, stripes ? other : 0xF4F4F4);
-        glPopMatrix();
+        pop();
     }
 
     private static void pumpkin(int color) {
@@ -379,33 +377,33 @@ enum Hat {
         box(-0.9F, -0.01F, -0.51F, -0.6F, 2.61F, 4.11F, dark);
         box(0.6F, -0.01F, -0.51F, 0.9F, 2.61F, 4.11F, dark);
         box(-0.3F, 2.6F, 1.5F, 0.3F, 3.4F, 2.1F, 0x4E7A2A);
-        boolean lit = Shapes.glow();
+        boolean lit = BeeMesh.glow();
         box(-1.6F, 1.4F, 4.1F, -0.7F, 2.1F, 4.15F, 0xFFD54A);
         box(0.7F, 1.4F, 4.1F, 1.6F, 2.1F, 4.15F, 0xFFD54A);
         box(-1.5F, 0.4F, 4.1F, 1.5F, 0.9F, 4.15F, 0xFFD54A);
         box(-0.9F, 0.9F, 4.1F, -0.4F, 1.1F, 4.15F, 0xFFD54A);
         box(0.4F, 0.9F, 4.1F, 0.9F, 1.1F, 4.15F, 0xFFD54A);
-        Shapes.endGlow(lit);
+        BeeMesh.endGlow(lit);
     }
 
     private static void flame(double time) {
-        boolean lit = Shapes.glow();
-        glPushMatrix();
-        glTranslatef(0, 0, 1.8F);
+        boolean lit = BeeMesh.glow();
+        push();
+        translate(0, 0, 1.8F);
         int[] colors = { 0xFF5A14, 0xFF8A1E, 0xFFB83A, 0xFFE36A };
         float half = 1.7F;
         for (int i = 0; i < 4; i++) {
             float flicker = 1 + 0.15F * (float) Math.sin(time * 11 + i * 1.9);
             float h = 0.9F * flicker;
-            glPushMatrix();
-            glTranslatef((float) Math.sin(time * 5 + i) * 0.2F * i, 0, 0);
-            glScalef(flicker, 1, flicker);
+            push();
+            translate((float) Math.sin(time * 5 + i) * 0.2F * i, 0, 0);
+            scale(flicker, 1, flicker);
             box(-half, 0, -half, half, h, half, colors[i]);
-            glPopMatrix();
-            glTranslatef(0, h, 0);
+            pop();
+            translate(0, h, 0);
             half *= 0.7F;
         }
-        glPopMatrix();
-        Shapes.endGlow(lit);
+        pop();
+        BeeMesh.endGlow(lit);
     }
 }

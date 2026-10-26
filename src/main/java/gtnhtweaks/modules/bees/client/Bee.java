@@ -55,6 +55,9 @@ final class Bee {
     /** How it feels, each from 0 to 1. */
     float sleep, hot, cold, rain;
     private long lastTime;
+    /** Where it looks in the hands, following where the viewer is with a little delay. */
+    private float yaw, pitch;
+    private long lastFacing;
 
     private Bee(SpeciesLook look, EnumBeeType type, IBeeGenome genome, NBTTagCompound tag) {
         this.look = look;
@@ -150,6 +153,26 @@ final class Bee {
             wantRain = world.getRainStrength(1);
         }
         follow(wantSleep, wantHot, wantCold, wantRain);
+    }
+
+    /**
+     * The yaw and pitch to the viewer, followed smoothly: about a tenth of a second behind, so the swaying of the hand
+     * and the bobbing of the view do not shake it.
+     */
+    float[] smoothFacing(float toYaw, float toPitch) {
+        long now = System.nanoTime();
+        if (lastFacing == 0 || now - lastFacing > FORGET) {
+            yaw = toYaw;
+            pitch = toPitch;
+        } else {
+            float step = 1 - (float) Math.exp(-(now - lastFacing) / 1e9 / 0.12);
+            float turn = toYaw - yaw;
+            turn -= 360 * Math.round(turn / 360);
+            yaw += turn * step;
+            pitch += (toPitch - pitch) * step;
+        }
+        lastFacing = now;
+        return new float[] { yaw, pitch };
     }
 
     /** Feels nothing in particular, with no world to feel. */

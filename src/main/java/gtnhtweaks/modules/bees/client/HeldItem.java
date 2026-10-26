@@ -17,8 +17,8 @@ final class HeldItem {
     private HeldItem() {}
 
     /**
-     * Draws the item one unit wide, centered on the origin, facing +z. Leaves GL_TEXTURE_2D disabled and the items
-     * texture bound, as the bee is drawn.
+     * Draws the item one unit wide, centered on the origin, facing +z. Leaves GL_TEXTURE_2D enabled and the items
+     * texture bound.
      */
     static void draw(ItemStack stack) {
         Item item = stack.getItem();
@@ -48,7 +48,6 @@ final class HeldItem {
                 0.0625F);
         }
         GL11.glPopMatrix();
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
         textures.bindTexture(TextureMap.locationItemsTexture);
     }
 }
