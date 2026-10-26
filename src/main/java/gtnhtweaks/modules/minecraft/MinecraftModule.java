@@ -154,7 +154,7 @@ public final class MinecraftModule extends TweakModule {
             CATEGORY_INVENTORY,
             hoverBounce,
             "The item of a slot squeezes and springs back when the mouse comes onto it, to show that it is hovered. "
-                + "In every inventory, of vanilla and of mods. Needs a restart");
+                + "In every inventory, of vanilla and of mods, and in the NEI panels. Needs a restart");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */

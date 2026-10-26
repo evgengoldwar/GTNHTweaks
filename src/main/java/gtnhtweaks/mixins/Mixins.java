@@ -90,6 +90,13 @@ public enum Mixins implements IMixins {
         .setApplyIf(() -> NEIModule.INSTANCE.isEnabled() && (NEIModule.preciseDrag || NEIModule.smoothScroll))
         .addRequiredMod(TargetMods.NEI)
         .addClientMixins("nei.MixinCamera_NEI")),
+    NEI_HOVER_BOUNCE(new MixinBuilder("Items of the NEI panels bounce when hovered").setPhase(Phase.LATE)
+        .setApplyIf(() -> MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.hoverBounce)
+        .addRequiredMod(TargetMods.NEI)
+        .addClientMixins(
+            "nei.MixinItemsGrid_HoverBounce",
+            "nei.MixinItemsGridSlot_HoverBounce",
+            "nei.MixinScreenCapture_HoverBounce")),
     NEI_FILL_ONE_CRAFT(
         new MixinBuilder("Ctrl + Shift + click on the recipe + fills the grid for one craft").setPhase(Phase.LATE)
             .setApplyIf(() -> NEIModule.INSTANCE.isEnabled() && NEIModule.fillOneCraftWithCtrl)

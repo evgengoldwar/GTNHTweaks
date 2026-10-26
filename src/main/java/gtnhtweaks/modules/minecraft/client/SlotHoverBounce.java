@@ -57,9 +57,7 @@ public final class SlotHoverBounce {
         GL11.glPushMatrix();
         Long start = STARTS.get(slot);
         if (start == null) return;
-        float t = (Minecraft.getSystemTime() - start) / 1000F;
-        // a damped spring: shrinks first, then grows a little over the full size and settles
-        float scale = 1F - DEPTH * (float) (Math.sin(FREQUENCY * t) * Math.exp(-DAMPING * t));
+        float scale = scale(start);
         float cx = slot.xDisplayPosition + 8F;
         float cy = slot.yDisplayPosition + 8F;
         GL11.glTranslatef(cx, cy, 0F);
@@ -69,5 +67,18 @@ public final class SlotHoverBounce {
 
     public static void end() {
         GL11.glPopMatrix();
+    }
+
+    /** Size of a bouncing item started at the given time, 1 for the full size. */
+    public static float scale(long start) {
+        float t = (Minecraft.getSystemTime() - start) / 1000F;
+        if (t * 1000F > DURATION) return 1F;
+        // a damped spring: shrinks first, then grows a little over the full size and settles
+        return 1F - DEPTH * (float) (Math.sin(FREQUENCY * t) * Math.exp(-DAMPING * t));
+    }
+
+    /** True while a bounce started at the given time is still playing. */
+    public static boolean playing(long start, long now) {
+        return now - start <= DURATION;
     }
 }
