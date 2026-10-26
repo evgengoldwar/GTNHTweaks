@@ -99,7 +99,10 @@ public enum Mixins implements IMixins {
             .addRequiredMod(TargetMods.CHROMATIC_SPECTRUM)
             .addClientMixins(
                 "chromatictooltips.MixinTooltipHandler_ChromaticTooltips",
-                "chromatictooltips.MixinTooltipContext_ChromaticTooltips")),
+                "chromatictooltips.MixinTooltipContext_ChromaticTooltips",
+                "chromatictooltips.MixinTitleEnricher_ChromaticTooltips",
+                "chromatictooltips.MixinContextInfoEnricher_ChromaticTooltips",
+                "chromatictooltips.AccessorTooltipLines_ChromaticTooltips")),
     CHROMATIC_TOOLTIPS_COLOR_QUEST_TOOLTIPS(
         new MixinBuilder("Chromatic Spectrum colors of the quest icon in BetterQuesting quest tooltips")
             .setPhase(Phase.LATE)
@@ -108,9 +111,7 @@ public enum Mixins implements IMixins {
             .addRequiredMod(TargetMods.CHROMATIC_TOOLTIPS)
             .addRequiredMod(TargetMods.CHROMATIC_SPECTRUM)
             .addRequiredMod(TargetMods.BETTER_QUESTING)
-            .addClientMixins(
-                "chromatictooltips.AccessorTooltipLines_ChromaticTooltips",
-                "chromatictooltips.MixinPanelButtonQuest_ChromaticTooltips")),
+            .addClientMixins("chromatictooltips.MixinPanelButtonQuest_ChromaticTooltips")),
 
     // Debug module
     DEBUG_CRASH_TEST_MIXIN(
