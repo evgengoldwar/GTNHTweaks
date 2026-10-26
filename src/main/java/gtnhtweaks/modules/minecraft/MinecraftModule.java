@@ -17,6 +17,7 @@ public final class MinecraftModule extends TweakModule {
 
     public static final String CATEGORY_OUTLINE = "blockOutline";
     public static final String CATEGORY_CHAT = "chat";
+    public static final String CATEGORY_PLAYER = "player";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -45,6 +46,9 @@ public final class MinecraftModule extends TweakModule {
     public static boolean systemMessageBar = true;
     /** Only the head before the messages of players, without their name. */
     public static boolean hideNames = false;
+
+    /** The hand swings when the player throws an item, as in newer versions. */
+    public static boolean dropSwing = true;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
@@ -133,6 +137,13 @@ public final class MinecraftModule extends TweakModule {
             systemMessageBar,
             "Show a bar before the messages not written by a player, like the ones of the server, as in the chat "
                 + "of newer versions. Needs a restart");
+
+        dropSwing = config.getBoolean(
+            "dropSwing",
+            CATEGORY_PLAYER,
+            dropSwing,
+            "Swing the hand when throwing an item, as in newer versions: with the drop key and out of any inventory. "
+                + "The other players see the swing too. Needs a restart");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
