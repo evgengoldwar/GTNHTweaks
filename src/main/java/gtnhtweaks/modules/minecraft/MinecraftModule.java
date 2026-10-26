@@ -2,8 +2,6 @@ package gtnhtweaks.modules.minecraft;
 
 import java.util.Locale;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 
@@ -266,8 +264,8 @@ public final class MinecraftModule extends TweakModule {
 
     @Override
     public void openSettingsButton(String category, Object parent) {
-        if (CATEGORY_OUTLINE.equalsIgnoreCase(category)) Minecraft.getMinecraft()
-            .displayGuiScreen(new OutlineScreen((GuiScreen) parent));
+        // through Object, so this class, read in the coremod phase, does not load GuiScreen before its mixins
+        if (CATEGORY_OUTLINE.equalsIgnoreCase(category)) OutlineScreen.open(parent);
     }
 
     /** Writes the current outline settings to the config file, after a change on the outline screen. */

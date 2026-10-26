@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.block.Block;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.RenderBlocks;
@@ -58,6 +59,12 @@ public class OutlineScreen extends GuiScreen {
 
     public OutlineScreen(GuiScreen parent) {
         this.parent = parent;
+    }
+
+    /** Opens the screen over {@code parent}, a GuiScreen or null. */
+    public static void open(Object parent) {
+        Minecraft.getMinecraft()
+            .displayGuiScreen(new OutlineScreen((GuiScreen) parent));
     }
 
     /** A value slider; reads and writes its setting through the methods below. */
