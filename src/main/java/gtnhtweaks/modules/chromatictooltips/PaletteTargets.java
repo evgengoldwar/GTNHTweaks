@@ -42,6 +42,7 @@ public final class PaletteTargets {
     private static TooltipTarget requested;
     private static boolean screenFailed;
     private static boolean questsFailed;
+    private static boolean loggedFound;
 
     private PaletteTargets() {}
 
@@ -56,6 +57,17 @@ public final class PaletteTargets {
             target = questIcon(request);
         }
         requested = target;
+        if (target != null && !loggedFound) {
+            loggedFound = true;
+            GTNHTweaks.LOG.info("Coloring a Chromatic Tooltips tooltip of bare lines by its {}", describe(target));
+        }
+    }
+
+    private static String describe(TooltipTarget target) {
+        if (target.isFluid()) return "fluid " + target.getFluid()
+            .getFluid()
+            .getName();
+        return "item " + target.getItem();
     }
 
     public static void endRequest() {

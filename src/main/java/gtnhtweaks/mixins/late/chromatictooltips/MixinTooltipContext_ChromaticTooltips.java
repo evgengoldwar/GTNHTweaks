@@ -1,5 +1,8 @@
 package gtnhtweaks.mixins.late.chromatictooltips;
 
+import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.FluidStack;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -18,7 +21,8 @@ import gtnhtweaks.modules.chromatictooltips.PaletteTargets;
 /**
  * Keeps the target found for a tooltip of bare lines with the built tooltip, which Chromatic Tooltips draws later and
  * rebuilds many times a second, and returns it as the target of the tooltip while it is drawn: Chromatic Spectrum
- * picks the palette of every decorator from the target then. The lines are built before, so they do not change.
+ * picks the palette of every decorator from the target then, and the icon decorator of the theme draws its item or
+ * fluid. The lines are built before, so they do not change.
  */
 @Mixin(value = TooltipContext.class, remap = false)
 public class MixinTooltipContext_ChromaticTooltips {
@@ -61,6 +65,20 @@ public class MixinTooltipContext_ChromaticTooltips {
     private void gtnhtweaks$paletteTarget(CallbackInfoReturnable<TooltipTarget> cir) {
         if (gtnhtweaks$drawing && gtnhtweaks$paletteTarget != null && PaletteTargets.isBare(cir.getReturnValue())) {
             cir.setReturnValue(gtnhtweaks$paletteTarget);
+        }
+    }
+
+    @Inject(method = "getItem()Lnet/minecraft/item/ItemStack;", at = @At("RETURN"), cancellable = true)
+    private void gtnhtweaks$paletteItem(CallbackInfoReturnable<ItemStack> cir) {
+        if (gtnhtweaks$drawing && gtnhtweaks$paletteTarget != null && PaletteTargets.isBare(target)) {
+            cir.setReturnValue(gtnhtweaks$paletteTarget.getItem());
+        }
+    }
+
+    @Inject(method = "getFluid()Lnet/minecraftforge/fluids/FluidStack;", at = @At("RETURN"), cancellable = true)
+    private void gtnhtweaks$paletteFluid(CallbackInfoReturnable<FluidStack> cir) {
+        if (gtnhtweaks$drawing && gtnhtweaks$paletteTarget != null && PaletteTargets.isBare(target)) {
+            cir.setReturnValue(gtnhtweaks$paletteTarget.getFluid());
         }
     }
 }
