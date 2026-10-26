@@ -5,9 +5,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import net.minecraft.launchwrapper.Launch;
+import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 
@@ -100,10 +102,31 @@ public final class ModuleManager {
             } catch (RuntimeException e) {
                 GTNHTweaks.LOG.error("Failed to read the config of module " + module.getId(), e);
             }
+            markRestartSettings(config);
             if (config.hasChanged()) config.save();
         }
 
         if (modules.hasChanged()) modules.save();
+    }
+
+    /**
+     * Marks the settings whose comment, or the comment of their category, says that they need a restart, so the
+     * settings screen can tell it.
+     */
+    private static void markRestartSettings(Configuration config) {
+        for (String name : config.getCategoryNames()) {
+            ConfigCategory category = config.getCategory(name);
+            boolean all = mentionsRestart(category.getComment());
+            for (Property property : category.getValues()
+                .values()) {
+                if (all || mentionsRestart(property.comment)) property.setRequiresMcRestart(true);
+            }
+        }
+    }
+
+    private static boolean mentionsRestart(String comment) {
+        return comment != null && comment.toLowerCase(Locale.ROOT)
+            .contains("restart");
     }
 
     /** modules.cfg, which switches the modules on and off. */

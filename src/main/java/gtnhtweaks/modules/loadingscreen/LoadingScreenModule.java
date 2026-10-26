@@ -72,7 +72,8 @@ public final class LoadingScreenModule extends TweakModule {
             "showLoadTimeInMainMenu",
             CATEGORY_GENERAL,
             showLoadTimeInMainMenu,
-            "Show the total loading time in the top left corner of the main menu");
+            "Show the total loading time in the top left corner of the vanilla main menu. The GTNH main menu "
+                + "shows it itself, see showLoadTime of the mainmenu module. Needs a restart");
 
         config.addCustomCategoryComment(
             CATEGORY_WALL,

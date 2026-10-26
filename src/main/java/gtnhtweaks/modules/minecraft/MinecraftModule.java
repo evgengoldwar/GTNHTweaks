@@ -2,6 +2,8 @@ package gtnhtweaks.modules.minecraft;
 
 import java.util.Locale;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 
@@ -10,10 +12,14 @@ import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
 import gtnhtweaks.modules.minecraft.client.NewItems;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
+import gtnhtweaks.modules.minecraft.client.OutlineScreen;
 import gtnhtweaks.modules.minecraft.client.ScreenBackground;
 import gtnhtweaks.modules.minecraft.client.WaterSplashes;
 
-/** Tweaks of Minecraft itself: the outline of the looked at block and the heads of the players in the chat. */
+/**
+ * Tweaks of Minecraft itself: the outline of the looked at block, the chat, the inventories, the background of the
+ * screens and the splashes in water.
+ */
 public final class MinecraftModule extends TweakModule {
 
     public static final MinecraftModule INSTANCE = new MinecraftModule();
@@ -251,6 +257,17 @@ public final class MinecraftModule extends TweakModule {
     @Override
     public boolean showInSettings(String category, String key) {
         return !CATEGORY_OUTLINE.equalsIgnoreCase(category) || "enabled".equals(key);
+    }
+
+    @Override
+    public String settingsButton(String category) {
+        return CATEGORY_OUTLINE.equalsIgnoreCase(category) ? "Open the outline editor" : null;
+    }
+
+    @Override
+    public void openSettingsButton(String category, Object parent) {
+        if (CATEGORY_OUTLINE.equalsIgnoreCase(category)) Minecraft.getMinecraft()
+            .displayGuiScreen(new OutlineScreen((GuiScreen) parent));
     }
 
     /** Writes the current outline settings to the config file, after a change on the outline screen. */

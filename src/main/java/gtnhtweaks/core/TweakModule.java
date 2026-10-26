@@ -105,6 +105,23 @@ public abstract class TweakModule {
         return true;
     }
 
+    /**
+     * Label of a button shown at the top of a category in the settings screen, to open a screen of its own for it, or
+     * null for none.
+     *
+     * @param category the category name, lower case as Forge keeps it
+     */
+    public String settingsButton(String category) {
+        return null;
+    }
+
+    /**
+     * Opens what the button of {@link #settingsButton} is for. Only called on the client.
+     *
+     * @param parent the settings screen, to come back to
+     */
+    public void openSettingsButton(String category, Object parent) {}
+
     /** Reads the module's own settings. Called once, even when the module is disabled, so the file is generated. */
     protected abstract void loadConfig(Configuration config);
 
