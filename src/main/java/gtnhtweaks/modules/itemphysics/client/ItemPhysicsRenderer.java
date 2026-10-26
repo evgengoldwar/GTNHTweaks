@@ -1,6 +1,7 @@
 package gtnhtweaks.modules.itemphysics.client;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -67,12 +68,17 @@ public final class ItemPhysicsRenderer {
     /** The items of a pile are turned by up to this many degrees from each other. */
     private static final float PILE_TURN = 25F;
     /**
-     * Blocks of a pile lie one on top of the other like the flat items, a hair apart so their faces do not flicker,
-     * moved and turned a bit from the block under them.
+     * Blocks of a pile are smaller than a lone block, so the pile stays low: two lie side by side and the third on top
+     * of them, moved and turned a bit.
      */
-    private static final float BLOCK_STEP = 1.002F;
-    private static final float BLOCK_SPREAD = 0.18F;
-    private static final float BLOCK_TURN = 35F;
+    private static final float PILE_BLOCK_SIZE = 0.7F;
+    /** Space between the two blocks on the ground, so they do not go into each other when turned. */
+    private static final float PILE_BLOCK_GAP = 0.06F;
+    /** How far the blocks of a pile lie from their places, in block units. */
+    private static final float PILE_BLOCK_SPREAD = 0.08F;
+    /** The blocks on the ground and the one on top are turned by up to this many degrees. */
+    private static final float PILE_BLOCK_TURN = 6F;
+    private static final float PILE_TOP_TURN = 30F;
     /**
      * A flat item of a mod renderer is drawn as the vanilla dropped items: from -0.25 to 0.75 high and about 0.04 thick
      * on both sides of its middle.
@@ -279,7 +285,7 @@ public final class ItemPhysicsRenderer {
         return size > 40 ? 5 : size > 20 ? 4 : size > 5 ? 3 : size > 1 ? 2 : 1;
     }
 
-    /** Blocks drawn for a stack: at most three, so the pile does not grow into a tower. */
+    /** Blocks drawn for a stack: at most three, two side by side and one on top. */
     private static int blockCopiesOf(int size) {
         return size > 20 ? 3 : size > 1 ? 2 : 1;
     }
@@ -310,8 +316,10 @@ public final class ItemPhysicsRenderer {
         }
         for (int i = 0; i < state.copies; i++) {
             GL11.glPushMatrix();
-            GL11.glTranslatef(state.offX[i], state.offY[i] + 0.5F, state.offZ[i]);
+            float size = state.sizes[i];
+            GL11.glTranslatef(state.offX[i], state.offY[i] + size / 2F, state.offZ[i]);
             GL11.glRotatef(state.turns[i], 0F, 1F, 0F);
+            GL11.glScalef(size, size, size);
             if (custom != null) {
                 // a mod renderer can leave another texture bound
                 textures.bindTexture(atlasOf(stack));
@@ -420,11 +428,11 @@ public final class ItemPhysicsRenderer {
         int kind = -1;
         int copies;
         float scale;
-        /** Places and turns of the copies, in item units, the bottom of the shape at y 0. */
-        float[] offX, offY, offZ, turns;
+        /** Places, turns and sizes of the copies, in item units, the bottom of the shape at y 0. */
+        float[] offX, offY, offZ, turns, sizes;
         /** Height of the shape and how far it reaches along its own z, in blocks. */
         float height, halfZ;
-        /** Half the width of one copy, in blocks. */
+        /** Half the width of a copy of size 1, in blocks. */
         float copyHalf;
 
         /** Tilt around the item's own x axis in degrees, a multiple of the rest step when lying. */
@@ -460,16 +468,32 @@ public final class ItemPhysicsRenderer {
             offY = new float[MAX_COPIES];
             offZ = new float[MAX_COPIES];
             turns = new float[MAX_COPIES];
+            sizes = new float[MAX_COPIES];
             RANDOM.setSeed(Float.floatToIntBits(entity.hoverStart) * 31L);
             float localHeight;
             if (kind == BLOCK || kind == CUSTOM_3D) {
-                for (int i = 1; i < MAX_COPIES; i++) {
-                    offX[i] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_SPREAD;
-                    offZ[i] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_SPREAD;
-                    offY[i] = i * BLOCK_STEP;
-                    turns[i] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_TURN;
+                // two side by side on the ground and the third on top of them, across both
+                float side = PILE_BLOCK_SIZE / 2F + PILE_BLOCK_GAP;
+                for (int i = 0; i < 2; i++) {
+                    // moved only outwards, so the two never come closer than the gap
+                    float apart = side + RANDOM.nextFloat() * PILE_BLOCK_SPREAD;
+                    offX[i] = i == 0 ? -apart : apart;
+                    offZ[i] = (RANDOM.nextFloat() * 2F - 1F) * PILE_BLOCK_SPREAD;
+                    turns[i] = (RANDOM.nextFloat() * 2F - 1F) * PILE_BLOCK_TURN;
                 }
-                localHeight = (copies - 1) * BLOCK_STEP + 1F;
+                offX[2] = (RANDOM.nextFloat() * 2F - 1F) * PILE_BLOCK_SPREAD;
+                offZ[2] = (RANDOM.nextFloat() * 2F - 1F) * PILE_BLOCK_SPREAD;
+                // a hair above the blocks under it, so their faces do not flicker
+                offY[2] = PILE_BLOCK_SIZE + 0.002F;
+                turns[2] = (RANDOM.nextFloat() * 2F - 1F) * PILE_TOP_TURN;
+                if (copies == 1) {
+                    offX[0] = offZ[0] = turns[0] = 0F;
+                    sizes[0] = 1F;
+                    localHeight = 1F;
+                } else {
+                    Arrays.fill(sizes, PILE_BLOCK_SIZE);
+                    localHeight = copies == 2 ? PILE_BLOCK_SIZE : offY[2] + PILE_BLOCK_SIZE;
+                }
             } else {
                 for (int i = 1; i < MAX_COPIES; i++) {
                     offX[i] = (RANDOM.nextFloat() * 2F - 1F) * PILE_SPREAD;
@@ -477,13 +501,14 @@ public final class ItemPhysicsRenderer {
                     offY[i] = i * PILE_STEP;
                     turns[i] = (RANDOM.nextFloat() * 2F - 1F) * PILE_TURN;
                 }
+                Arrays.fill(sizes, 1F);
                 localHeight = (copies - 1) * PILE_STEP + (kind == ITEM ? THICKNESS : CUSTOM_LIFT * 2F);
             }
             float localHalfZ = 0;
             for (int i = 0; i < copies; i++) {
                 float t = turns[i] * RAD;
                 float reach = Math.abs(offZ[i])
-                    + 0.5F * (Math.abs(MathHelper.cos(t)) + Math.abs(MathHelper.sin(t)));
+                    + 0.5F * sizes[i] * (Math.abs(MathHelper.cos(t)) + Math.abs(MathHelper.sin(t)));
                 localHalfZ = Math.max(localHalfZ, reach);
             }
             height = localHeight * scale;
@@ -608,7 +633,7 @@ public final class ItemPhysicsRenderer {
             double minX = 0, maxX = 0, minZ = 0, maxZ = 0;
             for (int i = 0; i < copies; i++) {
                 float t = (yaw + turns[i]) * RAD;
-                float reach = copyHalf * (Math.abs(MathHelper.cos(t)) + Math.abs(MathHelper.sin(t)));
+                float reach = copyHalf * sizes[i] * (Math.abs(MathHelper.cos(t)) + Math.abs(MathHelper.sin(t)));
                 float cx = (offX[i] * cos + offZ[i] * sin) * scale;
                 float cz = (-offX[i] * sin + offZ[i] * cos) * scale;
                 minX = Math.min(minX, cx - reach);
