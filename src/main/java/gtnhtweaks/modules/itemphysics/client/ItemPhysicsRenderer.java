@@ -88,6 +88,16 @@ public final class ItemPhysicsRenderer {
     private static final float SPRING = 0.6F;
     private static final float DAMPING = 1.1F;
     private static final float SUBSTEP = 0.25F;
+    /**
+     * An item starts to tumble only this fast or this many ticks in the air: the server puts a lying item a hair above
+     * the ground when it corrects its place, and it must not tumble for that little fall.
+     */
+    private static final float TUMBLE_SPEED = 0.15F;
+    private static final float TUMBLE_AIR_TICKS = 6F;
+    /** Part per tick of what is left of a correction of the server that the drawn item moves on. */
+    private static final float GLIDE_RATE = 0.3F;
+    /** Most copies of a pile: the layout is made for all of them, so a pile keeps its look when it grows. */
+    private static final int MAX_COPIES = 5;
 
     private static final Map<EntityItem, State> STATES = new WeakHashMap<>();
     private static final Random RANDOM = new Random();
@@ -136,6 +146,15 @@ public final class ItemPhysicsRenderer {
             state.layout(entity, kind, copies, scale);
         }
         float dt = state.update(entity, partialTicks, solid ? 90F : 180F);
+        state.glide(
+            entity,
+            x + RenderManager.renderPosX,
+            y + RenderManager.renderPosY,
+            z + RenderManager.renderPosZ,
+            dt);
+        x += state.glideX;
+        y += state.glideY;
+        z += state.glideZ;
 
         float yaw = entity.hoverStart / RAD + state.turn;
         float pitch = state.pitch;
@@ -343,8 +362,14 @@ public final class ItemPhysicsRenderer {
         /** Tilt the spring lays the item down to. */
         float target;
         final float spinSign;
-        boolean grounded;
+        boolean tumbling;
+        float airTicks;
         float time = Float.NaN;
+
+        /** What is left to move of the last correction of the server, in blocks. */
+        double glideX, glideY, glideZ;
+        double lastX = Double.NaN, lastY, lastZ;
+        boolean wasResting;
 
         double pushX, pushZ, targetPushX, targetPushZ;
         boolean pushSet;
@@ -353,18 +378,17 @@ public final class ItemPhysicsRenderer {
 
         State(EntityItem entity) {
             spinSign = (Float.floatToIntBits(entity.hoverStart) & 1) == 0 ? 1F : -1F;
-            grounded = entity.onGround;
         }
 
         void layout(EntityItem entity, int kind, int copies, float scale) {
             this.kind = kind;
             this.copies = copies;
             this.scale = scale;
-            offX = new float[copies];
-            offY = new float[copies];
-            offZ = new float[copies];
-            turns = new float[copies];
-            RANDOM.setSeed(Float.floatToIntBits(entity.hoverStart) * 31L + copies);
+            offX = new float[MAX_COPIES];
+            offY = new float[MAX_COPIES];
+            offZ = new float[MAX_COPIES];
+            turns = new float[MAX_COPIES];
+            RANDOM.setSeed(Float.floatToIntBits(entity.hoverStart) * 31L);
             float localHeight;
             if (kind == BLOCK || kind == CUSTOM_3D) {
                 if (copies > 1) {
@@ -376,22 +400,20 @@ public final class ItemPhysicsRenderer {
                         middleX += places[i][0] * BLOCK_GAP / ground;
                         middleZ += places[i][1] * BLOCK_GAP / ground;
                     }
-                    for (int i = 0; i < ground; i++) {
+                    for (int i = 0; i < 4; i++) {
                         offX[i] = places[i][0] * BLOCK_GAP - middleX;
                         offZ[i] = places[i][1] * BLOCK_GAP - middleZ;
                         turns[i] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_TURN;
                     }
-                    if (copies == 5) {
-                        offX[4] = -middleX;
-                        offZ[4] = -middleZ;
-                        // a hair above the blocks under it, so their faces do not flicker
-                        offY[4] = 1.002F;
-                        turns[4] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_TURN * 2F;
-                    }
+                    offX[4] = -middleX;
+                    offZ[4] = -middleZ;
+                    // a hair above the blocks under it, so their faces do not flicker
+                    offY[4] = 1.002F;
+                    turns[4] = (RANDOM.nextFloat() * 2F - 1F) * BLOCK_TURN * 2F;
                 }
                 localHeight = copies == 5 ? 2.002F : 1F;
             } else {
-                for (int i = 1; i < copies; i++) {
+                for (int i = 1; i < MAX_COPIES; i++) {
                     offX[i] = (RANDOM.nextFloat() * 2F - 1F) * PILE_SPREAD;
                     offZ[i] = (RANDOM.nextFloat() * 2F - 1F) * PILE_SPREAD;
                     offY[i] = i * PILE_STEP;
@@ -430,23 +452,25 @@ public final class ItemPhysicsRenderer {
                 return dt;
             }
             if (entity.onGround) {
-                if (!grounded) {
-                    grounded = true;
+                airTicks = 0F;
+                if (tumbling) {
+                    tumbling = false;
                     spin *= LANDING_KEEP;
                     target = restAngle(restStep);
                 }
                 settle(dt);
             } else {
-                grounded = false;
-                float wanted;
-                if (entity.isInWater()) {
-                    wanted = WATER_SPIN;
-                } else {
-                    float speed = MathHelper.sqrt_double(
-                        entity.motionX * entity.motionX + entity.motionY * entity.motionY
-                            + entity.motionZ * entity.motionZ);
-                    wanted = Math.min(speed * SPIN_PER_SPEED, MAX_SPIN);
+                airTicks += dt;
+                boolean inWater = entity.isInWater();
+                float speed = MathHelper.sqrt_double(
+                    entity.motionX * entity.motionX + entity.motionY * entity.motionY
+                        + entity.motionZ * entity.motionZ);
+                if (!tumbling && (inWater || speed > TUMBLE_SPEED || airTicks > TUMBLE_AIR_TICKS)) tumbling = true;
+                if (!tumbling) {
+                    settle(dt);
+                    return dt;
                 }
+                float wanted = inWater ? WATER_SPIN : Math.min(speed * SPIN_PER_SPEED, MAX_SPIN);
                 wanted *= spinSign * ItemPhysicsModule.tumbleSpeed;
                 spin += (wanted - spin) * (1F - (float) Math.exp(-dt * 0.15F));
                 pitch += spin * dt;
@@ -455,6 +479,39 @@ public final class ItemPhysicsRenderer {
                 if (turn > 360F || turn < -360F) turn %= 360F;
             }
             return dt;
+        }
+
+        /**
+         * Smooths the corrections of the server. The client moves a dropped item on its own and the server sends where
+         * the item really is now and then, so an item that has just landed jumps to another place. While the item lies
+         * still, such a jump is taken back and the drawn item moves on to the new place over a few ticks.
+         *
+         * @param x where the entity is drawn this frame, in the world
+         * @param y where the entity is drawn this frame, in the world
+         * @param z where the entity is drawn this frame, in the world
+         */
+        void glide(EntityItem entity, double x, double y, double z, float dt) {
+            boolean resting = entity.onGround
+                && entity.motionX * entity.motionX + entity.motionZ * entity.motionZ < 1.0E-4;
+            if (!Double.isNaN(lastX)) {
+                double dx = x - lastX, dy = y - lastY, dz = z - lastZ;
+                if (dx * dx + dy * dy + dz * dz > 4) {
+                    // teleported: no gliding over that
+                    glideX = glideY = glideZ = 0;
+                } else if (resting && wasResting) {
+                    glideX -= dx;
+                    glideY -= dy;
+                    glideZ -= dz;
+                }
+            }
+            lastX = x;
+            lastY = y;
+            lastZ = z;
+            wasResting = resting;
+            double keep = Math.exp(-dt * GLIDE_RATE);
+            glideX = clamp(glideX * keep, 1.5);
+            glideY = clamp(glideY * keep, 1.5);
+            glideZ = clamp(glideZ * keep, 1.5);
         }
 
         /** The side the item falls onto: the next one in the way it turns, unless it has barely passed one. */
