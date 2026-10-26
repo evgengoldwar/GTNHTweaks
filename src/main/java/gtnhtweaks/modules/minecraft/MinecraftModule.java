@@ -10,6 +10,7 @@ import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
 import gtnhtweaks.modules.minecraft.client.ScreenBackground;
+import gtnhtweaks.modules.minecraft.client.WaterSplashes;
 
 /** Tweaks of Minecraft itself: the outline of the looked at block and the heads of the players in the chat. */
 public final class MinecraftModule extends TweakModule {
@@ -21,6 +22,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_PLAYER = "player";
     public static final String CATEGORY_INVENTORY = "inventory";
     public static final String CATEGORY_BACKGROUND = "screenBackground";
+    public static final String CATEGORY_SPLASHES = "waterSplashes";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -71,6 +73,14 @@ public final class MinecraftModule extends TweakModule {
     public static int blurStrength = 5;
     /** Darkness of the gradient over the blurred world, in percent. */
     public static int blurDarkness = 20;
+
+    /** Splashes and rings of waves when something falls into water. */
+    public static boolean waterSplashes = true;
+    public static boolean splashItems = true;
+    public static boolean splashMobs = true;
+    public static boolean splashPlayers = true;
+    /** Most splashes at the same time. */
+    public static int maxSplashes = 48;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
@@ -209,6 +219,23 @@ public final class MinecraftModule extends TweakModule {
             0,
             100,
             "BLUR mode: how dark the blurred world is, in percent. 0 for no darkening");
+
+        config.addCustomCategoryComment(
+            CATEGORY_SPLASHES,
+            "Splashes of what falls into water: a crown of spray, droplets, bubbles and rings of small waves spreading "
+                + "on the surface. Only on the client, off with the Minimal particles of the video settings");
+        waterSplashes = config
+            .getBoolean("enabled", CATEGORY_SPLASHES, waterSplashes, "Splashes when something falls into water");
+        splashItems = config.getBoolean("items", CATEGORY_SPLASHES, splashItems, "Splashes of dropped items");
+        splashMobs = config.getBoolean("mobs", CATEGORY_SPLASHES, splashMobs, "Splashes of mobs and animals");
+        splashPlayers = config.getBoolean("players", CATEGORY_SPLASHES, splashPlayers, "Splashes of players");
+        maxSplashes = config.getInt(
+            "maxSplashes",
+            CATEGORY_SPLASHES,
+            maxSplashes,
+            1,
+            256,
+            "Most splashes at the same time: more falling at once make none, so a mass of items does not lag");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
@@ -263,5 +290,6 @@ public final class MinecraftModule extends TweakModule {
     public void preInit(FMLPreInitializationEvent event) {
         if (outlineEnabled) OutlineClient.register();
         ScreenBackground.register();
+        WaterSplashes.register();
     }
 }
