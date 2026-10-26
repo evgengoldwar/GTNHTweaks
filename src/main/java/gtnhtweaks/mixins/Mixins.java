@@ -65,6 +65,9 @@ public enum Mixins implements IMixins {
     MINECRAFT_DROP_SWING(new MixinBuilder("Swing of the hand when throwing an item").setPhase(Phase.EARLY)
         .setApplyIf(() -> MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.dropSwing)
         .addClientMixins("minecraft.MixinEntityPlayer_DropSwing", "minecraft.MixinEntityClientPlayerMP_DropSwing")),
+    MINECRAFT_HOVER_BOUNCE(new MixinBuilder("Items in slots bounce when hovered").setPhase(Phase.EARLY)
+        .setApplyIf(() -> MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.hoverBounce)
+        .addClientMixins("minecraft.MixinGuiContainer_HoverBounce")),
 
     // Item physics module
     ITEM_PHYSICS(new MixinBuilder("Dropped items lie on the ground and tumble when they fall").setPhase(Phase.EARLY)

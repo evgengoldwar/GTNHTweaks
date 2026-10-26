@@ -18,6 +18,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_OUTLINE = "blockOutline";
     public static final String CATEGORY_CHAT = "chat";
     public static final String CATEGORY_PLAYER = "player";
+    public static final String CATEGORY_INVENTORY = "inventory";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -49,6 +50,9 @@ public final class MinecraftModule extends TweakModule {
 
     /** The hand swings when the player throws an item, as in newer versions. */
     public static boolean dropSwing = true;
+
+    /** The item of a slot squeezes and springs back when the mouse comes onto it. */
+    public static boolean hoverBounce = true;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
@@ -144,6 +148,13 @@ public final class MinecraftModule extends TweakModule {
             dropSwing,
             "Swing the hand when throwing an item, as in newer versions: with the drop key and out of any inventory. "
                 + "The other players see the swing too. Needs a restart");
+
+        hoverBounce = config.getBoolean(
+            "hoverBounce",
+            CATEGORY_INVENTORY,
+            hoverBounce,
+            "The item of a slot squeezes and springs back when the mouse comes onto it, to show that it is hovered. "
+                + "In every inventory, of vanilla and of mods. Needs a restart");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
