@@ -95,10 +95,23 @@ public final class NewItems {
 
     /** Whether the slot holds a new item of the inventory of the player. */
     public static boolean isNew(Slot slot) {
-        return MinecraftModule.newItemStars && slot != null
-            && slot.inventory instanceof InventoryPlayer
-            && slot.getSlotIndex() < 36
-            && isNew(slot.getStack());
+        if (!MinecraftModule.newItemStars || slot == null) return false;
+        ItemStack stack = slot.getStack();
+        return isNew(stack) && ofPlayer(slot, stack);
+    }
+
+    /**
+     * Whether the slot shows the inventory of the player. Not only by its inventory: mods and the creative inventory
+     * show it through slots of their own, whose stack is still the one in the inventory of the player.
+     */
+    private static boolean ofPlayer(Slot slot, ItemStack stack) {
+        if (slot.inventory instanceof InventoryPlayer) return true;
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.thePlayer == null) return false;
+        for (ItemStack own : mc.thePlayer.inventory.mainInventory) {
+            if (own == stack) return true;
+        }
+        return false;
     }
 
     private static boolean isNew(ItemStack stack) {
@@ -109,7 +122,8 @@ public final class NewItems {
 
     /** The mouse is on the slot: its item is not new any more. */
     public static void seen(Slot slot) {
-        if (isNew(slot)) NEW.remove(key(slot.getStack()));
+        // whatever slot shows it: looked at is looked at
+        if (slot != null && isNew(slot.getStack())) NEW.remove(key(slot.getStack()));
     }
 
     /** Draws the star of a new item in the corner of the slot, over its item. */
