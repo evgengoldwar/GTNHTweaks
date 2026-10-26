@@ -17,7 +17,8 @@ import gtnhtweaks.GTNHTweaks;
  * What Chromatic Spectrum takes the colors of a tooltip from when the tooltip has only text. Chromatic Tooltips Compat
  * passes ModularUI and BetterQuesting tooltips as bare lines, so Chromatic Spectrum, which colors by the item or fluid
  * of the tooltip, falls back to its gray palette. The target is found when the tooltip is requested, kept with the
- * tooltip and given to Chromatic Spectrum while it is drawn; the content of the tooltip does not change.
+ * tooltip and returned as its target while it is drawn, which is when Chromatic Spectrum reads it; the content of the
+ * tooltip, built before, does not change.
  */
 public final class PaletteTargets {
 
@@ -39,14 +40,22 @@ public final class PaletteTargets {
     }
 
     private static TooltipTarget requested;
-    private static TooltipTarget drawn;
-    private static boolean failed;
+    private static boolean screenFailed;
+    private static boolean questsFailed;
 
     private PaletteTargets() {}
 
     /** Called when a tooltip is requested, before Chromatic Tooltips builds it. */
     public static void beginRequest(TooltipRequest request) {
-        requested = request != null && isBare(request.target) ? find(request) : null;
+        if (request == null || !isBare(request.target)) {
+            requested = null;
+            return;
+        }
+        TooltipTarget target = hoveredOnScreen();
+        if (target == null && BETTER_QUESTING && "betterquesting".equals(request.context)) {
+            target = questIcon(request);
+        }
+        requested = target;
     }
 
     public static void endRequest() {
@@ -58,37 +67,36 @@ public final class PaletteTargets {
         return requested;
     }
 
-    public static void beginDraw(TooltipTarget target) {
-        drawn = target;
-    }
-
-    public static void endDraw() {
-        drawn = null;
-    }
-
-    /** The target Chromatic Spectrum colors by: the found one in place of a bare target. */
-    public static TooltipTarget forPalette(TooltipTarget target) {
-        return drawn != null && isBare(target) ? drawn : target;
-    }
-
-    private static boolean isBare(TooltipTarget target) {
+    public static boolean isBare(TooltipTarget target) {
         return target == null || !target.isItem() && !target.isFluid();
     }
 
-    private static TooltipTarget find(TooltipRequest request) {
-        if (failed) return null;
+    /**
+     * The fluid or item of the ModularUI widget under the mouse, whose tooltip is shown. Also called while the tooltip
+     * is drawn, for tooltips built without a request.
+     */
+    public static TooltipTarget hoveredOnScreen() {
+        if (screenFailed) return null;
         try {
             TooltipTarget target = null;
             if (MODULAR_UI2) target = ModularUI2Hover.hoveredTarget();
             if (target == null && MODULAR_UI) target = ModularUIHover.hoveredTarget();
-            if (target == null && BETTER_QUESTING && "betterquesting".equals(request.context)) {
-                target = QuestIcons.targetFor(request.tooltip);
-            }
             return target;
         } catch (Throwable t) {
-            // An API of ModularUI or BetterQuesting changed: leave the tooltips gray instead of failing every frame
-            failed = true;
-            GTNHTweaks.LOG.error("Failed to find what to color a Chromatic Tooltips tooltip by, coloring is off", t);
+            // An API of ModularUI changed: leave the tooltips gray instead of failing every frame
+            screenFailed = true;
+            GTNHTweaks.LOG.error("Failed to find the hovered ModularUI widget, its tooltips stay gray", t);
+            return null;
+        }
+    }
+
+    private static TooltipTarget questIcon(TooltipRequest request) {
+        if (questsFailed) return null;
+        try {
+            return QuestIcons.targetFor(request.tooltip);
+        } catch (Throwable t) {
+            questsFailed = true;
+            GTNHTweaks.LOG.error("Failed to find the icon of the hovered quest, quest tooltips stay gray", t);
             return null;
         }
     }
