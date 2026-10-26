@@ -80,8 +80,8 @@ public final class NewItems {
     /** The stars on the hotbar, so a picked up item shows as new at once. */
     @SubscribeEvent
     public void onOverlay(RenderGameOverlayEvent.Post event) {
-        if (event.type != RenderGameOverlayEvent.ElementType.HOTBAR || NEW.isEmpty()
-            || !MinecraftModule.newItemStars) return;
+        if (event.type != RenderGameOverlayEvent.ElementType.HOTBAR || NEW.isEmpty() || !MinecraftModule.newItemStars)
+            return;
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.thePlayer == null) return;
         ScaledResolution resolution = event.resolution;

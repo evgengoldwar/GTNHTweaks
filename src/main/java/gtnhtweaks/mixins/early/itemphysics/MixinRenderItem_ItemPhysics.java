@@ -18,10 +18,7 @@ public class MixinRenderItem_ItemPhysics {
     @Shadow
     public boolean renderWithColor;
 
-    @Inject(
-        method = "doRender(Lnet/minecraft/entity/item/EntityItem;DDDFF)V",
-        at = @At("HEAD"),
-        cancellable = true)
+    @Inject(method = "doRender(Lnet/minecraft/entity/item/EntityItem;DDDFF)V", at = @At("HEAD"), cancellable = true)
     private void gtnhtweaks$doRender(EntityItem entity, double x, double y, double z, float yaw, float partialTicks,
         CallbackInfo ci) {
         if (ItemPhysicsRenderer.render(entity, x, y, z, partialTicks, renderWithColor)) ci.cancel();

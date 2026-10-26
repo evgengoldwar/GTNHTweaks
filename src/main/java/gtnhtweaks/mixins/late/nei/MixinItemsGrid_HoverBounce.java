@@ -37,8 +37,7 @@ public abstract class MixinItemsGrid_HoverBounce {
             int row = (mouseY - marginTop) / size;
             int column = (mouseX - marginLeft - paddingLeft) / size;
             if (row < rows && column < columns) {
-                NEIHoverBounce
-                    .update(this, marginLeft + paddingLeft + column * size, marginTop + row * size, size);
+                NEIHoverBounce.update(this, marginLeft + paddingLeft + column * size, marginTop + row * size, size);
                 return;
             }
         }

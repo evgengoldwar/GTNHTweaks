@@ -54,13 +54,11 @@ final class BeeModel {
      */
     private static final String[] OPEN_LEFT = { "..", "#w", "##", "##" }, OPEN_RIGHT = { "..", "w#", "##", "##" },
         SHUT = { "..", "..", "..", "##" }, CALM_LEFT = { "..", "..", "##", "#." },
-        CALM_RIGHT = { "..", "..", "##", ".#" },
-        SURPRISED_LEFT = { "#w", "##", "##", "##" }, SURPRISED_RIGHT = { "w#", "##", "##", "##" },
-        ANGRY_LEFT = { "..", "#.", "##", "#w" }, ANGRY_RIGHT = { "..", ".#", "##", "w#" },
-        SAD_LEFT = { "..", ".w", "##", "##" }, SAD_RIGHT = { "..", "w.", "##", "##" },
-        HALF = { "..", "..", "##", "##" },
-        STERN = { "##", "..", "##", "##" }, DIZZY_LEFT = { "..", "#.", ".#", "#." },
-        DIZZY_RIGHT = { "..", ".#", "#.", ".#" };
+        CALM_RIGHT = { "..", "..", "##", ".#" }, SURPRISED_LEFT = { "#w", "##", "##", "##" },
+        SURPRISED_RIGHT = { "w#", "##", "##", "##" }, ANGRY_LEFT = { "..", "#.", "##", "#w" },
+        ANGRY_RIGHT = { "..", ".#", "##", "w#" }, SAD_LEFT = { "..", ".w", "##", "##" },
+        SAD_RIGHT = { "..", "w.", "##", "##" }, HALF = { "..", "..", "##", "##" }, STERN = { "##", "..", "##", "##" },
+        DIZZY_LEFT = { "..", "#.", ".#", "#." }, DIZZY_RIGHT = { "..", ".#", "#.", ".#" };
     /** The mouths, 3 by 2 pixels between the eyes, in the fifth and sixth rows. */
     private static final String[] SMILE = { "...", ".#." }, GRIN = { "###", "#p#" }, OPEN = { ".#.", ".#." },
         FROWN = { ".#.", "#.#" }, SMIRK = { "...", ".##" }, LINE = { "...", "###" }, SNORE = { "...", ".#." },
@@ -78,8 +76,7 @@ final class BeeModel {
      * @param dressed   with what its species wears, holds and glows with
      * @param carry     carrying what it produces when it holds nothing else
      */
-    static void render(Bee bee, double time, int seed, float faceYaw, float facePitch, boolean dressed,
-        boolean carry) {
+    static void render(Bee bee, double time, int seed, float faceYaw, float facePitch, boolean dressed, boolean carry) {
         double t = time + rand(seed, 0) * 1000;
         SpeciesLook look = bee.look;
         BeeMesh.begin();
@@ -177,7 +174,13 @@ final class BeeModel {
                 return;
             case SLIME:
                 // a darker core in the see-through shell
-                box(-W * 0.65F, -H * 0.65F, -length * 0.7F, W * 0.65F, H * 0.65F, length * 0.7F,
+                box(
+                    -W * 0.65F,
+                    -H * 0.65F,
+                    -length * 0.7F,
+                    W * 0.65F,
+                    H * 0.65F,
+                    length * 0.7F,
                     mix(look.body, 0x000000, 0.3F));
                 return;
             case GLOW: {
@@ -226,8 +229,7 @@ final class BeeModel {
     }
 
     /** The face drawn in pixels on the front, as a texture would have it, so it can change with how the bee feels. */
-    private static void drawFace(Bee bee, Expression expression, float length, double t, int seed,
-        boolean dressed) {
+    private static void drawFace(Bee bee, Expression expression, float length, double t, int seed, boolean dressed) {
         boolean asleep = bee.sleep > 0.5F;
         boolean blink = frac(t / 3.7 + rand(seed, 1)) < 0.04;
         boolean hot = bee.hot > 0.5F, cold = bee.cold > 0.5F;
@@ -312,8 +314,7 @@ final class BeeModel {
         }
         pixels(mouth, 2, 4, z, DARK);
 
-        int blush = hot ? HOT_BLUSH
-            : bee.type == EnumBeeType.PRINCESS || expression == Expression.DIZZY ? BLUSH : -1;
+        int blush = hot ? HOT_BLUSH : bee.type == EnumBeeType.PRINCESS || expression == Expression.DIZZY ? BLUSH : -1;
         if (blush >= 0) {
             pixel(1, 5, z, blush);
             pixel(5, 5, z, blush);

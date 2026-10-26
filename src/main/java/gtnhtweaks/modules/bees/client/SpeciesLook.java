@@ -287,7 +287,7 @@ final class SpeciesLook {
                 + "callisto enceladus triton haumea makemake ceres phobos deimos oberon miranda proteus kuiper "
                 + "asteroid asteroids meteor meteoric meteorite comet galaxy galactic stellar orbit centauri "
                 + "barnarda tceti tcetie vega rocket astro nebula planet planetary desh ledox quantium mytryl")
-                .hat(Hat.ASTRONAUT);
+                    .hat(Hat.ASTRONAUT);
         rule(
             "radioactive nuclear uranium plutonium thorium naquadah naquadria americium radium radon neptunium "
                 + "curium californium polonium enriched isotope fission fallout irradiated").face(FaceGear.GASMASK)
@@ -382,8 +382,7 @@ final class SpeciesLook {
         rule(
             "sugary fruity sweet candy chocolate cocoa milk milky coffee sandwich bacon beef pork chicken mutton "
                 + "food cake cookie bread jam berry apple juice vanilla caramel toffee cheese pizza burger tasty "
-                + "delicious ripening ripe sour salt salty spice spicy pepper butter edible cuisine")
-                    .hat(Hat.CHEF_HAT);
+                + "delicious ripening ripe sour salt salty spice spicy pepper butter edible cuisine").hat(Hat.CHEF_HAT);
         rule("leporine bunny rabbit hare easter").hat(Hat.BUNNY_EARS);
         rule(
             "diamond emerald ruby sapphire olivine garnet amethyst topaz tanzanite amber certus fluix jasper opal "
@@ -397,8 +396,7 @@ final class SpeciesLook {
                 + "invar cobalt magnesium molybdenum palladium ruthenium rhodium niobium vanadium gallium indium "
                 + "bismuth antimony arsenic cadmium tantalum thallium mithril adamantium adamantite orichalcum "
                 + "vibranium duranium tritanium trinium lutetium europium samarium neodymium yttrium beryllium "
-                + "lithium uranium alloy ingot ore ores")
-                    .hat(Hat.MINER_HELMET)
+                + "lithium uranium alloy ingot ore ores").hat(Hat.MINER_HELMET)
                     .skin(Skin.METAL);
         rule("coal peat lignite graphite carbon charcoal coke soot ash ashen").hat(Hat.MINER_HELMET)
             .aura(Aura.SMOKE);
@@ -426,8 +424,8 @@ final class SpeciesLook {
         rule(
             "aggressive angry wrathful hostile furious rage wild savage hydra urghast avenger feral fierce "
                 + "vicious").expression(Expression.ANGRY);
-        rule("forlorn abandoned lonely sad gloomy melancholy sorrow weeping tears withered lost").expression(
-            Expression.SAD);
+        rule("forlorn abandoned lonely sad gloomy melancholy sorrow weeping tears withered lost")
+            .expression(Expression.SAD);
         rule("happy jolly lucky sunny bright").expression(Expression.GRIN);
         rule("curious wondrous shocked startled").expression(Expression.SURPRISED);
         rule("serene peaceful zen calm lazy sleepy common").expression(Expression.CALM);

@@ -238,8 +238,25 @@ final class BeeMesh {
     /** A flat rectangle facing +z. */
     static void face(float x0, float y0, float x1, float y1, float z, int rgb) {
         float u = BeeTexture.WHITE_U, v = BeeTexture.WHITE_V;
-        quad(Math.min(x0, x1), y0, z, Math.max(x0, x1), y0, z, Math.max(x0, x1), y1, z, Math.min(x0, x1), y1, z, u, v,
-            u, v, argb(rgb, 1), false);
+        quad(
+            Math.min(x0, x1),
+            y0,
+            z,
+            Math.max(x0, x1),
+            y0,
+            z,
+            Math.max(x0, x1),
+            y1,
+            z,
+            Math.min(x0, x1),
+            y1,
+            z,
+            u,
+            v,
+            u,
+            v,
+            argb(rgb, 1),
+            false);
     }
 
     /** The letter Z on the plane z = 0, facing +z, its middle at the origin. */
@@ -247,8 +264,25 @@ final class BeeMesh {
         face(-halfWidth, halfHeight - line, halfWidth, halfHeight, 0, rgb);
         face(-halfWidth, -halfHeight, halfWidth, -halfHeight + line, 0, rgb);
         float u = BeeTexture.WHITE_U, v = BeeTexture.WHITE_V;
-        quad(-halfWidth, -halfHeight + line, 0, -halfWidth + line * 1.8F, -halfHeight + line, 0, halfWidth,
-            halfHeight - line, 0, halfWidth - line * 1.8F, halfHeight - line, 0, u, v, u, v, argb(rgb, 1), false);
+        quad(
+            -halfWidth,
+            -halfHeight + line,
+            0,
+            -halfWidth + line * 1.8F,
+            -halfHeight + line,
+            0,
+            halfWidth,
+            halfHeight - line,
+            0,
+            halfWidth - line * 1.8F,
+            halfHeight - line,
+            0,
+            u,
+            v,
+            u,
+            v,
+            argb(rgb, 1),
+            false);
     }
 
     /**
