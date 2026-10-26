@@ -8,7 +8,10 @@ import com.gtnewhorizon.gtnhmixins.builders.TargetModBuilder;
 public enum TargetMods implements ITargetMod {
 
     GREGTECH(null, "gregtech"),
-    NEI(null, "NotEnoughItems");
+    NEI(null, "NotEnoughItems"),
+    CHROMATIC_TOOLTIPS(null, "chromatictooltips"),
+    CHROMATIC_SPECTRUM(null, "chromaticspectrum"),
+    BETTER_QUESTING(null, "betterquesting");
 
     private final TargetModBuilder builder;
 

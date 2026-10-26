@@ -204,6 +204,28 @@
 | `cables/hideCableInsulation` | `true` | рисовать поставленные изолированные кабели без изоляции |
 | `toolOverlay/modern` | `true` | оверлей инструментов как в GregTech CEu Modern; `false` — сетка GT5 |
 
+### chromatictooltips: фиксы Chromatic Tooltips
+
+Работает только если установлен [Chromatic Tooltips](https://github.com/slprime/ChromaticTooltips),
+иначе ничего не делает. Чинит его вместе с
+[Chromatic Tooltips Compat](https://github.com/slprime/ChromaticTooltipsCompat) и аддоном
+[Chromatic Spectrum](https://github.com/Danastroovakim/ChromaticSpectrum):
+
+- Chromatic Spectrum красит тултип в цвета предмета или жидкости, о которых он, а Compat передаёт
+  тултипы окон ModularUI (баки GregTech и другие) и квестов BetterQuesting одним текстом, поэтому они
+  оставались серыми. Теперь бак жидкости в окнах ModularUI 1 и 2 красится в цвет жидкости, а квест в
+  BetterQuesting — в цвет своей иконки. Текст тултипа не меняется, только цвета.
+- Текст в тултипах квестов BetterQuesting вылезал за рамку: Chromatic Tooltips меряет ширину строк
+  заранее, а рисуются они шире. Теперь ширина каждой нарисованной строки запоминается, и рамка
+  подстраивается под неё со следующего кадра (Chromatic Tooltips пересобирает тултип много раз в секунду).
+
+Настройки в `config/GTNHTweaks/chromatictooltips.cfg` (нужен перезапуск):
+
+| Параметр | По умолчанию | Описание |
+| --- | --- | --- |
+| `fixes/colorTextTooltips` | `true` | красить тултипы бака ModularUI и квеста BetterQuesting (нужен Chromatic Spectrum) |
+| `fixes/fitTextWidth` | `true` | растягивать рамку тултипа под нарисованный текст |
+
 ### extrautilities: твики Extra Utilities
 
 Работает только если установлен Extra Utilities, иначе ничего не делает.

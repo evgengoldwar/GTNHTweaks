@@ -5,6 +5,7 @@ import javax.annotation.Nonnull;
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 
+import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
@@ -82,6 +83,35 @@ public enum Mixins implements IMixins {
             .setApplyIf(() -> NEIModule.INSTANCE.isEnabled() && NEIModule.fillOneCraftWithCtrl)
             .addRequiredMod(TargetMods.NEI)
             .addClientMixins("nei.MixinGuiOverlayButton_NEI")),
+
+    // Chromatic Tooltips module
+    CHROMATIC_TOOLTIPS_FIT_TEXT_WIDTH(
+        new MixinBuilder("Chromatic Tooltips frames as wide as the drawn text").setPhase(Phase.LATE)
+            .setApplyIf(() -> ChromaticTooltipsModule.INSTANCE.isEnabled() && ChromaticTooltipsModule.fitTextWidth)
+            .addRequiredMod(TargetMods.CHROMATIC_TOOLTIPS)
+            .addClientMixins("chromatictooltips.MixinTooltipFontContext_ChromaticTooltips")),
+    CHROMATIC_TOOLTIPS_COLOR_TEXT_TOOLTIPS(
+        new MixinBuilder("Chromatic Spectrum colors of the hovered fluid in ModularUI tooltips")
+            .setPhase(Phase.LATE)
+            .setApplyIf(
+                () -> ChromaticTooltipsModule.INSTANCE.isEnabled() && ChromaticTooltipsModule.colorTextTooltips)
+            .addRequiredMod(TargetMods.CHROMATIC_TOOLTIPS)
+            .addRequiredMod(TargetMods.CHROMATIC_SPECTRUM)
+            .addClientMixins(
+                "chromatictooltips.MixinTooltipHandler_ChromaticTooltips",
+                "chromatictooltips.MixinTooltipContext_ChromaticTooltips",
+                "chromatictooltips.MixinSpectrumEventHandler_ChromaticTooltips")),
+    CHROMATIC_TOOLTIPS_COLOR_QUEST_TOOLTIPS(
+        new MixinBuilder("Chromatic Spectrum colors of the quest icon in BetterQuesting quest tooltips")
+            .setPhase(Phase.LATE)
+            .setApplyIf(
+                () -> ChromaticTooltipsModule.INSTANCE.isEnabled() && ChromaticTooltipsModule.colorTextTooltips)
+            .addRequiredMod(TargetMods.CHROMATIC_TOOLTIPS)
+            .addRequiredMod(TargetMods.CHROMATIC_SPECTRUM)
+            .addRequiredMod(TargetMods.BETTER_QUESTING)
+            .addClientMixins(
+                "chromatictooltips.AccessorTooltipLines_ChromaticTooltips",
+                "chromatictooltips.MixinPanelButtonQuest_ChromaticTooltips")),
 
     // Debug module
     DEBUG_CRASH_TEST_MIXIN(

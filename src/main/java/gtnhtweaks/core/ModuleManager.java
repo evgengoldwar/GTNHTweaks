@@ -17,6 +17,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.modules.backups.BackupsModule;
+import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
@@ -41,6 +42,7 @@ public final class ModuleManager {
             MinecraftModule.INSTANCE,
             GregTechModule.INSTANCE,
             NEIModule.INSTANCE,
+            ChromaticTooltipsModule.INSTANCE,
             TinkersModule.INSTANCE,
             ExtraUtilitiesModule.INSTANCE,
             LogsModule.INSTANCE,
