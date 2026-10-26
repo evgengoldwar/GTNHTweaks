@@ -8,6 +8,7 @@ import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
+import gtnhtweaks.modules.itemphysics.ItemPhysicsModule;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.logs.LogsModule;
 import gtnhtweaks.modules.mainmenu.MainMenuModule;
@@ -61,6 +62,11 @@ public enum Mixins implements IMixins {
                 "minecraft.MixinChatLine_ChatHeads",
                 "minecraft.MixinGuiNewChat_ChatHeads",
                 "minecraft.MixinGuiChat_ChatHeads")),
+
+    // Item physics module
+    ITEM_PHYSICS(new MixinBuilder("Dropped items lie on the ground and tumble when they fall").setPhase(Phase.EARLY)
+        .setApplyIf(ItemPhysicsModule.INSTANCE::isEnabled)
+        .addClientMixins("itemphysics.MixinRenderItem_ItemPhysics")),
 
     // GregTech module
     GREGTECH_HIDE_CABLE_INSULATION(

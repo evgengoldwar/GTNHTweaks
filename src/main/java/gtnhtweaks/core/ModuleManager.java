@@ -21,6 +21,7 @@ import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
+import gtnhtweaks.modules.itemphysics.ItemPhysicsModule;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
 import gtnhtweaks.modules.logs.LogsModule;
 import gtnhtweaks.modules.mainmenu.MainMenuModule;
@@ -40,6 +41,7 @@ public final class ModuleManager {
             MainMenuModule.INSTANCE,
             MenusModule.INSTANCE,
             MinecraftModule.INSTANCE,
+            ItemPhysicsModule.INSTANCE,
             GregTechModule.INSTANCE,
             NEIModule.INSTANCE,
             ChromaticTooltipsModule.INSTANCE,
