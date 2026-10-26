@@ -103,14 +103,7 @@ enum FaceGear {
                 for (int side = -1; side <= 1; side += 2) {
                     float wag = (float) Math.sin(time * 1.1) * 0.1F;
                     box(side < 0 ? -2.3F : 1.3F, -1.55F, 0, side < 0 ? -1.3F : 2.3F, -0.95F, 0.4F, color);
-                    box(
-                        side < 0 ? -2.75F : 2.3F,
-                        -1.0F + wag,
-                        0,
-                        side < 0 ? -2.3F : 2.75F,
-                        -0.45F + wag,
-                        0.35F,
-                        color);
+                    box(side < 0 ? -2.75F : 2.3F, -1.0F + wag, 0, side < 0 ? -2.3F : 2.75F, -0.45F + wag, 0.35F, color);
                 }
                 break;
             default:

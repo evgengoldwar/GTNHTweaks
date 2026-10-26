@@ -1,7 +1,5 @@
 package gtnhtweaks.modules.extrautilities.client;
 
-import static gtnhtweaks.modules.extrautilities.client.PottedPlantModel.SOIL_Y;
-import static gtnhtweaks.modules.extrautilities.client.PottedPlantModel.STEM;
 import static gtnhtweaks.common.model.Shapes.box;
 import static gtnhtweaks.common.model.Shapes.cube;
 import static gtnhtweaks.common.model.Shapes.face;
@@ -10,6 +8,8 @@ import static gtnhtweaks.common.model.Shapes.letterZ;
 import static gtnhtweaks.common.model.Shapes.mix;
 import static gtnhtweaks.common.model.Shapes.rand;
 import static gtnhtweaks.common.model.Shapes.translucent;
+import static gtnhtweaks.modules.extrautilities.client.PottedPlantModel.SOIL_Y;
+import static gtnhtweaks.modules.extrautilities.client.PottedPlantModel.STEM;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
 import static org.lwjgl.opengl.GL11.glRotatef;

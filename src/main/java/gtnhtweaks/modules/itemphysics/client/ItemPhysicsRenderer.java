@@ -306,8 +306,8 @@ public final class ItemPhysicsRenderer {
     }
 
     /** Blocks, each standing on its bottom face; the unit cube of a block is centered on the origin. */
-    private static void drawBlocks(State state, EntityItem entity, ItemStack stack, Block block,
-        IItemRenderer custom, TextureManager textures) {
+    private static void drawBlocks(State state, EntityItem entity, ItemStack stack, Block block, IItemRenderer custom,
+        TextureManager textures) {
         boolean blend = block != null && block.getRenderBlockPass() > 0;
         if (blend) {
             GL11.glAlphaFunc(GL11.GL_GREATER, 0.1F);
@@ -604,8 +604,8 @@ public final class ItemPhysicsRenderer {
          * @param bottom the bottom of the entity in the world
          * @param z      the middle of the entity in the world
          */
-        void updatePush(World world, EntityItem entity, double x, double bottom, double z, float yaw,
-            float shapeHeight, float dt) {
+        void updatePush(World world, EntityItem entity, double x, double bottom, double z, float yaw, float shapeHeight,
+            float dt) {
             if (x != keyX || bottom != keyY || z != keyZ || yaw != keyYaw || shapeHeight != keyHeight) {
                 keyX = x;
                 keyY = bottom;

@@ -58,8 +58,7 @@ final class BeeModel {
      * @param dressed   with what its species wears, holds and glows with
      * @param carry     carrying what it produces when it holds nothing else
      */
-    static void render(Bee bee, double time, int seed, float faceYaw, float facePitch, boolean dressed,
-        boolean carry) {
+    static void render(Bee bee, double time, int seed, float faceYaw, float facePitch, boolean dressed, boolean carry) {
         double t = time + rand(seed, 0) * 1000;
         SpeciesLook look = bee.look;
         if (bee.type == EnumBeeType.LARVAE) {
@@ -95,7 +94,13 @@ final class BeeModel {
         drawBody(skin, body, stripe, length, t);
         if (bee.type != EnumBeeType.DRONE) {
             float sting = queen ? 0.45F : 0.35F;
-            box(-sting, -1.05F - sting, -length - (queen ? 2 : 1.4F), sting, -1.05F + sting, -length,
+            box(
+                -sting,
+                -1.05F - sting,
+                -length - (queen ? 2 : 1.4F),
+                sting,
+                -1.05F + sting,
+                -length,
                 mix(stripe, 0x000000, 0.5F));
         }
         drawLegs(legs, t, bee.sleep);
@@ -191,12 +196,24 @@ final class BeeModel {
                     float a = (float) rand(77, i) * 2 - 1, b = (float) rand(77, i + 50) * 2 - 1;
                     float s = 0.3F + (float) rand(77, i + 100) * 0.4F;
                     int speck = i % 3 == 0 ? mix(body, 0xFFFFFF, 0.3F) : mix(body, 0x000000, 0.35F);
-                    if (i % 3 == 0) box(a * (W - 0.5F) - s, H, b * (length - 0.5F) - s, a * (W - 0.5F) + s, H + 0.06F,
-                        b * (length - 0.5F) + s, speck);
+                    if (i % 3 == 0) box(
+                        a * (W - 0.5F) - s,
+                        H,
+                        b * (length - 0.5F) - s,
+                        a * (W - 0.5F) + s,
+                        H + 0.06F,
+                        b * (length - 0.5F) + s,
+                        speck);
                     else {
                         float x = i % 2 == 0 ? -W - 0.06F : W;
-                        box(x, a * (H - 0.5F) - s, b * (length - 0.5F) - s, x + 0.06F, a * (H - 0.5F) + s,
-                            b * (length - 0.5F) + s, speck);
+                        box(
+                            x,
+                            a * (H - 0.5F) - s,
+                            b * (length - 0.5F) - s,
+                            x + 0.06F,
+                            a * (H - 0.5F) + s,
+                            b * (length - 0.5F) + s,
+                            speck);
                     }
                 }
                 break;
@@ -318,8 +335,14 @@ final class BeeModel {
                         boolean lit = eyesGlow && Shapes.glow();
                         box(cx - hw, cy - hh, z, cx + hw, cy + hh, z + 0.25F, eye);
                         if (eyesGlow) Shapes.endGlow(lit);
-                        else box(cx + hw - 0.85F, cy + hh - 0.85F, z + 0.25F, cx + hw - 0.2F, cy + hh - 0.2F,
-                            z + 0.3F, SHINE);
+                        else box(
+                            cx + hw - 0.85F,
+                            cy + hh - 0.85F,
+                            z + 0.25F,
+                            cx + hw - 0.2F,
+                            cy + hh - 0.2F,
+                            z + 0.3F,
+                            SHINE);
                         if (expression == Expression.SMUG || expression == Expression.DETERMINED) {
                             // the lid over the eye
                             float lid = expression == Expression.SMUG ? cy - 0.05F : cy + 0.45F;
@@ -341,9 +364,21 @@ final class BeeModel {
             if (bee.type == EnumBeeType.PRINCESS && !asleep) {
                 // lashes on the outer corner
                 float x = cx + side * 0.9F;
-                box(Math.min(x, x + side * 0.6F), cy + 0.6F, z, Math.max(x, x + side * 0.6F), cy + 0.85F, z + 0.2F,
+                box(
+                    Math.min(x, x + side * 0.6F),
+                    cy + 0.6F,
+                    z,
+                    Math.max(x, x + side * 0.6F),
+                    cy + 0.85F,
+                    z + 0.2F,
                     DARK);
-                box(Math.min(x, x + side * 0.5F), cy + 1.1F, z, Math.max(x, x + side * 0.5F), cy + 1.35F, z + 0.2F,
+                box(
+                    Math.min(x, x + side * 0.5F),
+                    cy + 1.1F,
+                    z,
+                    Math.max(x, x + side * 0.5F),
+                    cy + 1.35F,
+                    z + 0.2F,
                     DARK);
             }
             int blush = hot ? HOT_BLUSH
