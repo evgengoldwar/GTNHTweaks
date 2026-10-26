@@ -6,7 +6,6 @@ import java.util.Map;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
-import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -23,6 +22,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.common.model.EyeSpace;
 import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
 
 /**
@@ -54,19 +54,6 @@ public final class HealingAxeRenderer implements IItemRenderer {
 
     /** The plane the arm is cut by, set in the space of the companion. */
     private static final DoubleBuffer BOTTOM = BufferUtils.createDoubleBuffer(4);
-
-    /** The light what glows was drawn in, before its full brightness. */
-    private static float brightnessX, brightnessY;
-
-    static {
-        Shapes.fullBright = () -> {
-            brightnessX = OpenGlHelper.lastBrightnessX;
-            brightnessY = OpenGlHelper.lastBrightnessY;
-            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
-        };
-        Shapes.usualLight = () -> OpenGlHelper
-            .setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, brightnessX, brightnessY);
-    }
 
     /** Renderers the axe had before, by the render type they handled. */
     private final Map<ItemRenderType, IItemRenderer> previous = new EnumMap<>(ItemRenderType.class);

@@ -11,6 +11,8 @@ import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
 
+import gtnhtweaks.common.model.EyeSpace;
+
 /**
  * Hangs a held lantern from its handle, straight down whatever way the camera looks, swinging: it lags behind when its
  * holder turns or walks, swings back and settles, like the lanterns held in hand in newer versions.

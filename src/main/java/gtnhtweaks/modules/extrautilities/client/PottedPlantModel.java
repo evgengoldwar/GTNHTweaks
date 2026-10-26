@@ -1,13 +1,13 @@
 package gtnhtweaks.modules.extrautilities.client;
 
-import static gtnhtweaks.modules.extrautilities.client.Shapes.box;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.color;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.easeOut;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.face;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.letterZ;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.mix;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.pulse;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.rand;
+import static gtnhtweaks.common.model.Shapes.box;
+import static gtnhtweaks.common.model.Shapes.color;
+import static gtnhtweaks.common.model.Shapes.easeOut;
+import static gtnhtweaks.common.model.Shapes.face;
+import static gtnhtweaks.common.model.Shapes.letterZ;
+import static gtnhtweaks.common.model.Shapes.mix;
+import static gtnhtweaks.common.model.Shapes.pulse;
+import static gtnhtweaks.common.model.Shapes.rand;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
 import static org.lwjgl.opengl.GL11.glRotatef;

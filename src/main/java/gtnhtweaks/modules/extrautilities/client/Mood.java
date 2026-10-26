@@ -1,5 +1,7 @@
 package gtnhtweaks.modules.extrautilities.client;
 
+import gtnhtweaks.common.model.Shapes;
+
 /** How a companion feels where it is, each from 0 to 1. Heat wins over the rest, rain over the night. */
 public final class Mood {
 

@@ -2,19 +2,21 @@ package gtnhtweaks.modules.extrautilities.client;
 
 import static gtnhtweaks.modules.extrautilities.client.PottedPlantModel.SOIL_Y;
 import static gtnhtweaks.modules.extrautilities.client.PottedPlantModel.STEM;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.box;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.cube;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.face;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.frac;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.letterZ;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.mix;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.rand;
-import static gtnhtweaks.modules.extrautilities.client.Shapes.translucent;
+import static gtnhtweaks.common.model.Shapes.box;
+import static gtnhtweaks.common.model.Shapes.cube;
+import static gtnhtweaks.common.model.Shapes.face;
+import static gtnhtweaks.common.model.Shapes.frac;
+import static gtnhtweaks.common.model.Shapes.letterZ;
+import static gtnhtweaks.common.model.Shapes.mix;
+import static gtnhtweaks.common.model.Shapes.rand;
+import static gtnhtweaks.common.model.Shapes.translucent;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
 import static org.lwjgl.opengl.GL11.glRotatef;
 import static org.lwjgl.opengl.GL11.glScalef;
 import static org.lwjgl.opengl.GL11.glTranslatef;
+
+import gtnhtweaks.common.model.Shapes;
 
 /**
  * A sunflower in the clay pot of {@link PottedPlantModel}: a smiling brown face in a ring of yellow petals, on a stem

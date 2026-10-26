@@ -11,6 +11,8 @@ import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.RenderPlayer;
 
+import gtnhtweaks.common.model.EyeSpace;
+
 /**
  * The bare arm of the player in first person, holding the companion on its hand: vanilla draws no arm while an item
  * is held. It is the arm vanilla draws when the hand is empty, at the same place, so it looks like the other, empty

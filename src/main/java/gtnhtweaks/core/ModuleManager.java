@@ -17,6 +17,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.modules.backups.BackupsModule;
+import gtnhtweaks.modules.bees.BeesModule;
 import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
@@ -47,6 +48,7 @@ public final class ModuleManager {
             ChromaticTooltipsModule.INSTANCE,
             TinkersModule.INSTANCE,
             ExtraUtilitiesModule.INSTANCE,
+            BeesModule.INSTANCE,
             LogsModule.INSTANCE,
             BackupsModule.INSTANCE,
             DebugModule.INSTANCE));
