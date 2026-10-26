@@ -9,6 +9,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
+import gtnhtweaks.modules.minecraft.client.ScreenBackground;
 
 /** Tweaks of Minecraft itself: the outline of the looked at block and the heads of the players in the chat. */
 public final class MinecraftModule extends TweakModule {
@@ -19,11 +20,18 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_CHAT = "chat";
     public static final String CATEGORY_PLAYER = "player";
     public static final String CATEGORY_INVENTORY = "inventory";
+    public static final String CATEGORY_BACKGROUND = "screenBackground";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
         NORMAL,
         THROUGH_BLOCKS
+    }
+
+    /** DIM: the dark gradient of vanilla. BLUR: the world blurred behind the screen, as in newer versions. */
+    public enum BackgroundMode {
+        DIM,
+        BLUR
     }
 
     public static final int VANILLA_COLOR = 0x66000000;
@@ -53,6 +61,16 @@ public final class MinecraftModule extends TweakModule {
 
     /** The item of a slot squeezes and springs back when the mouse comes onto it. */
     public static boolean hoverBounce = true;
+
+    /** Darkness of the vanilla gradient, in percent of opacity at the top. */
+    public static final int VANILLA_DARKNESS = 75;
+    public static BackgroundMode backgroundMode = BackgroundMode.DIM;
+    /** Darkness of the gradient over the world in the DIM mode, in percent, 75 in vanilla. */
+    public static int darkness = VANILLA_DARKNESS;
+    /** Strength of the blur, 1 to 10. */
+    public static int blurStrength = 5;
+    /** Darkness of the gradient over the blurred world, in percent. */
+    public static int blurDarkness = 20;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
@@ -155,6 +173,42 @@ public final class MinecraftModule extends TweakModule {
             hoverBounce,
             "The item of a slot squeezes and springs back when the mouse comes onto it, to show that it is hovered. "
                 + "In every inventory, of vanilla and of mods, and in the NEI panels. Needs a restart");
+
+        config.addCustomCategoryComment(
+            CATEGORY_BACKGROUND,
+            "The background of the menus and inventories opened in a world: the world dimmed or blurred behind them");
+        try {
+            backgroundMode = BackgroundMode.valueOf(
+                config
+                    .getString(
+                        "mode",
+                        CATEGORY_BACKGROUND,
+                        BackgroundMode.DIM.name(),
+                        "DIM: the world is darkened, like vanilla, by the darkness below. BLUR: the world is blurred, "
+                            + "as in newer versions, by blurStrength, and darkened by blurDarkness. Without shader or "
+                            + "framebuffer support BLUR falls back to DIM",
+                        new String[] { BackgroundMode.DIM.name(), BackgroundMode.BLUR.name() })
+                    .trim()
+                    .toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            backgroundMode = BackgroundMode.DIM;
+        }
+        darkness = config.getInt(
+            "darkness",
+            CATEGORY_BACKGROUND,
+            VANILLA_DARKNESS,
+            0,
+            100,
+            "DIM mode: how dark the world is behind the screens, in percent. 75 is vanilla, 0 no darkening");
+        blurStrength = config
+            .getInt("blurStrength", CATEGORY_BACKGROUND, blurStrength, 1, 10, "BLUR mode: how strong the blur is");
+        blurDarkness = config.getInt(
+            "blurDarkness",
+            CATEGORY_BACKGROUND,
+            blurDarkness,
+            0,
+            100,
+            "BLUR mode: how dark the blurred world is, in percent. 0 for no darkening");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
@@ -208,5 +262,6 @@ public final class MinecraftModule extends TweakModule {
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         if (outlineEnabled) OutlineClient.register();
+        ScreenBackground.register();
     }
 }
