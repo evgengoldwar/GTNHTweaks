@@ -97,8 +97,7 @@ public enum Mixins implements IMixins {
             .addRequiredMod(TargetMods.CHROMATIC_SPECTRUM)
             .addClientMixins(
                 "chromatictooltips.MixinTooltipHandler_ChromaticTooltips",
-                "chromatictooltips.MixinTooltipContext_ChromaticTooltips",
-                "chromatictooltips.MixinSpectrumEventHandler_ChromaticTooltips")),
+                "chromatictooltips.MixinTooltipContext_ChromaticTooltips")),
     CHROMATIC_TOOLTIPS_COLOR_QUEST_TOOLTIPS(
         new MixinBuilder("Chromatic Spectrum colors of the quest icon in BetterQuesting quest tooltips")
             .setPhase(Phase.LATE)
