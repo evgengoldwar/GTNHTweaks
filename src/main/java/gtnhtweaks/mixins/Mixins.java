@@ -69,6 +69,9 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Darkness or blur of the world behind the screens").setPhase(Phase.EARLY)
             .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
             .addClientMixins("minecraft.MixinGuiScreen_Background")),
+    MINECRAFT_NEW_ITEMS(new MixinBuilder("Stars on the new items of the inventory").setPhase(Phase.EARLY)
+        .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
+        .addClientMixins("minecraft.MixinGuiContainer_NewItems")),
     MINECRAFT_HOVER_BOUNCE(new MixinBuilder("Items in slots bounce when hovered").setPhase(Phase.EARLY)
         .setApplyIf(() -> MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.hoverBounce)
         .addClientMixins("minecraft.MixinGuiContainer_HoverBounce")),
