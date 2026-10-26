@@ -36,6 +36,7 @@ import net.minecraftforge.client.MinecraftForgeClient;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
+import gtnhtweaks.common.render.UprightWhenDropped;
 import gtnhtweaks.modules.itemphysics.ItemPhysicsModule;
 
 /**
@@ -167,8 +168,9 @@ public final class ItemPhysicsRenderer {
         if (state.kind != kind || state.copies != copies || state.scale != scale) {
             state.layout(entity, kind, copies, scale);
         }
-        // a lone block lies on any face, a pile only right side up or upside down
-        float dt = state.update(entity, partialTicks, solid && copies == 1 ? 90F : 180F);
+        // a lone block lies on any face, a pile only right side up or upside down, a living thing only right side up
+        float restStep = custom instanceof UprightWhenDropped ? 360F : solid && copies == 1 ? 90F : 180F;
+        float dt = state.update(entity, partialTicks, restStep);
         state.glide(dt);
         x += state.glideX;
         y += state.glideY;
@@ -520,7 +522,8 @@ public final class ItemPhysicsRenderer {
         /**
          * Moves the tilt on to the time of this frame.
          *
-         * @param restStep degrees between the sides the item can lie on: 180 for flat items and piles, 90 for a block
+         * @param restStep degrees between the sides the item can lie on: 180 for flat items and piles, 90 for a block,
+         *                 360 for what stands only right side up
          * @return ticks since the last frame
          */
         float update(EntityItem entity, float partialTicks, float restStep) {

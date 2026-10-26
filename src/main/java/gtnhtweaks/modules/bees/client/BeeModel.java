@@ -94,7 +94,8 @@ final class BeeModel {
         // hovers softly, and lands to sleep
         float hover = (float) Math.sin(t * 1.7) * 0.03F * awake;
         float shiver = bee.cold > 0 ? (float) Math.sin(t * 14) * 0.008F * bee.cold : 0;
-        translate(shiver, -0.06F + hover - bee.sleep * 0.12F, 0);
+        // a little above the middle of the cube, so what it carries under it is in the cube too, not in the ground
+        translate(shiver, 0.04F + hover - bee.sleep * 0.12F, 0);
         // turned a little from the viewer, so it is seen in 3D, looking about now and then
         rotate(faceYaw + 35 + (float) Math.sin(t * 0.35) * 8 * awake, 0, 1, 0);
         // nodding as it flies, as the vanilla bee
@@ -402,9 +403,11 @@ final class BeeModel {
         push();
         translate(0, -H, length - 0.6F);
         if (held == Held.PRODUCT) {
-            translate(0, -2.0F + (float) Math.sin(t * 1.7 + 1) * 0.15F, 0.8F);
+            // held out in front, under the face, so it is seen from above too
+            translate(0, -0.9F + (float) Math.sin(t * 1.7 + 1) * 0.15F, 2.4F);
+            rotate(-20, 1, 0, 0);
             rotate((float) Math.sin(t * 0.9) * 10, 0, 1, 0);
-            scale(3.6F, 3.6F, 3.6F);
+            scale(4.0F, 4.0F, 4.0F);
             BeeMesh.item(look.product);
         } else {
             held.draw(look.eyesGlow ? look.eyes : mix(look.body, 0xFFFFFF, 0.4F), t);

@@ -21,6 +21,7 @@ import forestry.api.apiculture.BeeManager;
 import forestry.api.apiculture.EnumBeeType;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.common.model.EyeSpace;
+import gtnhtweaks.common.render.UprightWhenDropped;
 import gtnhtweaks.modules.bees.BeesModule;
 
 /**
@@ -31,18 +32,22 @@ import gtnhtweaks.modules.bees.BeesModule;
  * Where it is switched off in the config, or for a stack with no genes, the renderer the item had before (if any)
  * draws it, else it is drawn as usual.
  */
-public final class BeeRenderer implements IItemRenderer {
+public final class BeeRenderer implements IItemRenderer, UprightWhenDropped {
 
     private static final float FIRST_PERSON_LIFT = 0.45F;
     private static final float FIRST_PERSON_SCALE = 0.85F;
 
-    /** Nanoseconds within which the next drawing of the same dropped stack is another copy of it, not a new frame. */
-    private static final long SAME_FRAME = 2_000_000L;
-
-    /** The dropped stack drawn last, when, and how many copies of it were drawn: Forge draws up to 4 for a stack. */
+    /** Counts the frames, so the copies of a dropped stack drawn in one frame are told apart. */
+    private static int frame;
+    /**
+     * The dropped stack drawn last, in which frame, and how many copies of it were drawn: Forge draws up to 4 for a
+     * stack, the item physics more.
+     */
     private static Entity lastDropped;
-    private static long lastDroppedTime;
+    private static int lastDroppedFrame;
     private static int copy;
+
+    private static final float[] ON_GROUND = { 0, 0 };
 
     /** The facing of the bees in the slots, and when it was read. */
     private static float[] slotFacing;
@@ -60,10 +65,10 @@ public final class BeeRenderer implements IItemRenderer {
     public static void register() {
         FMLCommonHandler.instance()
             .bus()
-            .register(new FirstTick());
+            .register(new Ticks());
     }
 
-    public static final class FirstTick {
+    public static final class Ticks {
 
         private boolean done;
 
@@ -72,6 +77,11 @@ public final class BeeRenderer implements IItemRenderer {
             if (done) return;
             done = true;
             registerNow();
+        }
+
+        @SubscribeEvent
+        public void onRenderTick(TickEvent.RenderTickEvent event) {
+            if (event.phase == TickEvent.Phase.START) frame++;
         }
     }
 
@@ -212,6 +222,9 @@ public final class BeeRenderer implements IItemRenderer {
      * GL now and then rather than for each bee of a page of NEI: reading the GL stalls it.
      */
     private static float[] facing(ItemRenderType type) {
+        // on the ground it faces where it landed, as anything dropped: turned to the viewer it shook as the view moved,
+        // and reading the GL for every bee of a pile lagged
+        if (type == ItemRenderType.ENTITY) return ON_GROUND;
         if (type != ItemRenderType.INVENTORY) {
             return EyeSpace.current()
                 .facing(true);
@@ -233,10 +246,10 @@ public final class BeeRenderer implements IItemRenderer {
         if (type == ItemRenderType.INVENTORY || entity == null) return System.identityHashCode(item);
         int seed = entity.getEntityId() * 31 + System.identityHashCode(item);
         if (type == ItemRenderType.ENTITY) {
-            long now = System.nanoTime();
-            copy = entity == lastDropped && now - lastDroppedTime < SAME_FRAME ? copy + 1 : 0;
+            // the same copy gets the same seed every frame, or the bees of a pile swapped their poses and shook
+            copy = entity == lastDropped && frame == lastDroppedFrame ? copy + 1 : 0;
             lastDropped = entity;
-            lastDroppedTime = now;
+            lastDroppedFrame = frame;
             seed += copy * 977;
         }
         return seed;
