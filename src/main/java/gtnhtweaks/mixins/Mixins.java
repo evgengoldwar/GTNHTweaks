@@ -91,10 +91,8 @@ public enum Mixins implements IMixins {
             .addRequiredMod(TargetMods.CHROMATIC_TOOLTIPS)
             .addClientMixins("chromatictooltips.MixinTooltipFontContext_ChromaticTooltips")),
     CHROMATIC_TOOLTIPS_COLOR_TEXT_TOOLTIPS(
-        new MixinBuilder("Chromatic Spectrum colors of the hovered fluid in ModularUI tooltips")
-            .setPhase(Phase.LATE)
-            .setApplyIf(
-                () -> ChromaticTooltipsModule.INSTANCE.isEnabled() && ChromaticTooltipsModule.colorTextTooltips)
+        new MixinBuilder("Chromatic Spectrum colors of the hovered fluid in ModularUI tooltips").setPhase(Phase.LATE)
+            .setApplyIf(() -> ChromaticTooltipsModule.INSTANCE.isEnabled() && ChromaticTooltipsModule.colorTextTooltips)
             .addRequiredMod(TargetMods.CHROMATIC_TOOLTIPS)
             .addRequiredMod(TargetMods.CHROMATIC_SPECTRUM)
             .addClientMixins(
@@ -104,8 +102,7 @@ public enum Mixins implements IMixins {
     CHROMATIC_TOOLTIPS_COLOR_QUEST_TOOLTIPS(
         new MixinBuilder("Chromatic Spectrum colors of the quest icon in BetterQuesting quest tooltips")
             .setPhase(Phase.LATE)
-            .setApplyIf(
-                () -> ChromaticTooltipsModule.INSTANCE.isEnabled() && ChromaticTooltipsModule.colorTextTooltips)
+            .setApplyIf(() -> ChromaticTooltipsModule.INSTANCE.isEnabled() && ChromaticTooltipsModule.colorTextTooltips)
             .addRequiredMod(TargetMods.CHROMATIC_TOOLTIPS)
             .addRequiredMod(TargetMods.CHROMATIC_SPECTRUM)
             .addRequiredMod(TargetMods.BETTER_QUESTING)
