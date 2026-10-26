@@ -8,6 +8,7 @@ import net.minecraftforge.common.config.Property;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
+import gtnhtweaks.modules.minecraft.client.NewItems;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
 import gtnhtweaks.modules.minecraft.client.ScreenBackground;
 import gtnhtweaks.modules.minecraft.client.WaterSplashes;
@@ -63,6 +64,7 @@ public final class MinecraftModule extends TweakModule {
 
     /** The item of a slot squeezes and springs back when the mouse comes onto it. */
     public static boolean hoverBounce = true;
+    public static boolean newItemStars = true;
 
     /** Darkness of the vanilla gradient, in percent of opacity at the top. */
     public static final int VANILLA_DARKNESS = 75;
@@ -183,6 +185,13 @@ public final class MinecraftModule extends TweakModule {
             hoverBounce,
             "The item of a slot squeezes and springs back when the mouse comes onto it, to show that it is hovered. "
                 + "In every inventory, of vanilla and of mods, and in the NEI panels. Needs a restart");
+        newItemStars = config.getBoolean(
+            "newItemStars",
+            CATEGORY_INVENTORY,
+            newItemStars,
+            "A little star in the corner of the slots of new items, until the mouse is brought onto them in an "
+                + "inventory. An item is new when it comes into the inventory and was not in it before since joining "
+                + "the world: picked up, crafted or taken from a chest. Shown on the hotbar too");
 
         config.addCustomCategoryComment(
             CATEGORY_BACKGROUND,
@@ -291,5 +300,6 @@ public final class MinecraftModule extends TweakModule {
         if (outlineEnabled) OutlineClient.register();
         ScreenBackground.register();
         WaterSplashes.register();
+        NewItems.register();
     }
 }
