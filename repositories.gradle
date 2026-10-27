@@ -1,18 +1,19 @@
 // Add any additional repositories for your dependencies here.
 
 repositories {
-    // Chromatic Tooltips, for the chromatictooltips module
-    maven {
-        name = "Chromatic Tooltips"
-        url = uri("https://slprime.github.io/ChromaticTooltips/")
-        content {
-            includeGroup("com.github.slprime")
-        }
-    }
-    maven {
-        name = "JitPack"
-        url = uri("https://jitpack.io")
-        content {
+    // Chromatic Tooltips, for the chromatictooltips module. Exclusive: looked up only here, so the other repositories
+    // (a well-known one timing out failed the release build) are never asked for it
+    exclusiveContent {
+        forRepositories(
+            maven {
+                name = "Chromatic Tooltips"
+                url = uri("https://slprime.github.io/ChromaticTooltips/")
+            },
+            maven {
+                name = "JitPack"
+                url = uri("https://jitpack.io")
+            })
+        filter {
             includeGroup("com.github.slprime")
         }
     }
