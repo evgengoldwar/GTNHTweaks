@@ -118,6 +118,14 @@ public final class ItemPhysicsRenderer {
     private static final double KEEP_SPEED = 0.15;
     /** Farther moves are teleports: taken at once, without gliding. */
     private static final double TELEPORT_DISTANCE = 2;
+    /**
+     * Items lying on each other on the same ground have their faces at the same height and flicker, each drawn over the
+     * other in turn. Every item is lifted to a layer of its own, by its entity id, so of any {@code LAYERS} items
+     * dropped one after another, as from a broken chest, no two share a height; later ones lie higher, as if on top.
+     * The highest layer is less than a pixel above the ground.
+     */
+    private static final int LAYERS = 32;
+    private static final float LAYER_STEP = 0.0015F;
     /** Most copies of a pile: the layout is made for all of them, so a pile keeps its look when it grows. */
     private static final int MAX_COPIES = 5;
 
@@ -181,7 +189,7 @@ public final class ItemPhysicsRenderer {
         // lifted by as much as the tilt lowers the lowest point, so the shape stands on the bottom of the entity
         float lift = state.height / 2F * Math.abs(MathHelper.cos(pitch * RAD))
             + state.halfZ * Math.abs(MathHelper.sin(pitch * RAD));
-        double bottom = y - entity.yOffset;
+        double bottom = y - entity.yOffset + Math.floorMod(entity.getEntityId(), LAYERS) * LAYER_STEP;
         if (ItemPhysicsModule.keepOutOfBlocks) {
             state.updatePush(
                 world,
