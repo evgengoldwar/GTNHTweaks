@@ -81,20 +81,25 @@ public final class Movement {
     }
 
     /**
-     * Swimming of newer versions: starts sprinting with the eyes under water, goes on while sprinting in water. Not
-     * while flying or riding. Crawling in a low gap is the same pose but not swimming.
+     * Swimming of newer versions: starts sprinting with the eyes under water and the feet in a water block, goes on
+     * while sprinting in water. Not while flying or riding. Crawling in a low gap is the same pose but not swimming.
      */
     private static boolean swimming(EntityPlayer player, MovementState state) {
         if (player.capabilities.isFlying || player.isRiding() || !player.isSprinting()) return false;
-        return state.swimming ? player.isInWater() : eyesInWater(player, state);
+        if (state.swimming) return player.isInWater();
+        int x = MathHelper.floor_double(player.posX);
+        int y = MathHelper.floor_double(player.boundingBox.minY);
+        int z = MathHelper.floor_double(player.posZ);
+        return eyesInWater(player) && player.worldObj.getBlock(x, y, z)
+            .getMaterial() == Material.water;
     }
 
     /**
      * Whether the eyes of the pose are under the water surface. Counted from the bottom of the box, the same on the
      * server and on the client, whose players have their eyes at other heights in vanilla.
      */
-    private static boolean eyesInWater(EntityPlayer player, MovementState state) {
-        double eye = player.boundingBox.minY + state.pose.eye;
+    public static boolean eyesInWater(EntityPlayer player) {
+        double eye = player.boundingBox.minY + state(player).pose.eye;
         int x = MathHelper.floor_double(player.posX);
         int y = MathHelper.floor_double(eye);
         int z = MathHelper.floor_double(player.posZ);

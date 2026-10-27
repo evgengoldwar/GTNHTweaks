@@ -58,8 +58,13 @@ public final class MovementClient {
 
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.START || !event.player.worldObj.isRemote) return;
+        if (!event.player.worldObj.isRemote) return;
         EntityPlayer player = event.player;
+        if (event.phase == TickEvent.Phase.END) {
+            if (player instanceof EntityPlayerSP && player == Minecraft.getMinecraft().thePlayer)
+                afterMove((EntityPlayerSP) player, Movement.state(player));
+            return;
+        }
         Movement.updateOnClient(player);
         MovementState state = Movement.state(player);
         state.prevSwim = state.swim;
@@ -81,17 +86,13 @@ public final class MovementClient {
     }
 
     /**
-     * Swimming of newer versions: less drag in the water, so faster, and up or down where the player looks. Before
-     * the movement of vanilla in the tick, which then moves the player as usual.
+     * Swimming of newer versions, before the movement of vanilla in the tick: sneaking in water sinks, and a swimming
+     * player goes up or down toward where it looks.
      */
     private static void swim(EntityPlayerSP player, MovementState state) {
         if (!Movement.clientSwim || !player.isInWater() || player.capabilities.isFlying) return;
-        // sneaking in water sinks, as in newer versions
         if (player.movementInput.sneak) player.motionY -= 0.04;
         if (!state.swimming) return;
-        // vanilla keeps 0.8 of the speed in water each tick, swimming keeps 0.9
-        player.motionX *= 0.9 / 0.8;
-        player.motionZ *= 0.9 / 0.8;
         double look = player.getLookVec().yCoord;
         double rate = look < -0.2 ? 0.085 : 0.06;
         int x = MathHelper.floor_double(player.posX);
@@ -103,6 +104,22 @@ public final class MovementClient {
         if (look <= 0 || player.movementInput.jump || waterAbove) player.motionY += (look - player.motionY) * rate;
     }
 
+    /**
+     * After the movement of vanilla in the tick. Vanilla moves in water as {@code (speed + push) * 0.8} and pulls down
+     * by 0.02; sprinting in water newer versions keep {@code (speed + push) * 0.9} across and have no pull down, so
+     * the speed is brought to that. And out of the swimming, a sprinting player with its head out of the water stops
+     * sprinting, as in newer versions.
+     */
+    private static void afterMove(EntityPlayerSP player, MovementState state) {
+        if (!Movement.clientSwim || !player.isInWater() || player.capabilities.isFlying) return;
+        if (player.isSprinting()) {
+            player.motionX *= 0.9 / 0.8;
+            player.motionZ *= 0.9 / 0.8;
+            player.motionY += 0.02;
+        }
+        if (player.isSprinting() && !state.swimming && !Movement.eyesInWater(player)) player.setSprinting(false);
+    }
+
     /** Double pressing the forward key starts sprinting, so swimming, also under water and not only on the ground. */
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
@@ -112,10 +129,7 @@ public final class MovementClient {
         EntityPlayerSP player = mc.thePlayer;
         if (player == null || !Movement.clientSwim) return;
         boolean down = mc.gameSettings.keyBindForward.getIsKeyPressed();
-        if (down && !forwardWasDown
-            && !player.isSprinting()
-            && player.isInWater()
-            && player.isInsideOfMaterial(Material.water)) {
+        if (down && !forwardWasDown && !player.isSprinting() && player.isInWater() && Movement.eyesInWater(player)) {
             if (tapTimer > 0) player.setSprinting(true);
             else tapTimer = DOUBLE_TAP_TICKS;
         }
@@ -156,6 +170,7 @@ public final class MovementClient {
         renderPartialTicks = partialTicks;
         if (!(entity instanceof EntityPlayer)) return;
         MovementState state = Movement.state((EntityPlayer) entity);
+        lowerCrouching((EntityPlayer) entity, state);
         float swim = state.swim(partialTicks);
         if (swim <= 0) return;
         float pitch = entity.prevRotationPitch + (entity.rotationPitch - entity.prevRotationPitch) * partialTicks;
@@ -163,6 +178,14 @@ public final class MovementClient {
         float lying = entity.isInWater() ? -90 - pitch : -90;
         glRotatef(swim * lying, 1, 0, 0);
         if (state.pose == Pose.SWIM) glTranslatef(0, -1, 0.3F);
+    }
+
+    /**
+     * A player crouching by its pose without the sneak key is drawn lower too, as vanilla draws the sneaking ones:
+     * called where the body is turned, before it is turned into the swimming pose.
+     */
+    private static void lowerCrouching(EntityPlayer player, MovementState state) {
+        if (state.pose == Pose.CROUCH && !player.isSneaking()) glTranslatef(0, -0.125F, 0);
     }
 
     /** Before the model of a player is posed: the crouching pose bends it even without the sneak key. */
@@ -180,8 +203,10 @@ public final class MovementClient {
 
     /** After the model of a player is posed: the head and the strokes of the arms and legs of swimming. */
     public static void afterPose(ModelBiped model, float limbSwing, Entity entity) {
-        if (firstPersonArm || !(entity instanceof EntityPlayer)) return;
+        if (!(entity instanceof EntityPlayer)) return;
         MovementState state = Movement.state((EntityPlayer) entity);
+        crouchModel(model, !firstPersonArm && state.pose == Pose.CROUCH);
+        if (firstPersonArm) return;
         float swim = state.swim(renderPartialTicks);
         if (swim <= 0) return;
         // looks ahead along the swimming or crawling, not at the ground
@@ -190,8 +215,10 @@ public final class MovementClient {
 
         // a stroke takes 26 steps of the walking animation: arms forward over the head, out to the sides and back
         float step = limbSwing % 26;
-        // a hand that hits does its swing instead of the stroke
+        // a hand that hits does its swing instead of the stroke, a player using an item makes no strokes
         float right = model.onGround > 0 ? 0 : swim;
+        if (((EntityPlayer) entity).isUsingItem()) right = 0;
+        float left = ((EntityPlayer) entity).isUsingItem() ? 0 : swim;
         float leftZ, rightZ, armX;
         if (step < 14) {
             armX = 0;
@@ -209,11 +236,11 @@ public final class MovementClient {
             leftZ = PI;
             rightZ = PI;
         }
-        model.bipedLeftArm.rotateAngleX = turn(model.bipedLeftArm.rotateAngleX, armX, swim);
+        model.bipedLeftArm.rotateAngleX = turn(model.bipedLeftArm.rotateAngleX, armX, left);
         model.bipedRightArm.rotateAngleX = lerp(right, model.bipedRightArm.rotateAngleX, armX);
-        model.bipedLeftArm.rotateAngleY = turn(model.bipedLeftArm.rotateAngleY, PI, swim);
+        model.bipedLeftArm.rotateAngleY = turn(model.bipedLeftArm.rotateAngleY, PI, left);
         model.bipedRightArm.rotateAngleY = lerp(right, model.bipedRightArm.rotateAngleY, PI);
-        model.bipedLeftArm.rotateAngleZ = turn(model.bipedLeftArm.rotateAngleZ, leftZ, swim);
+        model.bipedLeftArm.rotateAngleZ = turn(model.bipedLeftArm.rotateAngleZ, leftZ, left);
         model.bipedRightArm.rotateAngleZ = lerp(right, model.bipedRightArm.rotateAngleZ, rightZ);
         // the legs kick
         model.bipedLeftLeg.rotateAngleX = lerp(
@@ -224,6 +251,29 @@ public final class MovementClient {
             swim,
             model.bipedRightLeg.rotateAngleX,
             0.3F * MathHelper.cos(limbSwing * 0.33333334F));
+    }
+
+    /**
+     * The crouching model of newer versions, lower than the sneaking one of 1.7.10: the body and the head go down
+     * with the arms, the legs stay under them. Undone when the player stands, as vanilla moves only the head and legs.
+     */
+    private static void crouchModel(ModelBiped model, boolean crouching) {
+        if (crouching) {
+            model.bipedHead.rotationPointY = 4.2F;
+            model.bipedHeadwear.rotationPointY = 4.2F;
+            model.bipedBody.rotationPointY = 3.2F;
+            model.bipedRightArm.rotationPointY = 5.2F;
+            model.bipedLeftArm.rotationPointY = 5.2F;
+            model.bipedRightLeg.rotationPointY = 12.2F;
+            model.bipedLeftLeg.rotationPointY = 12.2F;
+            model.bipedRightLeg.rotationPointZ = 4;
+            model.bipedLeftLeg.rotationPointZ = 4;
+        } else if (model.bipedBody.rotationPointY == 3.2F) {
+            // was crouching the last time: the parts vanilla does not put back
+            model.bipedBody.rotationPointY = 0;
+            model.bipedRightArm.rotationPointY = 2;
+            model.bipedLeftArm.rotationPointY = 2;
+        }
     }
 
     private static float armAngle(float step) {
