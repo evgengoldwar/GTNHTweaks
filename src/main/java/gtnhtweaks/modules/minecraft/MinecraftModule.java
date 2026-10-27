@@ -247,8 +247,10 @@ public final class MinecraftModule extends TweakModule {
 
         config.addCustomCategoryComment(
             CATEGORY_SPLASHES,
-            "Splashes of what falls into water: a crown of spray, droplets, bubbles and rings of small waves spreading "
-                + "on the surface. Only on the client, off with the Minimal particles of the video settings");
+            "Splashes of what falls into water, in the look of the splashes of newer versions' mods: a square wall of "
+                + "water with foam edges and a higher jet in the middle, a ring of foam on the surface and pixel "
+                + "droplets that make ripples where they fall back. Only on the client, off with the Minimal "
+                + "particles of the video settings");
         waterSplashes = config
             .getBoolean("enabled", CATEGORY_SPLASHES, waterSplashes, "Splashes when something falls into water");
         splashItems = config.getBoolean("items", CATEGORY_SPLASHES, splashItems, "Splashes of dropped items");

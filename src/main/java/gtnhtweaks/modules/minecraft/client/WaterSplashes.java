@@ -13,8 +13,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.particle.EntityBubbleFX;
-import net.minecraft.client.particle.EntitySplashFX;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -36,30 +34,57 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 import gtnhtweaks.modules.minecraft.MinecraftModule;
 
 /**
- * Splashes of the items, mobs and players falling into water, as some mods of newer versions make them: a crown of
- * pixel spray rising from the surface and falling back, droplets and bubbles, and rings of small waves spreading on
- * the surface and fading away. Their color is the one of the water of the biome, their brightness the light there.
+ * Splashes of the items, mobs and players falling into water, in the look of the splashes of newer versions' mods:
+ * <ul>
+ * <li>a square wall of water rises around the place of the fall, its top edge in pixel waves outlined with white
+ * foam; it grows, falls back and breaks into spray, while it slowly widens;</li>
+ * <li>a second, narrower and twice as high, jet rises in the middle a bit later;</li>
+ * <li>a square ring of foam lies on the surface under the wall and breaks into its corners at the end;</li>
+ * <li>pixel droplets fly out and fall back, and each one makes a little ripple ring where it falls into water.</li>
+ * </ul>
+ * The wall is as wide as twice the entity and as high as its speed times that width, so a dropped item makes a small
+ * splash and a player jumping from high a big one. Its color is the one of the water of the biome, its brightness the
+ * light there. The animation frames are drawn by code, once.
  * <p>
  * Only on the client: every tick the entities around the player are checked, and an entity whose feet were above the
- * water and now are in it, falling fast enough, makes a splash as big as its speed and its width. An entity bobbing on
- * the surface or floating in a stream does not: it is too slow, and every entity waits a second between two splashes.
+ * water and now are in it, moving fast enough, makes a splash. An entity bobbing on the surface or floating in a
+ * stream does not: it is too slow, and every entity waits a second between two splashes.
  */
 public final class WaterSplashes {
 
     /** Splashes farther from the player are not made. */
     private static final double MAX_DISTANCE = 48;
-    /** Slowest fall in blocks per tick that makes a splash. */
-    private static final double MIN_SPEED = 0.1;
+    /** Slowest move in blocks per tick that makes a splash. */
+    private static final double MIN_SPEED = 0.3;
     /** Ticks an entity waits between two splashes. */
     private static final int COOLDOWN = 20;
-    /** Ticks a ring of waves lives. */
-    private static final int RING_LIFE = 28;
-    /** Ticks between the rings of a splash. */
-    private static final int RING_GAP = 4;
+
+    /** Frames of the animation of the wall and the ring of foam: 0 to FRAMES - 1. */
+    private static final int FRAMES = 13;
+    /** Pixels of a side of the wall: wide and high; the 4 sides lie next to each other in a frame. */
+    private static final int SIDE = 12;
+    private static final int WALL_HEIGHT = 16;
+    /** Width of a frame cell in the atlases. */
+    private static final int CELL = 64;
+    private static final int RING_CELL = 16;
+    /** Half the width of the wall per unit of width, in blocks. */
+    private static final float HALF_WIDTH = 0.375F;
+    /** The wall widens by this part every tick. */
+    private static final float WIDEN = 1.03F;
+    /** The second jet: part of the width, times the height. */
+    private static final float JET_WIDTH = 0.5F;
+    private static final float JET_HEIGHT = 2F;
+
+    /** Droplets: gravity and drag per tick, half their size in blocks, most at the same time. */
+    private static final double GRAVITY = 0.05;
+    private static final double DRAG = 0.99;
+    private static final double DROP_HALF = 0.03;
+    private static final int MAX_DROPS = 600;
+    private static final int DROP_LIFE = 100;
 
     private static final class Tracked {
 
-        double lastBottom;
+        double lastX, lastBottom, lastZ;
         boolean inWater;
         int cooldown;
         long seen;
@@ -68,39 +93,78 @@ public final class WaterSplashes {
     private static final class Splash {
 
         final double x, y, z;
-        /** 0 to 1: a small item to a player jumping from high. */
-        final float size;
-        final float width;
-        final int rings;
-        final int crownLife;
-        final float red, green, blue;
+        /** Width of the wall in units of {@link #HALF_WIDTH} * 2, widening every tick. */
+        float width;
+        final float height;
+        final int wave1End, wave2Start, wave2End;
+        final float red, green, blue, light;
         int age;
 
-        Splash(double x, double y, double z, float size, float width, int color, float light) {
+        Splash(double x, double y, double z, float width, float height, int color, float light) {
             this.x = x;
             this.y = y;
             this.z = z;
-            this.size = size;
             this.width = width;
-            this.rings = 1 + Math.round(size * 2);
-            this.crownLife = 10 + Math.round(size * 6);
+            this.height = height;
+            this.wave1End = 10 + Math.round(width * 1.2F);
+            this.wave2Start = 6 + Math.round(width * 0.7F);
+            this.wave2End = 20 + Math.round(width * 2.4F);
+            this.light = light;
             this.red = (color >> 16 & 0xFF) / 255F * light;
             this.green = (color >> 8 & 0xFF) / 255F * light;
             this.blue = (color & 0xFF) / 255F * light;
         }
+    }
 
-        int life() {
-            return Math.max(crownLife, (rings - 1) * RING_GAP + RING_LIFE);
+    private static final class Drop {
+
+        double x, y, z, prevX, prevY, prevZ, motionX, motionY, motionZ;
+        final float red, green, blue;
+        int age;
+
+        Drop(double x, double y, double z, double motionX, double motionY, double motionZ, Splash splash) {
+            this.x = prevX = x;
+            this.y = prevY = y;
+            this.z = prevZ = z;
+            this.motionX = motionX;
+            this.motionY = motionY;
+            this.motionZ = motionZ;
+            // lighter than the water: drops catch the light
+            red = Math.min(1, splash.red * 0.5F + splash.light * 0.5F);
+            green = Math.min(1, splash.green * 0.5F + splash.light * 0.5F);
+            blue = Math.min(1, splash.blue * 0.5F + splash.light * 0.5F);
+        }
+    }
+
+    private static final class Ripple {
+
+        final double x, y, z;
+        final float size, red, green, blue;
+        final int life;
+        int age;
+
+        Ripple(double x, double y, double z, Drop drop) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            int spread = 1 + RANDOM.nextInt(10);
+            this.size = 0.3F + RANDOM.nextFloat() * 0.015F * spread;
+            this.life = 10 + RANDOM.nextInt(spread);
+            this.red = drop.red;
+            this.green = drop.green;
+            this.blue = drop.blue;
         }
     }
 
     private static final Map<Integer, Tracked> TRACKED = new HashMap<>();
     private static final List<Splash> SPLASHES = new ArrayList<>();
+    private static final List<Drop> DROPS = new ArrayList<>();
+    private static final List<Ripple> RIPPLES = new ArrayList<>();
     private static final Random RANDOM = new Random();
 
     private static World world;
     private static long tick;
-    private static DynamicTexture ringTexture, sprayTexture;
+    private static DynamicTexture wallTexture, foamTexture, rippleTexture;
 
     private WaterSplashes() {}
 
@@ -120,13 +184,17 @@ public final class WaterSplashes {
             world = mc.theWorld;
             TRACKED.clear();
             SPLASHES.clear();
+            DROPS.clear();
+            RIPPLES.clear();
         }
         if (world == null || mc.thePlayer == null || mc.isGamePaused()) return;
         tick++;
 
-        for (Iterator<Splash> it = SPLASHES.iterator(); it.hasNext();) {
-            Splash splash = it.next();
-            if (++splash.age > splash.life()) it.remove();
+        tickSplashes(mc);
+        tickDrops();
+        for (Iterator<Ripple> it = RIPPLES.iterator(); it.hasNext();) {
+            Ripple ripple = it.next();
+            if (++ripple.age >= ripple.life) it.remove();
         }
 
         boolean on = MinecraftModule.waterSplashes && mc.gameSettings.particleSetting < 2;
@@ -143,6 +211,89 @@ public final class WaterSplashes {
         }
         TRACKED.values()
             .removeIf(tracked -> tracked.seen != tick);
+    }
+
+    private static void tickSplashes(Minecraft mc) {
+        float drops = mc.gameSettings.particleSetting == 1 ? 0.5F : 1F;
+        for (Iterator<Splash> it = SPLASHES.iterator(); it.hasNext();) {
+            Splash splash = it.next();
+            splash.width *= WIDEN;
+            splash.age++;
+            if (splash.age == 1) {
+                // the spray of the wall: out to the sides and up
+                int count = Math.round(splash.width * 10 * drops);
+                for (int i = 0; i < count; i++) {
+                    addDrop(
+                        splash,
+                        splash.width / 5,
+                        signed() / 5 * splash.width / 2.5,
+                        RANDOM.nextFloat() / 10 + splash.height / 2.8,
+                        signed() / 10 * splash.width / 2.5);
+                }
+            } else if (splash.age == splash.wave2Start) {
+                // the spray of the jet: higher and closer to the middle
+                int count = Math.round(splash.width * 5 * drops);
+                for (int i = 0; i < count; i++) {
+                    addDrop(
+                        splash,
+                        splash.width / 5 * JET_WIDTH,
+                        signed() / 10 * splash.width / 5,
+                        RANDOM.nextFloat() / 10 + splash.height / 2.2,
+                        signed() / 10 * splash.width / 5);
+                }
+            }
+            if (splash.age >= splash.wave2End) it.remove();
+        }
+    }
+
+    /** A droplet thrown from up to {@code spread} blocks around the middle of the splash. */
+    private static void addDrop(Splash splash, double spread, double motionX, double motionY, double motionZ) {
+        if (DROPS.size() >= MAX_DROPS) return;
+        double x = splash.x + signed() * spread, z = splash.z + signed() * spread;
+        DROPS.add(new Drop(x, splash.y, z, motionX, motionY, motionZ, splash));
+    }
+
+    private static void tickDrops() {
+        for (Iterator<Drop> it = DROPS.iterator(); it.hasNext();) {
+            Drop drop = it.next();
+            drop.prevX = drop.x;
+            drop.prevY = drop.y;
+            drop.prevZ = drop.z;
+            if (++drop.age >= DROP_LIFE) {
+                it.remove();
+                continue;
+            }
+            double nextY = drop.y + drop.motionY;
+            int x = MathHelper.floor_double(drop.x);
+            int z = MathHelper.floor_double(drop.z);
+            Block next = world.getBlock(x, MathHelper.floor_double(nextY), z);
+            if (next.getMaterial() == Material.water && drop.motionY < 0) {
+                // falls into water: a ripple on its surface
+                int y = MathHelper.floor_double(nextY);
+                double surface = surface(x, y, z);
+                if (!Double.isNaN(surface) && drop.y >= surface - 0.5) {
+                    RIPPLES.add(new Ripple(drop.x, surface, drop.z, drop));
+                }
+                it.remove();
+                continue;
+            }
+            if (next.getMaterial()
+                .isSolid()) {
+                it.remove();
+                continue;
+            }
+            drop.motionX *= DRAG;
+            drop.motionY -= GRAVITY;
+            drop.motionZ *= DRAG;
+            drop.x += drop.motionX;
+            drop.y = nextY;
+            drop.z += drop.motionZ;
+        }
+    }
+
+    /** A random number from -1 to 1. */
+    private static double signed() {
+        return RANDOM.nextDouble() * 2 - 1;
     }
 
     private static boolean splashes(Entity entity) {
@@ -166,17 +317,22 @@ public final class WaterSplashes {
             tracked = new Tracked();
             TRACKED.put(entity.getEntityId(), tracked);
         } else {
-            double speed = tracked.lastBottom - bottom;
+            double fall = tracked.lastBottom - bottom;
+            double dx = entity.posX - tracked.lastX, dz = entity.posZ - tracked.lastZ;
+            double speed = Math.sqrt(dx * dx + fall * fall + dz * dz);
             if (inWater && !tracked.inWater
                 && tracked.cooldown == 0
+                && fall > 0
                 && speed >= MIN_SPEED
                 && SPLASHES.size() < MinecraftModule.maxSplashes) {
-                splash(entity, x, y, z, surface, speed);
+                splash(entity, x, z, surface, fall);
                 tracked.cooldown = COOLDOWN;
             }
         }
         if (tracked.cooldown > 0) tracked.cooldown--;
+        tracked.lastX = entity.posX;
         tracked.lastBottom = bottom;
+        tracked.lastZ = entity.posZ;
         tracked.inWater = inWater;
         tracked.seen = tick;
     }
@@ -193,48 +349,29 @@ public final class WaterSplashes {
         return top + 1 - BlockLiquid.getLiquidHeightPercent(world.getBlockMetadata(x, top, z));
     }
 
-    private static void splash(Entity entity, int x, int y, int z, double surface, double speed) {
+    private static void splash(Entity entity, int x, int z, double surface, double fall) {
         Minecraft mc = Minecraft.getMinecraft();
-        float width = Math.max(0.25F, entity.width);
-        float size = (float) Math.min(1.0, speed / 0.9 * (0.6 + width * 0.7));
-        size = Math.max(0.15F, size);
+        float entityWidth = Math.max(0.25F, entity.width);
+        float width = entityWidth * 2;
+        float height = (float) Math.min(4, fall) * width;
         int top = MathHelper.floor_double(surface);
         int color = tint(Blocks.water, x, top, z);
         float light = Math.max(0.25F, world.getLightBrightness(x, top + 1, z));
-        Splash splash = new Splash(entity.posX, surface, entity.posZ, size, width, color, light);
+        Splash splash = new Splash(entity.posX, surface, entity.posZ, width, height, color, light);
         SPLASHES.add(splash);
 
-        boolean fewer = mc.gameSettings.particleSetting == 1;
-        int droplets = Math.round((4 + size * 18) * (fewer ? 0.5F : 1F));
-        for (int i = 0; i < droplets; i++) {
-            double angle = RANDOM.nextDouble() * Math.PI * 2;
-            double out = (0.03 + RANDOM.nextDouble() * 0.1) * (0.5 + size);
-            double radius = width * 0.5 * RANDOM.nextDouble();
-            EntitySplashFX drop = new EntitySplashFX(
-                world,
-                splash.x + Math.cos(angle) * radius,
-                surface + 0.1,
-                splash.z + Math.sin(angle) * radius,
-                0,
-                0,
-                0);
-            drop.motionX = Math.cos(angle) * out;
-            drop.motionY = (0.12 + RANDOM.nextDouble() * 0.2) * (0.5 + size);
-            drop.motionZ = Math.sin(angle) * out;
-            mc.effectRenderer.addEffect(drop);
-        }
-        if (fewer) return;
-        int bubbles = Math.round(2 + size * 8);
-        for (int i = 0; i < bubbles; i++) {
-            mc.effectRenderer.addEffect(
-                new EntityBubbleFX(
-                    world,
-                    splash.x + (RANDOM.nextDouble() - 0.5) * width,
-                    surface - 0.2 - RANDOM.nextDouble() * 0.6,
-                    splash.z + (RANDOM.nextDouble() - 0.5) * width,
-                    (RANDOM.nextDouble() - 0.5) * 0.05,
-                    0.05 + RANDOM.nextDouble() * 0.05,
-                    (RANDOM.nextDouble() - 0.5) * 0.05));
+        // the water thrown up by the body itself, over its whole width
+        int count = Math.round(entityWidth * 25 * (mc.gameSettings.particleSetting == 1 ? 0.5F : 1F));
+        for (int i = 0; i < count && DROPS.size() < MAX_DROPS; i++) {
+            DROPS.add(
+                new Drop(
+                    entity.posX + signed() * entityWidth / 5,
+                    surface,
+                    entity.posZ + signed() * entityWidth,
+                    signed() / 15,
+                    RANDOM.nextDouble() / 2.5,
+                    signed() / 15,
+                    splash));
         }
     }
 
@@ -248,9 +385,11 @@ public final class WaterSplashes {
         return r << 16 | g << 8 | b;
     }
 
+    // ---- drawing
+
     @SubscribeEvent
     public void onRenderWorldLast(RenderWorldLastEvent event) {
-        if (SPLASHES.isEmpty()) return;
+        if (SPLASHES.isEmpty() && DROPS.isEmpty() && RIPPLES.isEmpty()) return;
         Minecraft mc = Minecraft.getMinecraft();
         makeTextures();
         float partialTicks = event.partialTicks;
@@ -261,26 +400,52 @@ public final class WaterSplashes {
         mc.entityRenderer.disableLightmap(partialTicks);
         glPushMatrix();
         glTranslated(-RenderManager.renderPosX, -RenderManager.renderPosY, -RenderManager.renderPosZ);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
+        Tessellator tessellator = Tessellator.instance;
+
+        // the droplets are solid little cubes
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_BLEND);
+        tessellator.startDrawingQuads();
+        for (Drop drop : DROPS) drawDrop(tessellator, drop, partialTicks);
+        tessellator.draw();
+
         glEnable(GL_TEXTURE_2D);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_ALPHA_TEST);
         glAlphaFunc(GL_GREATER, 0.004F);
-        glDisable(GL_LIGHTING);
-        glDisable(GL_CULL_FACE);
-        glEnable(GL_DEPTH_TEST);
         glDepthMask(false);
 
-        Tessellator tessellator = Tessellator.instance;
-        glBindTexture(GL_TEXTURE_2D, ringTexture.getGlTextureId());
+        glBindTexture(GL_TEXTURE_2D, rippleTexture.getGlTextureId());
         tessellator.startDrawingQuads();
-        for (Splash splash : SPLASHES) drawRings(tessellator, splash, splash.age + partialTicks);
+        for (Ripple ripple : RIPPLES) drawRipple(tessellator, ripple, partialTicks);
         tessellator.draw();
 
-        glBindTexture(GL_TEXTURE_2D, sprayTexture.getGlTextureId());
+        glBindTexture(GL_TEXTURE_2D, foamTexture.getGlTextureId());
         tessellator.startDrawingQuads();
-        for (Splash splash : SPLASHES) drawCrown(tessellator, splash, splash.age + partialTicks);
+        for (Splash splash : SPLASHES) {
+            if (splash.age <= splash.wave1End) drawFoam(tessellator, splash, frame1(splash), 1, partialTicks);
+            if (splash.age >= splash.wave2Start) drawFoam(tessellator, splash, frame2(splash), JET_WIDTH, partialTicks);
+        }
         tessellator.draw();
+
+        glBindTexture(GL_TEXTURE_2D, wallTexture.getGlTextureId());
+        // the water of the walls in its color, then their white foam edges over it
+        for (int rim = 0; rim < 2; rim++) {
+            tessellator.startDrawingQuads();
+            for (Splash splash : SPLASHES) {
+                if (splash.age <= splash.wave1End) {
+                    drawWall(tessellator, splash, frame1(splash), 1, 1, rim == 1, partialTicks);
+                }
+                if (splash.age >= splash.wave2Start) {
+                    drawWall(tessellator, splash, frame2(splash), JET_WIDTH, JET_HEIGHT, rim == 1, partialTicks);
+                }
+            }
+            tessellator.draw();
+        }
 
         glPopMatrix();
         mc.entityRenderer.enableLightmap(partialTicks);
@@ -288,88 +453,218 @@ public final class WaterSplashes {
         GL20.glUseProgram(program);
     }
 
-    /** Rings of waves spreading from the splash and fading away, one after the other. */
-    private static void drawRings(Tessellator tessellator, Splash splash, float age) {
-        float maxRadius = splash.width * 0.6F + 0.6F + splash.size * 1.6F;
-        for (int ring = 0; ring < splash.rings; ring++) {
-            float t = (age - ring * RING_GAP) / RING_LIFE;
-            if (t <= 0 || t >= 1) continue;
-            // fast at first, slower as it spreads, like a wave
-            float radius = splash.width * 0.4F + maxRadius * (1 - (1 - t) * (1 - t)) * (1 - ring * 0.15F);
-            float alpha = (1 - t) * (1 - t) * (0.55F + splash.size * 0.35F);
-            double y = splash.y + 0.01 + ring * 0.002;
-            tessellator.setColorRGBA_F(splash.red, splash.green, splash.blue, alpha);
-            tessellator.addVertexWithUV(splash.x - radius, y, splash.z - radius, 0, 0);
-            tessellator.addVertexWithUV(splash.x - radius, y, splash.z + radius, 0, 1);
-            tessellator.addVertexWithUV(splash.x + radius, y, splash.z + radius, 1, 1);
-            tessellator.addVertexWithUV(splash.x + radius, y, splash.z - radius, 1, 0);
-        }
+    private static int frame1(Splash splash) {
+        return clampFrame(Math.round(splash.age / (float) splash.wave1End * (FRAMES - 1)));
     }
 
-    /** A crown of spray around the splash: it rises fast, falls back slower and fades at the end. */
-    private static void drawCrown(Tessellator tessellator, Splash splash, float age) {
-        float t = age / splash.crownLife;
-        if (t >= 1) return;
-        float rise = t < 0.3F ? t / 0.3F : 1 - (t - 0.3F) / 0.7F;
-        float height = (0.25F + splash.size * 1.1F) * (float) Math.sin(rise * Math.PI / 2);
+    private static int frame2(Splash splash) {
+        float t = (splash.age - splash.wave2Start) / (float) (splash.wave2End - splash.wave2Start);
+        return clampFrame(Math.round(t * (FRAMES - 1)));
+    }
+
+    private static int clampFrame(int frame) {
+        return Math.max(0, Math.min(FRAMES - 1, frame));
+    }
+
+    private static float halfWidth(Splash splash, float widthPart, float partialTicks) {
+        return HALF_WIDTH * splash.width * (1 + (WIDEN - 1) * partialTicks) * widthPart;
+    }
+
+    /**
+     * The four sides of a wall, from the surface up, with a fainter copy mirrored under the surface, as seen through
+     * the water.
+     */
+    private static void drawWall(Tessellator t, Splash splash, int frame, float widthPart, float heightPart,
+        boolean rim, float partialTicks) {
+        float half = halfWidth(splash, widthPart, partialTicks);
+        float height = splash.height * heightPart;
         if (height < 0.01F) return;
-        float bottomRadius = splash.width * 0.5F + 0.1F + t * 0.25F * (0.5F + splash.size);
-        float topRadius = bottomRadius * (1.25F + t * 0.4F);
-        float alpha = (t < 0.6F ? 1 : 1 - (t - 0.6F) / 0.4F) * 0.9F;
-        int segments = splash.size > 0.5F ? 12 : 8;
-        // the texture goes twice around, from the surface at the bottom of it to the tips at the top
-        float uStep = 2F / segments;
-        double y = splash.y;
-        tessellator.setColorRGBA_F(splash.red, splash.green, splash.blue, alpha);
-        for (int i = 0; i < segments; i++) {
-            double a0 = Math.PI * 2 * i / segments;
-            double a1 = Math.PI * 2 * (i + 1) / segments;
-            double c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
-            float u0 = i * uStep, u1 = u0 + uStep;
-            tessellator.addVertexWithUV(splash.x + c0 * bottomRadius, y, splash.z + s0 * bottomRadius, u0, 1);
-            tessellator.addVertexWithUV(splash.x + c1 * bottomRadius, y, splash.z + s1 * bottomRadius, u1, 1);
-            tessellator.addVertexWithUV(splash.x + c1 * topRadius, y + height, splash.z + s1 * topRadius, u1, 0);
-            tessellator.addVertexWithUV(splash.x + c0 * topRadius, y + height, splash.z + s0 * topRadius, u0, 0);
+        double v0 = rim ? 0.5 : 0, v1 = v0 + WALL_HEIGHT / 32.0;
+        double[] cornerX = { -half, half, half, -half, -half };
+        double[] cornerZ = { -half, -half, half, half, -half };
+        for (int mirror = 0; mirror < 2; mirror++) {
+            if (rim) t.setColorRGBA_F(splash.light, splash.light, splash.light, mirror == 0 ? 1 : 0.35F);
+            else t.setColorRGBA_F(splash.red, splash.green, splash.blue, mirror == 0 ? 1 : 0.35F);
+            double top = splash.y + (mirror == 0 ? height : -height);
+            for (int side = 0; side < 4; side++) {
+                double u0 = (frame * CELL + side * SIDE) / 1024.0, u1 = u0 + SIDE / 1024.0;
+                t.addVertexWithUV(splash.x + cornerX[side], top, splash.z + cornerZ[side], u0, v0);
+                t.addVertexWithUV(splash.x + cornerX[side + 1], top, splash.z + cornerZ[side + 1], u1, v0);
+                t.addVertexWithUV(splash.x + cornerX[side + 1], splash.y, splash.z + cornerZ[side + 1], u1, v1);
+                t.addVertexWithUV(splash.x + cornerX[side], splash.y, splash.z + cornerZ[side], u0, v1);
+            }
         }
     }
 
-    /** Pixel textures in the style of the game, drawn once: a ring of waves and the spray of the crown. */
-    private static void makeTextures() {
-        if (ringTexture != null) return;
-        ringTexture = new DynamicTexture(32, 32);
-        int[] ring = ringTexture.getTextureData();
-        Random random = new Random(4);
-        for (int py = 0; py < 32; py++) {
-            for (int px = 0; px < 32; px++) {
-                double distance = Math.sqrt((px - 15.5) * (px - 15.5) + (py - 15.5) * (py - 15.5));
-                int argb = 0;
-                if (distance >= 13.5 && distance < 15.5) {
-                    // a ring two pixels wide, brighter outside, with a few gaps like foam
-                    if (random.nextInt(9) != 0) argb = (distance >= 14.5 ? 0xFF : 0xA0) << 24 | 0xFFFFFF;
-                } else if (distance >= 12.5 && distance < 13.5 && random.nextInt(3) == 0) {
-                    argb = 0x60FFFFFF;
-                }
-                ring[py * 32 + px] = argb;
-            }
-        }
-        ringTexture.updateDynamicTexture();
+    /** The square ring of foam on the surface, under a wall. */
+    private static void drawFoam(Tessellator tessellator, Splash splash, int frame, float widthPart,
+        float partialTicks) {
+        float half = halfWidth(splash, widthPart, partialTicks);
+        double y = splash.y + 0.002;
+        double u0 = frame * RING_CELL / 256.0, u1 = u0 + SIDE / 256.0, v1 = SIDE / 16.0;
+        tessellator.setColorRGBA_F(splash.light, splash.light, splash.light, 1);
+        tessellator.addVertexWithUV(splash.x - half, y, splash.z - half, u0, 0);
+        tessellator.addVertexWithUV(splash.x - half, y, splash.z + half, u0, v1);
+        tessellator.addVertexWithUV(splash.x + half, y, splash.z + half, u1, v1);
+        tessellator.addVertexWithUV(splash.x + half, y, splash.z - half, u1, 0);
+    }
 
-        sprayTexture = new DynamicTexture(16, 16);
-        int[] spray = sprayTexture.getTextureData();
-        random = new Random(7);
-        for (int py = 0; py < 16; py++) {
-            // py 0 is the top of the crown: few drops there, dense foam at the surface
-            float density = 0.12F + 0.88F * (float) Math.pow(py / 15F, 1.4);
-            for (int px = 0; px < 16; px++) {
-                int argb = 0;
-                if (random.nextFloat() < density) {
-                    int alpha = py > 12 ? 0xE0 : 0xB0 + random.nextInt(0x40);
-                    int shade = random.nextInt(4) == 0 ? 0xC8E4FF : 0xFFFFFF;
-                    argb = alpha << 24 | shade;
-                }
-                spray[py * 16 + px] = argb;
+    private static void drawRipple(Tessellator tessellator, Ripple ripple, float partialTicks) {
+        float t = (ripple.age + partialTicks) / ripple.life;
+        if (t >= 1) return;
+        int frame = Math.min(5, (int) (t * 6));
+        float half = ripple.size * (0.5F + frame * 0.1F);
+        double y = ripple.y + 0.004;
+        double u0 = frame / 8.0, u1 = u0 + 1 / 8.0;
+        tessellator.setColorRGBA_F(ripple.red, ripple.green, ripple.blue, 1 - t * 0.6F);
+        tessellator.addVertexWithUV(ripple.x - half, y, ripple.z - half, u0, 0);
+        tessellator.addVertexWithUV(ripple.x - half, y, ripple.z + half, u0, 1);
+        tessellator.addVertexWithUV(ripple.x + half, y, ripple.z + half, u1, 1);
+        tessellator.addVertexWithUV(ripple.x + half, y, ripple.z - half, u1, 0);
+    }
+
+    private static void drawDrop(Tessellator t, Drop drop, float partialTicks) {
+        double x = drop.prevX + (drop.x - drop.prevX) * partialTicks;
+        double y = drop.prevY + (drop.y - drop.prevY) * partialTicks;
+        double z = drop.prevZ + (drop.z - drop.prevZ) * partialTicks;
+        double h = DROP_HALF;
+        // lit from above: the top is the brightest, the sides a bit darker
+        for (int face = 0; face < 6; face++) {
+            float shade = face == 0 ? 1 : face == 1 ? 0.6F : 0.8F;
+            t.setColorOpaque_F(drop.red * shade, drop.green * shade, drop.blue * shade);
+            switch (face) {
+                case 0:
+                    quad(t, x - h, y + h, z - h, x - h, y + h, z + h, x + h, y + h, z + h, x + h, y + h, z - h);
+                    break;
+                case 1:
+                    quad(t, x - h, y - h, z - h, x + h, y - h, z - h, x + h, y - h, z + h, x - h, y - h, z + h);
+                    break;
+                case 2:
+                    quad(t, x - h, y - h, z - h, x - h, y + h, z - h, x + h, y + h, z - h, x + h, y - h, z - h);
+                    break;
+                case 3:
+                    quad(t, x - h, y - h, z + h, x + h, y - h, z + h, x + h, y + h, z + h, x - h, y + h, z + h);
+                    break;
+                case 4:
+                    quad(t, x - h, y - h, z - h, x - h, y - h, z + h, x - h, y + h, z + h, x - h, y + h, z - h);
+                    break;
+                default:
+                    quad(t, x + h, y - h, z - h, x + h, y + h, z - h, x + h, y + h, z + h, x + h, y - h, z + h);
+                    break;
             }
         }
-        sprayTexture.updateDynamicTexture();
+    }
+
+    private static void quad(Tessellator tessellator, double x0, double y0, double z0, double x1, double y1, double z1,
+        double x2, double y2, double z2, double x3, double y3, double z3) {
+        tessellator.addVertex(x0, y0, z0);
+        tessellator.addVertex(x1, y1, z1);
+        tessellator.addVertex(x2, y2, z2);
+        tessellator.addVertex(x3, y3, z3);
+    }
+
+    // ---- the frames, drawn once
+
+    private static void makeTextures() {
+        if (wallTexture != null) return;
+        wallTexture = new DynamicTexture(1024, 32);
+        makeWall(wallTexture.getTextureData());
+        wallTexture.updateDynamicTexture();
+        foamTexture = new DynamicTexture(256, 16);
+        makeFoam(foamTexture.getTextureData());
+        foamTexture.updateDynamicTexture();
+        rippleTexture = new DynamicTexture(128, 16);
+        makeRipples(rippleTexture.getTextureData());
+        rippleTexture.updateDynamicTexture();
+    }
+
+    /**
+     * The frames of the wall, each 4 sides of 12 by 16 pixels: rows 0 to 15 the water, rows 16 to 31 its white edges.
+     * The top edge is a row of pixel waves that rise to their highest in frame 4 and fall back; from frame 7 the wall
+     * comes off the surface from below, as spray thrown up.
+     */
+    private static void makeWall(int[] pixels) {
+        int columns = SIDE * 4;
+        // the waves of the top edge: two crests on each side, of their own heights and widths
+        Random random = new Random(11);
+        float[] shape = new float[columns];
+        for (int crest = 0; crest < 8; crest++) {
+            float middle = crest * 6 + 2 + random.nextFloat() * 2;
+            float reach = 2.5F + random.nextFloat() * 1.5F;
+            float top = 0.65F + random.nextFloat() * 0.35F;
+            for (int c = 0; c < columns; c++) {
+                float distance = Math.abs(c - middle);
+                distance = Math.min(distance, columns - distance);
+                shape[c] = Math.max(shape[c], top * Math.max(0, 1 - distance / reach));
+            }
+        }
+        for (int c = 0; c < columns; c++) shape[c] = 0.35F + shape[c] * 0.65F;
+
+        for (int frame = 0; frame < FRAMES; frame++) {
+            float rise = frame <= 4 ? (frame + 1) / 5F : Math.max(0, 1 - (frame - 4) / 9F);
+            Random jitter = new Random(100 + frame);
+            int[] tops = new int[columns];
+            int[] bottoms = new int[columns];
+            for (int c = 0; c < columns; c++) {
+                int height = Math.round(WALL_HEIGHT * rise * shape[c]) + (jitter.nextInt(5) == 0 ? 1 : 0);
+                height = Math.max(0, Math.min(WALL_HEIGHT, height));
+                int lifted = frame < 7 ? 0 : Math.round((frame - 6) / 6F * height * 0.9F);
+                tops[c] = WALL_HEIGHT - height;
+                bottoms[c] = WALL_HEIGHT - lifted;
+            }
+            for (int c = 0; c < columns; c++) {
+                int left = (c + columns - 1) % columns, right = (c + 1) % columns;
+                for (int row = tops[c]; row < bottoms[c]; row++) {
+                    // the water, clearer low down
+                    int alpha = row - tops[c] < 3 ? 0xC8 : 0x90;
+                    pixels[row * 1024 + frame * CELL + c] = alpha << 24 | 0xFFFFFF;
+                    boolean edge = row == tops[c] || row == bottoms[c] - 1 && bottoms[c] < WALL_HEIGHT
+                        || row < tops[left]
+                        || row < tops[right];
+                    if (edge) pixels[(row + 16) * 1024 + frame * CELL + c] = 0xFFFFFFFF;
+                }
+            }
+        }
+    }
+
+    /**
+     * The frames of the ring of foam on the surface, 12 by 12 pixels: a square ring with round corners inside, that
+     * thins and from frame 9 breaks into its four corners, which shrink.
+     */
+    private static void makeFoam(int[] pixels) {
+        for (int frame = 0; frame < FRAMES; frame++) {
+            int thickness = frame < 6 ? 2 : 1;
+            int corner = frame < 9 ? SIDE : 5 - (frame - 9);
+            for (int y = 0; y < SIDE; y++) {
+                for (int x = 0; x < SIDE; x++) {
+                    int fromEdge = Math.min(Math.min(x, SIDE - 1 - x), Math.min(y, SIDE - 1 - y));
+                    boolean ring = fromEdge < thickness;
+                    // the round inside of the corners
+                    int inX = Math.min(x, SIDE - 1 - x), inY = Math.min(y, SIDE - 1 - y);
+                    if (!ring && inX == thickness && inY == thickness) ring = true;
+                    if (!ring) continue;
+                    int alongX = Math.min(x, SIDE - 1 - x), alongY = Math.min(y, SIDE - 1 - y);
+                    // broken: only what is near a corner stays
+                    if (Math.max(alongX, alongY) >= corner) continue;
+                    pixels[y * 256 + frame * RING_CELL + x] = 0xFFFFFFFF;
+                }
+            }
+        }
+    }
+
+    /** The frames of a ripple, 16 by 16 pixels: a round ring one pixel wide that widens and breaks up. */
+    private static void makeRipples(int[] pixels) {
+        Random random = new Random(5);
+        for (int frame = 0; frame < 6; frame++) {
+            double radius = 3 + frame * 1.0;
+            for (int y = 0; y < 16; y++) {
+                for (int x = 0; x < 16; x++) {
+                    double distance = Math.sqrt((x - 7.5) * (x - 7.5) + (y - 7.5) * (y - 7.5));
+                    if (Math.abs(distance - radius) >= 0.5) continue;
+                    if (frame >= 4 && random.nextInt(frame - 2) != 0) continue;
+                    pixels[y * 128 + frame * 16 + x] = 0xFFFFFFFF;
+                }
+            }
+        }
     }
 }
