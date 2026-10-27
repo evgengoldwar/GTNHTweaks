@@ -143,8 +143,9 @@ public class ModListScreen extends GuiScreen {
 
         String query = search != null ? search.getText() : "";
         boolean focused = search != null && search.isFocused();
-        searchW = Math.min(200, windowW / 3) - 8;
-        search = new GuiTextField(fontRendererObj, windowX + windowW - GAP - searchW - 4, windowY + 9, searchW, 12);
+        // under the list, in the row of the buttons; room is left at its right for the count of the found mods
+        searchW = listW - 12 - 46;
+        search = new GuiTextField(fontRendererObj, listX + 6, footerY() + 6, searchW, 12);
         search.setEnableBackgroundDrawing(false);
         search.setMaxStringLength(64);
         search.setText(query);
@@ -282,6 +283,7 @@ public class ModListScreen extends GuiScreen {
         drawTitle(theme);
         drawList(mouseX, mouseY, theme);
         drawDetails(mouseX, mouseY, theme);
+        drawSearch(theme);
         drawFooter(mouseX, mouseY);
     }
 
@@ -296,22 +298,31 @@ public class ModListScreen extends GuiScreen {
         String count = all.size() + " loaded";
         UI.text(count, windowX + GAP + 8 + fontRendererObj.getStringWidth("Mods"), windowY + 10, theme.textDisabled);
 
-        int x = search.xPosition - 4, y = search.yPosition - 4, w = searchW + 8;
-        UI.inset(x, y, w, 16);
-        if (search.isFocused()) UI.rect(x, y + 15, w, 1, theme.barFill);
+    }
+
+    /** The search box under the list, with the count of the found mods at its right. */
+    private void drawSearch(GTNHTheme theme) {
+        int y = footerY();
+        UI.inset(listX, y, listW, 20);
+        if (search.isFocused()) UI.rect(listX, y + 19, listW, 1, theme.barFill);
         if (search.getText()
             .isEmpty() && !search.isFocused()) {
             UI.text("Search mods", search.xPosition, search.yPosition, theme.textDisabled);
         } else if (!query().isEmpty()) {
-            String found = shown.size() + (shown.size() == 1 ? " mod" : " mods");
+            String found = String.valueOf(shown.size());
             UI.text(
                 found,
-                x - 6 - fontRendererObj.getStringWidth(found),
+                listX + listW - 6 - fontRendererObj.getStringWidth(found),
                 search.yPosition,
                 shown.isEmpty() ? Rows.ERROR : theme.textDim);
         }
         search.setTextColor(theme.text & 0xFFFFFF);
         search.drawTextBox();
+    }
+
+    /** Top of the row of the buttons and the search, under the list. */
+    private int footerY() {
+        return windowY + windowH - FOOTER_HEIGHT + 6;
     }
 
     private void drawList(int mouseX, int mouseY, GTNHTheme theme) {
@@ -345,6 +356,8 @@ public class ModListScreen extends GuiScreen {
 
     private void drawDetails(int mouseX, int mouseY, GTNHTheme theme) {
         UI.inset(detailX, detailY, detailW, detailH);
+        // a cleared search brings back the mods: the first one is shown again
+        if (selected == null && !shown.isEmpty()) select(shown.get(0));
         if (selected == null) {
             String none = "No mod matches the search";
             UI.text(none, detailX + (detailW - fontRendererObj.getStringWidth(none)) / 2, detailY + 20, theme.textDim);
@@ -398,7 +411,7 @@ public class ModListScreen extends GuiScreen {
     }
 
     private void drawFooter(int mouseX, int mouseY) {
-        int y = windowY + windowH - FOOTER_HEIGHT + 6;
+        int y = footerY();
         int w = 110;
         UI.button(detailX, y, w, 20, "Config", mouseX, mouseY, configOf(selected) != null);
         UI.button(detailX + w + 6, y, w, 20, "Open mods folder", mouseX, mouseY, true);
@@ -511,12 +524,11 @@ public class ModListScreen extends GuiScreen {
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int button) {
         super.mouseClicked(mouseX, mouseY, button);
-        int sx = search.xPosition - 4, sy = search.yPosition - 4;
-        if (UI.inside(mouseX, mouseY, sx, sy, searchW + 8, 16)) {
+        if (UI.inside(mouseX, mouseY, listX, footerY(), listW, 20)) {
             search.setFocused(true);
             if (button == 1) {
                 search.setText("");
-                filter();
+                searched();
             }
             return;
         }
@@ -540,7 +552,7 @@ public class ModListScreen extends GuiScreen {
             return;
         }
 
-        int y = windowY + windowH - FOOTER_HEIGHT + 6, w = 110;
+        int y = footerY(), w = 110;
         if (UI.inside(mouseX, mouseY, detailX, y, w, 20)) openConfig();
         else if (UI.inside(mouseX, mouseY, detailX + w + 6, y, w, 20)) {
             UI.playClick();
@@ -604,7 +616,7 @@ public class ModListScreen extends GuiScreen {
                 search.setFocused(false);
                 if (code == Keyboard.KEY_ESCAPE) {
                     search.setText("");
-                    filter();
+                    searched();
                 }
                 return;
             }
