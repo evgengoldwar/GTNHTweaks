@@ -243,12 +243,7 @@ final class Rows {
                 .getStringWidth(count);
             int countX = x + w - 8 - countW;
             UI.text(count, countX, y + 6, changed > 0 ? theme.barFill : theme.textDisabled);
-            UI.rect(
-                lineX,
-                y + 10,
-                countX - 6 - lineX,
-                1,
-                theme.isBeveled() ? theme.inset.topLeft : theme.barBorder);
+            UI.rect(lineX, y + 10, countX - 6 - lineX, 1, theme.isBeveled() ? theme.inset.topLeft : theme.barBorder);
         }
 
         @Override
@@ -297,7 +292,8 @@ final class Rows {
             String open = "Open »";
             UI.text(
                 open,
-                x + w - 8
+                x + w
+                    - 8
                     - UI.font()
                         .getStringWidth(open),
                 y + 6,
@@ -388,8 +384,10 @@ final class Rows {
             int labelW = controlX(x, w) - x - 16;
             String marker = property.requiresMcRestart() ? " *" : "";
             String shown = UI.font()
-                .trimStringToWidth(label, labelW - UI.font()
-                    .getStringWidth(marker));
+                .trimStringToWidth(
+                    label,
+                    labelW - UI.font()
+                        .getStringWidth(marker));
             int ty = y + (HEIGHT - 8) / 2;
             drawHighlighted(shown, x + 10, ty, theme.text, screen.query());
             if (!marker.isEmpty()) {
