@@ -94,7 +94,6 @@ public enum Mixins implements IMixins {
                 || MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.modernMovement)
         .addCommonMixins(
             "minecraft.MixinEntityPlayer_Movement",
-            "minecraft.MixinEntityPlayerMP_Movement",
             "minecraft.MixinEntity_Movement",
             "minecraft.MixinNetHandlerPlayServer_Movement")),
     MINECRAFT_MOVEMENT_CLIENT(
@@ -102,12 +101,12 @@ public enum Mixins implements IMixins {
             .setApplyIf(() -> MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.modernMovement)
             .addClientMixins(
                 "minecraft.MixinEntityRenderer_Movement",
-                "minecraft.MixinEntityLivingBase_Movement",
                 "minecraft.MixinRendererLivingEntity_Movement",
                 "minecraft.MixinModelBiped_Movement",
                 "minecraft.MixinEntityPlayerSP_Movement",
                 "minecraft.MixinMovementInputFromOptions_Movement",
-                "minecraft.MixinRenderPlayer_Movement")),
+                "minecraft.MixinRenderPlayer_Movement",
+                "minecraft.MixinEntity_MovementLight")),
     // Applied with the module, the settings are read when the screen is used, so they need no restart
     MINECRAFT_RESOURCE_PACKS(new MixinBuilder("Dragging and presets of the resource packs").setPhase(Phase.EARLY)
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)

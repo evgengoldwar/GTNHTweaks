@@ -159,11 +159,28 @@ public final class Movement {
         player.boundingBox.maxY = player.boundingBox.minY + height;
     }
 
-    /** How much lower the eyes of the player are than standing, for the eye height of the game. */
+    /** The own player on the client, set by the client side; null on a server. */
+    public static EntityPlayer clientPlayer;
+    /** How far the position of the own player is lowered to its eyes while a frame is drawn, see MovementClient. */
+    public static float renderShift;
+
+    /**
+     * How much lower the eyes of the player are than vanilla has them, for the eye height of the game: through it the
+     * server, the suffocation and the blocks the own player looks at all take the eyes of the pose.
+     */
     public static float eyeDrop(EntityPlayer player) {
         Pose pose = state(player).pose;
-        return pose == Pose.STAND ? 0 : Pose.STAND.eye - pose.eye;
+        float drop = pose == Pose.STAND ? 0 : Pose.STAND.eye - pose.eye;
+        if (player == clientPlayer) {
+            // vanilla lowers the own sneaking player a little by itself, and a frame lowers it to its eyes
+            if (pose != Pose.STAND && player.isSneaking()) drop -= SNEAK_DIP;
+            drop -= renderShift;
+        }
+        return drop;
     }
+
+    /** How far vanilla lowers the own sneaking player on the client. */
+    public static final float SNEAK_DIP = 0.08F;
 
     /**
      * Whether the eyes of the player in its pose are in a full block, as the suffocation of vanilla checks them at the

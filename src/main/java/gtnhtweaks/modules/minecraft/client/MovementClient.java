@@ -1,16 +1,21 @@
 package gtnhtweaks.modules.minecraft.client;
 
+import static org.lwjgl.opengl.GL11.glPopMatrix;
+import static org.lwjgl.opengl.GL11.glPushMatrix;
 import static org.lwjgl.opengl.GL11.glRotatef;
 import static org.lwjgl.opengl.GL11.glTranslatef;
 
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
+import net.minecraftforge.client.event.RenderPlayerEvent;
+import net.minecraftforge.common.MinecraftForge;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -35,15 +40,66 @@ public final class MovementClient {
     private static float renderPartialTicks;
     /** The arm of the own player is drawn in the first person view, with no pose of the body. */
     private static boolean firstPersonArm;
+    /** The own player lowered to its eyes for the frame being drawn, and where it was. */
+    private static EntityPlayerSP framePlayer;
+    private static float frameDrop;
+    private static double framePosY, framePrevPosY, frameLastTickPosY, frameCapeY, framePrevCapeY;
     private static boolean forwardWasDown;
     private static int tapTimer;
 
     private MovementClient() {}
 
     public static void register() {
+        MovementClient client = new MovementClient();
         FMLCommonHandler.instance()
             .bus()
-            .register(new MovementClient());
+            .register(client);
+        MinecraftForge.EVENT_BUS.register(client);
+    }
+
+    /**
+     * The cape of a crouching player hangs from its body, as in newer versions: lowered and leaning with it. Vanilla
+     * draws it from the shoulders of the standing body, only tilted a bit more for the sneak key.
+     */
+    @SubscribeEvent
+    public void onSpecials(RenderPlayerEvent.Specials.Pre event) {
+        EntityPlayer player = event.entityPlayer;
+        if (!event.renderCape || Movement.state(player).pose != Pose.CROUCH
+            || !(player instanceof AbstractClientPlayer)) return;
+        AbstractClientPlayer owner = (AbstractClientPlayer) player;
+        if (!owner.func_152122_n() || owner.isInvisible() || owner.getHideCape()) return;
+        event.renderCape = false;
+        float partialTicks = event.partialRenderTick;
+        Minecraft.getMinecraft()
+            .getTextureManager()
+            .bindTexture(owner.getLocationCape());
+        glPushMatrix();
+        // the pivot and the lean of the crouching body
+        glTranslatef(0, 3.2F * 0.0625F, 0);
+        glRotatef(0.5F * 180 / PI, 1, 0, 0);
+        glTranslatef(0, 0, 0.125F);
+        double dx = owner.field_71091_bM + (owner.field_71094_bP - owner.field_71091_bM) * partialTicks
+            - (owner.prevPosX + (owner.posX - owner.prevPosX) * partialTicks);
+        double dy = owner.field_71096_bN + (owner.field_71095_bQ - owner.field_71096_bN) * partialTicks
+            - (owner.prevPosY + (owner.posY - owner.prevPosY) * partialTicks);
+        double dz = owner.field_71097_bO + (owner.field_71085_bR - owner.field_71097_bO) * partialTicks
+            - (owner.prevPosZ + (owner.posZ - owner.prevPosZ) * partialTicks);
+        float yaw = owner.prevRenderYawOffset + (owner.renderYawOffset - owner.prevRenderYawOffset) * partialTicks;
+        double sin = MathHelper.sin(yaw * PI / 180);
+        double cos = -MathHelper.cos(yaw * PI / 180);
+        float flap = MathHelper.clamp_float((float) dy * 10, -6, 32);
+        float lean = MathHelper.clamp_float((float) (dx * sin + dz * cos) * 100, 0, 150);
+        float lean2 = MathHelper.clamp_float((float) (dx * cos - dz * sin) * 100, -20, 20);
+        float bob = owner.prevCameraYaw + (owner.cameraYaw - owner.prevCameraYaw) * partialTicks;
+        float walked = owner.prevDistanceWalkedModified
+            + (owner.distanceWalkedModified - owner.prevDistanceWalkedModified) * partialTicks;
+        flap += MathHelper.sin(walked * 6) * 32 * bob;
+        glRotatef(6 + lean / 2 + flap, 1, 0, 0);
+        glRotatef(lean2 / 2, 0, 0, 1);
+        glRotatef(-lean2 / 2, 0, 1, 0);
+        glRotatef(180, 0, 1, 0);
+        event.renderer.modelBipedMain.renderCloak(0.0625F);
+        glPopMatrix();
     }
 
     @SubscribeEvent
@@ -54,6 +110,7 @@ public final class MovementClient {
     @SubscribeEvent
     public void onDisconnected(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
         Movement.resetClient();
+        Movement.clientPlayer = null;
     }
 
     @SubscribeEvent
@@ -70,6 +127,7 @@ public final class MovementClient {
         state.prevSwim = state.swim;
         state.swim = state.pose == Pose.SWIM ? Math.min(1, state.swim + 0.09F) : Math.max(0, state.swim - 0.09F);
         if (player instanceof EntityPlayerSP && player == Minecraft.getMinecraft().thePlayer) {
+            Movement.clientPlayer = player;
             moveCamera((EntityPlayerSP) player, state);
             swim((EntityPlayerSP) player, state);
         }
@@ -154,18 +212,10 @@ public final class MovementClient {
         return player.onGround || player.movementInput.sneak || forward && canSprint;
     }
 
-    /**
-     * How far the eyes of the own player are under those of vanilla, at once: newer versions look at blocks and
-     * entities from the eyes of the pose, only the camera follows them smoothly.
-     */
-    public static float eyeDrop(Entity viewer) {
-        if (!(viewer instanceof EntityPlayerSP)) return 0;
-        return targetDrop((EntityPlayerSP) viewer, Movement.state((EntityPlayer) viewer));
-    }
-
+    /** How far the camera of the own player is to go under that of vanilla, for the eyes of its pose. */
     private static float targetDrop(EntityPlayerSP player, MovementState state) {
         // vanilla lowers the camera of the sneaking own player a little by itself
-        float dip = player.isSneaking() ? 0.08F : 0;
+        float dip = player.isSneaking() ? Movement.SNEAK_DIP : 0;
         return state.pose == Pose.STAND ? 0 : Math.max(0, Pose.STAND.eye - state.pose.eye - dip);
     }
 
@@ -203,11 +253,55 @@ public final class MovementClient {
         return false;
     }
 
-    /** How far the camera of the own player is lowered under the camera of vanilla. */
-    public static float cameraDrop(Entity viewer, float partialTicks) {
-        if (!(viewer instanceof EntityPlayerSP)) return 0;
-        return Movement.state((EntityPlayer) viewer)
+    /**
+     * Lowers the own player to the eyes of its pose while a frame of the world is drawn, as far as the camera follows
+     * them smoothly. Vanilla draws from the position of the player: the camera, the culling and the sorting of the
+     * chunks and the mods drawing in the world all take it, and over a low gap it would be in the block above. Its
+     * box stays where it is.
+     */
+    public static void beginFrame(Entity viewer, float partialTicks) {
+        endFrame();
+        if (!(viewer instanceof EntityPlayerSP)) return;
+        EntityPlayerSP player = (EntityPlayerSP) viewer;
+        float drop = Movement.state(player)
             .drop(partialTicks);
+        if (drop == 0) return;
+        framePlayer = player;
+        frameDrop = drop;
+        framePosY = player.posY;
+        framePrevPosY = player.prevPosY;
+        frameLastTickPosY = player.lastTickPosY;
+        frameCapeY = player.field_71095_bQ;
+        framePrevCapeY = player.field_71096_bN;
+        player.posY -= drop;
+        player.prevPosY -= drop;
+        player.lastTickPosY -= drop;
+        // the cape swings by how far it trails the player, which does not change
+        player.field_71095_bQ -= drop;
+        player.field_71096_bN -= drop;
+        Movement.renderShift = drop;
+    }
+
+    /** Around the light of an entity taken during a frame: the own player stands where it is for it. */
+    public static void standForLight(Entity entity, boolean begin) {
+        if (entity != framePlayer) return;
+        double shift = begin ? frameDrop : -frameDrop;
+        entity.posY += shift;
+        entity.prevPosY += shift;
+        entity.lastTickPosY += shift;
+    }
+
+    /** Puts the own player back after the frame. */
+    public static void endFrame() {
+        if (framePlayer == null) return;
+        framePlayer.posY = framePosY;
+        framePlayer.prevPosY = framePrevPosY;
+        framePlayer.lastTickPosY = frameLastTickPosY;
+        framePlayer.field_71095_bQ = frameCapeY;
+        framePlayer.field_71096_bN = framePrevCapeY;
+        framePlayer = null;
+        frameDrop = 0;
+        Movement.renderShift = 0;
     }
 
     /**
@@ -218,6 +312,8 @@ public final class MovementClient {
         renderPartialTicks = partialTicks;
         if (!(entity instanceof EntityPlayer)) return;
         MovementState state = Movement.state((EntityPlayer) entity);
+        // the own player is drawn where it stands, not at its eyes the frame lowered it to
+        if (entity == framePlayer) glTranslatef(0, frameDrop, 0);
         lowerCrouching((EntityPlayer) entity, state);
         float swim = state.swim(partialTicks);
         if (swim <= 0) return;
