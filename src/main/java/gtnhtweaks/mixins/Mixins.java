@@ -78,6 +78,9 @@ public enum Mixins implements IMixins {
     MINECRAFT_SCREEN_SHAKE(new MixinBuilder("Camera shake on explosions").setPhase(Phase.EARLY)
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
         .addClientMixins("minecraft.MixinExplosion_ScreenShake", "minecraft.MixinEntityRenderer_ScreenShake")),
+    MINECRAFT_PARTICLE_RAIN(new MixinBuilder("Rain and snow of particles in place of vanilla").setPhase(Phase.EARLY)
+        .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
+        .addClientMixins("minecraft.MixinEntityRenderer_ParticleRain")),
     // Applied with the module, the settings are read when the screen is used, so they need no restart
     MINECRAFT_RESOURCE_PACKS(
         new MixinBuilder("Dragging and presets of the resource packs").setPhase(Phase.EARLY)

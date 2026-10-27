@@ -12,6 +12,7 @@ import gtnhtweaks.modules.minecraft.client.FallingLeaves;
 import gtnhtweaks.modules.minecraft.client.NewItems;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
 import gtnhtweaks.modules.minecraft.client.OutlineScreen;
+import gtnhtweaks.modules.minecraft.client.ParticleRain;
 import gtnhtweaks.modules.minecraft.client.PickupNotifier;
 import gtnhtweaks.modules.minecraft.client.ScreenBackground;
 import gtnhtweaks.modules.minecraft.client.WaterSplashes;
@@ -34,6 +35,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_SCREEN_SHAKE = "screenShake";
     public static final String CATEGORY_PICKUPS = "pickupNotifier";
     public static final String CATEGORY_LEAVES = "fallingLeaves";
+    public static final String CATEGORY_WEATHER = "particleRain";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -112,6 +114,11 @@ public final class MinecraftModule extends TweakModule {
 
     /** Leaves falling from the trees, in percent of the usual amount, 0 for none. */
     public static int fallingLeaves = 100;
+
+    /** Rain, snow and sand dust of particles, in percent of the usual amount, 0 for none. */
+    public static int particleRain = 100;
+    /** The streaks of rain and snow of vanilla are hidden while the particles fall. */
+    public static boolean hideVanillaRain = true;
 
     /** A list at the side of the screen of the items picked up. */
     public static boolean pickupNotifier = true;
@@ -321,6 +328,26 @@ public final class MinecraftModule extends TweakModule {
                 + "particles, none with Minimal");
 
         config.addCustomCategoryComment(
+            CATEGORY_WEATHER,
+            "Weather of particles: rain of separate drops that splash on the ground, snow of swaying flakes that lie "
+                + "a moment, and sand dust blown along the ground in deserts and mesas when it rains. Only on the "
+                + "client, off with the Minimal particles of the video settings");
+        particleRain = config.getInt(
+            "amount",
+            CATEGORY_WEATHER,
+            particleRain,
+            0,
+            300,
+            "How much falls, in percent: 0 for none and the rain of vanilla, 200 for twice as much. It follows the "
+                + "strength of the rain; half with Decreased particles");
+        hideVanillaRain = config.getBoolean(
+            "hideVanillaRain",
+            CATEGORY_WEATHER,
+            hideVanillaRain,
+            "Hide the streaks of rain and snow of vanilla while the particles fall, so it does not rain twice. The "
+                + "sound of the rain stays. Worlds with a weather of their own, as on other planets, keep it");
+
+        config.addCustomCategoryComment(
             CATEGORY_PICKUPS,
             "A list at the side of the screen of the items you pick up, like \"64x Cobblestone\" with the icon of "
                 + "the item, in the color of its rarity. Only on the client");
@@ -477,5 +504,6 @@ public final class MinecraftModule extends TweakModule {
         NewItems.register();
         PickupNotifier.register();
         FallingLeaves.register();
+        ParticleRain.register();
     }
 }
