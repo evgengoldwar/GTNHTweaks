@@ -95,6 +95,8 @@ public final class MinecraftModule extends TweakModule {
     public static boolean resourcePackPresets = true;
     /** Choosing a preset applies it at once, as the Done button does, instead of only filling the lists. */
     public static boolean applyPresetAtOnce = false;
+    /** The Default entry of the selected list is hidden while other packs are selected. */
+    public static boolean hideDefaultPack = true;
     /** Done without a change of the packs closes the screen at once, without reloading the resources. */
     public static boolean skipReloadWithoutChanges = true;
 
@@ -283,6 +285,12 @@ public final class MinecraftModule extends TweakModule {
             applyPresetAtOnce,
             "With presets: choosing a preset applies it at once and reloads the resources, as the Done button does. "
                 + "Off: it only puts the packs into the lists, to look at them and press Done");
+        hideDefaultPack = config.getBoolean(
+            "hideDefaultPack",
+            CATEGORY_RESOURCE_PACKS,
+            hideDefaultPack,
+            "Hide the Default entry of the selected packs while at least one other pack is selected: the default "
+                + "look is always under them, so it only takes room. It comes back when no pack is selected");
         skipReloadWithoutChanges = config.getBoolean(
             "skipReloadWithoutChanges",
             CATEGORY_RESOURCE_PACKS,

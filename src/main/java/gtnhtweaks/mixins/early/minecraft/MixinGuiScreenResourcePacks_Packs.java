@@ -33,6 +33,11 @@ public abstract class MixinGuiScreenResourcePacks_Packs extends GuiScreen implem
         if (ResourcePackScreen.actionPerformed(this, button)) ci.cancel();
     }
 
+    @Inject(method = "drawScreen", at = @At("HEAD"), require = 0)
+    private void gtnhtweaks$beforeDrawScreen(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        ResourcePackScreen.beforeDraw(this);
+    }
+
     @Inject(method = "drawScreen", at = @At("TAIL"), require = 0)
     private void gtnhtweaks$drawScreen(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         List<String> tooltip = ResourcePackScreen.draw(this, mouseX, mouseY);

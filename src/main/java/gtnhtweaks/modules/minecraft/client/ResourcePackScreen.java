@@ -51,6 +51,8 @@ public final class ResourcePackScreen {
     private static GuiScreen screen;
     private static GuiSlot availableSlot, selectedSlot;
     private static List<Object> available, selected;
+    /** The entry of the default pack, taken out of the selected list while other packs are selected. */
+    private static Object defaultEntry;
 
     /** The pack pressed on, then dragged. */
     private static ResourcePackListEntry held;
@@ -82,6 +84,7 @@ public final class ResourcePackScreen {
         pendingPacks = null;
         if (available == null) return;
         knownPacks = allPacks();
+        syncDefault();
         if (MinecraftModule.resourcePackPresets
             && !PresetPanel.init(gui, buttons, availableSlot.left, availableSlot.top, availableSlot.bottom)) {
             buttons.add(new GuiButton(PRESETS_BUTTON, 4, 6, 70, 20, "Presets"));
@@ -144,6 +147,30 @@ public final class ResourcePackScreen {
         }
     }
 
+    /** Before the lists are drawn: the default pack follows the packs moved by the arrows of vanilla. */
+    public static void beforeDraw(GuiScreen gui) {
+        if (gui == screen) syncDefault();
+    }
+
+    /**
+     * Hides the default pack while any other pack is selected: it is always under them, so its entry only takes room.
+     * Done takes only the other packs, so the entry being out of the list changes nothing.
+     */
+    private static void syncDefault() {
+        if (selected == null || defaultEntry == null) return;
+        boolean anyPack = false;
+        for (Object entry : selected) {
+            if (entry instanceof ResourcePackListEntryFound) {
+                anyPack = true;
+                break;
+            }
+        }
+        boolean hide = MinecraftModule.hideDefaultPack && anyPack;
+        boolean shown = selected.contains(defaultEntry);
+        if (hide && shown) selected.remove(defaultEntry);
+        else if (!hide && !shown) selected.add(defaultEntry);
+    }
+
     /** True if the key is taken by the presets. */
     public static boolean keyTyped(GuiScreen gui, char c, int code) {
         return held == null && PresetPanel.keyTyped(gui, c, code);
@@ -171,7 +198,10 @@ public final class ResourcePackScreen {
             return;
         }
         if (!Mouse.isButtonDown(0)) {
-            if (dragging) drop(mouseX, mouseY);
+            if (dragging) {
+                drop(mouseX, mouseY);
+                syncDefault();
+            }
             held = null;
             dragging = false;
             return;
@@ -256,6 +286,10 @@ public final class ResourcePackScreen {
             available = oneSelected ? other : one;
             availableSlot = first.left <= second.left ? first : second;
             selectedSlot = availableSlot == first ? second : first;
+            defaultEntry = null;
+            for (Object entry : selected) {
+                if (entry instanceof ResourcePackListEntryDefault) defaultEntry = entry;
+            }
         } catch (ReflectiveOperationException | RuntimeException e) {
             GTNHTweaks.LOG.warn("Could not find the lists of the resource pack screen", e);
             available = selected = null;
@@ -366,6 +400,7 @@ public final class ResourcePackScreen {
         available.clear();
         available.addAll(fixed);
         available.addAll(entries.values());
+        syncDefault();
     }
 
     // ---- dragging
