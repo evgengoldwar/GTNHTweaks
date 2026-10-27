@@ -2,6 +2,7 @@ package gtnhtweaks.modules.itemphysics.client;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -120,12 +121,15 @@ public final class ItemPhysicsRenderer {
     private static final double TELEPORT_DISTANCE = 2;
     /**
      * Items lying on each other on the same ground have their faces at the same height and flicker, each drawn over the
-     * other in turn. Every item is lifted to a layer of its own, by its entity id, so of any {@code LAYERS} items
-     * dropped one after another, as from a broken chest, no two share a height; later ones lie higher, as if on top.
-     * The highest layer is less than a pixel above the ground.
+     * other in turn. An item that comes to lie takes the lowest layer that no item lying where it would touch it has,
+     * and is lifted by that many steps, so items that touch never share a height and the last one lies on top.
      */
-    private static final int LAYERS = 32;
     private static final float LAYER_STEP = 0.0015F;
+    /** Items closer than this along both horizontal axes and in height can touch, in blocks. */
+    private static final double LAYER_REACH = 0.75;
+    private static final double LAYER_REACH_HEIGHT = 0.5;
+    /** A lying item moved this far from where it took its layer takes one anew. */
+    private static final double LAYER_MOVE = 0.05;
     /** Most copies of a pile: the layout is made for all of them, so a pile keeps its look when it grows. */
     private static final int MAX_COPIES = 5;
 
@@ -189,7 +193,8 @@ public final class ItemPhysicsRenderer {
         // lifted by as much as the tilt lowers the lowest point, so the shape stands on the bottom of the entity
         float lift = state.height / 2F * Math.abs(MathHelper.cos(pitch * RAD))
             + state.halfZ * Math.abs(MathHelper.sin(pitch * RAD));
-        double bottom = y - entity.yOffset + Math.floorMod(entity.getEntityId(), LAYERS) * LAYER_STEP;
+        updateLayer(entity, state);
+        double bottom = y - entity.yOffset + Math.max(0, state.layer) * LAYER_STEP;
         if (ItemPhysicsModule.keepOutOfBlocks) {
             state.updatePush(
                 world,
@@ -284,6 +289,29 @@ public final class ItemPhysicsRenderer {
      */
     public static boolean keepSpeed(EntityItem entity, double motionX, double motionY, double motionZ) {
         return isLying(entity) && motionX * motionX + motionY * motionY + motionZ * motionZ < KEEP_SPEED * KEEP_SPEED;
+    }
+
+    /** Gives an item that comes to lie, or is moved while lying, the lowest layer free among the items it can touch. */
+    private static void updateLayer(EntityItem entity, State state) {
+        // an item in the air keeps the layer it had, and takes one when it lands
+        if (!isLying(entity)) return;
+        if (state.layer >= 0 && Math.abs(entity.posX - state.layerX) < LAYER_MOVE
+            && Math.abs(entity.posY - state.layerY) < LAYER_MOVE
+            && Math.abs(entity.posZ - state.layerZ) < LAYER_MOVE) return;
+        BitSet used = new BitSet();
+        for (Map.Entry<EntityItem, State> entry : STATES.entrySet()) {
+            EntityItem other = entry.getKey();
+            int layer = entry.getValue().layer;
+            if (other == entity || layer < 0 || other.isDead || other.worldObj != entity.worldObj || !isLying(other)) {
+                continue;
+            }
+            if (Math.abs(other.posX - entity.posX) < LAYER_REACH && Math.abs(other.posZ - entity.posZ) < LAYER_REACH
+                && Math.abs(other.posY - entity.posY) < LAYER_REACH_HEIGHT) used.set(layer);
+        }
+        state.layer = used.nextClearBit(0);
+        state.layerX = entity.posX;
+        state.layerY = entity.posY;
+        state.layerZ = entity.posZ;
     }
 
     private static boolean isLying(EntityItem entity) {
@@ -464,6 +492,9 @@ public final class ItemPhysicsRenderer {
         double pushX, pushZ, targetPushX, targetPushZ;
         boolean pushSet;
         double keyX = Double.NaN, keyY, keyZ;
+        /** Height layer among the items it can touch, -1 before it first lies; where it took it. */
+        int layer = -1;
+        double layerX, layerY, layerZ;
         float keyYaw, keyHeight;
 
         State(EntityItem entity) {
