@@ -19,6 +19,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.modules.backups.BackupsModule;
+import gtnhtweaks.modules.backups.BackupsServerModule;
 import gtnhtweaks.modules.bees.BeesModule;
 import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
 import gtnhtweaks.modules.debug.DebugModule;
@@ -30,6 +31,7 @@ import gtnhtweaks.modules.logs.LogsModule;
 import gtnhtweaks.modules.mainmenu.MainMenuModule;
 import gtnhtweaks.modules.menus.MenusModule;
 import gtnhtweaks.modules.minecraft.MinecraftModule;
+import gtnhtweaks.modules.minecraft.MinecraftServerModule;
 import gtnhtweaks.modules.nei.NEIModule;
 import gtnhtweaks.modules.tinkers.TinkersModule;
 
@@ -37,13 +39,14 @@ public final class ModuleManager {
 
     private static final String CATEGORY_MODULES = "modules";
 
-    /** Every module of the mod. Register new modules here. */
+    /** Every module of the mod, client and server ones. Register new modules here. */
     private static final List<TweakModule> MODULES = Collections.unmodifiableList(
         Arrays.<TweakModule>asList(
             LoadingScreenModule.INSTANCE,
             MainMenuModule.INSTANCE,
             MenusModule.INSTANCE,
             MinecraftModule.INSTANCE,
+            MinecraftServerModule.INSTANCE,
             ItemPhysicsModule.INSTANCE,
             GregTechModule.INSTANCE,
             NEIModule.INSTANCE,
@@ -53,6 +56,7 @@ public final class ModuleManager {
             BeesModule.INSTANCE,
             LogsModule.INSTANCE,
             BackupsModule.INSTANCE,
+            BackupsServerModule.INSTANCE,
             DebugModule.INSTANCE));
 
     private static boolean configLoaded;
@@ -93,7 +97,8 @@ public final class ModuleManager {
                 .get(CATEGORY_MODULES, module.getId(), module.isEnabledByDefault(), module.getDescription());
             property.setRequiresMcRestart(true);
             boolean enabled = property.getBoolean();
-            module.setEnabled(enabled && (client || !module.isClientOnly()));
+            // a server module also runs in the client, for the singleplayer world; a client module never on a server
+            module.setEnabled(enabled && (client || module.getSide() != TweakModule.ModuleSide.CLIENT));
 
             Configuration config = new Configuration(new File(dir, module.getId() + ".cfg"));
             CONFIGS.put(module, config);

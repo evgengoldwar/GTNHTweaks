@@ -58,7 +58,7 @@ public class BackupPacket implements IMessage {
         @Override
         public IMessage onMessage(BackupPacket message, MessageContext ctx) {
             // Runs on the network thread, the client applies it on its next tick
-            BackupClient.receive(message);
+            if (BackupsModule.INSTANCE.isEnabled()) BackupClient.receive(message);
             return null;
         }
     }

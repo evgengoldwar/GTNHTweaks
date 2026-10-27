@@ -42,7 +42,7 @@ public final class MainMenuModule extends TweakModule {
     public static String textSettings = "GTNHTweaks settings";
 
     private MainMenuModule() {
-        super("mainmenu", "Main menu in the style of the GTNH loading screen", true);
+        super("mainmenu", "Main menu in the style of the GTNH loading screen", ModuleSide.CLIENT);
     }
 
     @Override

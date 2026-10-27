@@ -54,7 +54,10 @@ public final class LoadingScreenModule extends TweakModule {
     public static String unitSeconds = "s";
 
     private LoadingScreenModule() {
-        super("loadingscreen", "GTNH loading screen with a loading timer and the previous launch time", true);
+        super(
+            "loadingscreen",
+            "GTNH loading screen with a loading timer and the previous launch time",
+            ModuleSide.CLIENT);
     }
 
     @Override

@@ -45,7 +45,7 @@ public final class LogsModule extends TweakModule {
     private static volatile List<Pattern> ignorePatterns = new ArrayList<>();
 
     private LogsModule() {
-        super("logs", "Sorted logs: errors, warnings and crashes in separate files without the noise", false);
+        super("logs", "Sorted logs: errors, warnings and crashes in separate files without the noise", ModuleSide.BOTH);
     }
 
     @Override

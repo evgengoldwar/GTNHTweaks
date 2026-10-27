@@ -4,9 +4,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import net.minecraftforge.common.config.Configuration;
+
 import gtnhtweaks.GTNHTweaks;
 
-/** Tells what a log line or a chat message says about a backup. Shared by the server and the client side. */
+/**
+ * Tells what a log line or a chat message says about a backup. Shared by the server and the client side, each with its
+ * own {@link Patterns}: the server reads its log, the client its chat.
+ */
 public final class BackupMessages {
 
     public enum Kind {
@@ -30,20 +35,99 @@ public final class BackupMessages {
     /** Size of the archive, like {@code 2.0GB} in "Backup done in 00:41 seconds (2.0GB)!". */
     private static final Pattern SIZE = Pattern.compile("(?i)(\\d+(?:[.,]\\d+)?)\\s*([KMGT]i?B)\\b");
 
+    /** Patterns of the chat messages, for the client. */
+    public static final Patterns CHAT = new Patterns();
+    /** Patterns of the log lines, for the server. */
+    public static final Patterns LOG = new Patterns();
+
     static volatile Pattern loggers = Pattern.compile(DEFAULT_LOGGERS);
-    static volatile Pattern keywords = Pattern.compile(DEFAULT_KEYWORDS);
-    static volatile Pattern ignored = Pattern.compile(DEFAULT_IGNORED);
-    static volatile Pattern failed = Pattern.compile(DEFAULT_FAILED);
-    static volatile Pattern finished = Pattern.compile(DEFAULT_FINISHED);
-    static volatile Pattern started = Pattern.compile(DEFAULT_STARTED);
 
     private BackupMessages() {}
+
+    /** What tells a backup message and its kind. */
+    public static final class Patterns {
+
+        volatile Pattern keywords = Pattern.compile(DEFAULT_KEYWORDS);
+        volatile Pattern ignored = Pattern.compile(DEFAULT_IGNORED);
+        volatile Pattern failed = Pattern.compile(DEFAULT_FAILED);
+        volatile Pattern finished = Pattern.compile(DEFAULT_FINISHED);
+        volatile Pattern started = Pattern.compile(DEFAULT_STARTED);
+
+        /** Reads the patterns from a category of a config. */
+        void load(Configuration config, String category, String where) {
+            keywords = compile(
+                config.getString(
+                    "keywords",
+                    category,
+                    DEFAULT_KEYWORDS,
+                    "A " + where + " is about a backup only when it matches this"),
+                DEFAULT_KEYWORDS);
+            ignored = compile(
+                config.getString(
+                    "ignored",
+                    category,
+                    DEFAULT_IGNORED,
+                    "Backup " + where + "s that are not a start, like \"Next backup in 30 minutes\""),
+                DEFAULT_IGNORED);
+            failed = compile(
+                config.getString(
+                    "failed",
+                    category,
+                    DEFAULT_FAILED,
+                    "A backup " + where + " matching this means the backup failed"),
+                DEFAULT_FAILED);
+            finished = compile(
+                config.getString(
+                    "finished",
+                    category,
+                    DEFAULT_FINISHED,
+                    "A backup " + where
+                        + " matching this means the backup is done. While a backup runs, a chat "
+                        + "message matching this ends it even without the keywords, like \"Done! (00:12)\""),
+                DEFAULT_FINISHED);
+            started = compile(
+                config.getString(
+                    "started",
+                    category,
+                    DEFAULT_STARTED,
+                    "A backup " + where + " matching this means a backup started"),
+                DEFAULT_STARTED);
+        }
+
+        /**
+         * @param text    message without color codes
+         * @param fromMod the line comes from the ServerUtilities logger, so a bare percentage is backup progress
+         * @param running a backup is running, so a bare "Done!" ends it
+         */
+        public Kind classify(String text, boolean fromMod, boolean running) {
+            if (text == null || text.isEmpty()) return Kind.NONE;
+            if (!keywords.matcher(text)
+                .matches()) {
+                if (fromMod && progress(text) >= 0) return Kind.PROGRESS;
+                if (running && !fromMod
+                    && finished.matcher(text)
+                        .matches())
+                    return Kind.FINISHED;
+                return Kind.NONE;
+            }
+            if (failed.matcher(text)
+                .matches()) return Kind.FAILED;
+            if (finished.matcher(text)
+                .matches()) return Kind.FINISHED;
+            if (progress(text) >= 0) return Kind.PROGRESS;
+            if (ignored.matcher(text)
+                .matches()) return Kind.OTHER;
+            if (started.matcher(text)
+                .matches()) return Kind.STARTED;
+            return Kind.OTHER;
+        }
+    }
 
     static Pattern compile(String regex, String fallback) {
         try {
             return Pattern.compile(regex);
         } catch (PatternSyntaxException e) {
-            GTNHTweaks.LOG.warn("Invalid pattern in backups.cfg: {}", regex);
+            GTNHTweaks.LOG.warn("Invalid backup pattern in the config: {}", regex);
             return Pattern.compile(fallback);
         }
     }
@@ -51,34 +135,6 @@ public final class BackupMessages {
     public static boolean isBackupLogger(String logger) {
         return logger != null && loggers.matcher(logger)
             .matches();
-    }
-
-    /**
-     * @param text    message without color codes
-     * @param fromMod the line comes from the ServerUtilities logger, so a bare percentage is backup progress
-     * @param running a backup is running, so a bare "Done!" ends it
-     */
-    public static Kind classify(String text, boolean fromMod, boolean running) {
-        if (text == null || text.isEmpty()) return Kind.NONE;
-        if (!keywords.matcher(text)
-            .matches()) {
-            if (fromMod && progress(text) >= 0) return Kind.PROGRESS;
-            if (running && !fromMod
-                && finished.matcher(text)
-                    .matches())
-                return Kind.FINISHED;
-            return Kind.NONE;
-        }
-        if (failed.matcher(text)
-            .matches()) return Kind.FAILED;
-        if (finished.matcher(text)
-            .matches()) return Kind.FINISHED;
-        if (progress(text) >= 0) return Kind.PROGRESS;
-        if (ignored.matcher(text)
-            .matches()) return Kind.OTHER;
-        if (started.matcher(text)
-            .matches()) return Kind.STARTED;
-        return Kind.OTHER;
     }
 
     /** Kind of a ServerUtilities translation key like {@code serverutilities.lang.backup_start}, NONE if unknown. */

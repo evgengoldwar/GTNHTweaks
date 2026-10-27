@@ -22,7 +22,7 @@ public final class GregTechModule extends TweakModule {
     public static boolean modernToolOverlay = true;
 
     private GregTechModule() {
-        super("gregtech", "Client side tweaks of GregTech", true);
+        super("gregtech", "Client side tweaks of GregTech", ModuleSide.CLIENT);
     }
 
     @Override

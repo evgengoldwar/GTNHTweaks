@@ -95,7 +95,9 @@ final class Rows {
         void draw(int x, int y, int w, int mouseX, int mouseY, float dtMs) {
             GTNHTheme theme = UI.theme();
             UI.text(title, x + 8, y + 7, theme.logo);
-            String side = module.isClientOnly() ? "client" : "client and server";
+            TweakModule.ModuleSide moduleSide = module.getSide();
+            String side = moduleSide == TweakModule.ModuleSide.CLIENT ? "client"
+                : moduleSide == TweakModule.ModuleSide.SERVER ? "server" : "client and server";
             int titleEnd = x + 8
                 + UI.font()
                     .getStringWidth(title);

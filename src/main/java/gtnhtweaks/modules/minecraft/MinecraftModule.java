@@ -10,6 +10,7 @@ import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
 import gtnhtweaks.modules.minecraft.client.BlockChunks;
 import gtnhtweaks.modules.minecraft.client.FallingLeaves;
+import gtnhtweaks.modules.minecraft.client.MovementClient;
 import gtnhtweaks.modules.minecraft.client.NewItems;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
 import gtnhtweaks.modules.minecraft.client.OutlineScreen;
@@ -19,8 +20,9 @@ import gtnhtweaks.modules.minecraft.client.ScreenBackground;
 import gtnhtweaks.modules.minecraft.client.WaterSplashes;
 
 /**
- * Tweaks of Minecraft itself: the outline of the looked at block, the chat, the inventories, the background of the
- * screens, the splashes in water and the resource pack screen.
+ * Client side tweaks of Minecraft itself: the outline of the looked at block, the chat, the inventories, the background
+ * of the screens, the splashes in water, the resource pack screen, and the client side of the crouching and swimming of
+ * {@link MinecraftServerModule}.
  */
 public final class MinecraftModule extends TweakModule {
 
@@ -38,6 +40,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_LEAVES = "fallingLeaves";
     public static final String CATEGORY_BLOCK_CHUNKS = "blockChunks";
     public static final String CATEGORY_WEATHER = "particleRain";
+    public static final String CATEGORY_MOVEMENT = "movement";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -132,6 +135,9 @@ public final class MinecraftModule extends TweakModule {
     /** The streaks of rain and snow of vanilla are hidden while the particles fall. */
     public static boolean hideVanillaRain = true;
 
+    /** The crouching and swimming of newer versions, on the servers that allow them. */
+    public static boolean modernMovement = true;
+
     /** A list at the side of the screen of the items picked up. */
     public static boolean pickupNotifier = true;
     public static PickupPosition pickupPosition = PickupPosition.BOTTOM_RIGHT;
@@ -157,7 +163,7 @@ public final class MinecraftModule extends TweakModule {
     public static boolean skipReloadWithoutChanges = true;
 
     private MinecraftModule() {
-        super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
+        super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", ModuleSide.CLIENT);
     }
 
     @Override
@@ -370,6 +376,15 @@ public final class MinecraftModule extends TweakModule {
                 + "0 for none, 200 for twice as many. For the leaves of every mod. Half as many with Decreased "
                 + "particles, none with Minimal");
 
+        modernMovement = config.getBoolean(
+            "enabled",
+            CATEGORY_MOVEMENT,
+            modernMovement,
+            "Crouching and swimming of newer versions: crouching lower under slabs, swimming while sprinting under "
+                + "water, crawling through gaps one block high. Only on servers that allow them, with the Minecraft "
+                + "server module of GTNHTweaks, and in singleplayer; elsewhere the movement stays vanilla. Changes "
+                + "require a game restart");
+
         config.addCustomCategoryComment(
             CATEGORY_WEATHER,
             "Weather of particles: rain of separate drops that splash on the ground, snow of swaying flakes that lie "
@@ -549,5 +564,6 @@ public final class MinecraftModule extends TweakModule {
         FallingLeaves.register();
         BlockChunks.register();
         ParticleRain.register();
+        if (modernMovement) MovementClient.register();
     }
 }

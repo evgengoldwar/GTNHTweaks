@@ -40,7 +40,7 @@ public final class ExtraUtilitiesModule extends TweakModule {
     public static boolean onGround = true;
 
     private ExtraUtilitiesModule() {
-        super("extrautilities", "Client side tweaks of Extra Utilities", true);
+        super("extrautilities", "Client side tweaks of Extra Utilities", ModuleSide.CLIENT);
     }
 
     @Override

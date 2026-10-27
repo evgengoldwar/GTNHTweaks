@@ -16,6 +16,11 @@ import gtnhtweaks.common.render.GTNHTheme;
  * A module lives in its own package under {@code gtnhtweaks.modules}, can be switched on or off in
  * {@code config/GTNHTweaks/modules.cfg} and keeps its own settings in {@code config/GTNHTweaks/<id>.cfg}.
  * <p>
+ * Every module is either a client or a server one: a client module draws and plays on the game client, a server
+ * module runs where the world runs (the dedicated server, or the singleplayer world in the client). A feature that
+ * needs both sides is two modules, one per side, each with its own switch and settings. A few modules do the same on
+ * either side and are shown in both lists.
+ * <p>
  * Configs are read during the coremod phase (before any mod is constructed), so {@link #loadConfig} must not touch
  * Minecraft classes. Lifecycle methods are only called for enabled modules.
  */
@@ -23,13 +28,32 @@ public abstract class TweakModule {
 
     private final String id;
     private final String description;
-    private final boolean clientOnly;
+    private final ModuleSide side;
     private boolean enabled;
 
-    protected TweakModule(String id, String description, boolean clientOnly) {
+    /** Where a module runs. */
+    public enum ModuleSide {
+
+        /** Only on the game client. */
+        CLIENT,
+        /** Where the world runs: the dedicated server and the singleplayer world. */
+        SERVER,
+        /** The same on the client and on a dedicated server. */
+        BOTH;
+
+        public boolean onClient() {
+            return this != SERVER;
+        }
+
+        public boolean onServer() {
+            return this != CLIENT;
+        }
+    }
+
+    protected TweakModule(String id, String description, ModuleSide side) {
         this.id = id;
         this.description = description;
-        this.clientOnly = clientOnly;
+        this.side = side;
     }
 
     /** Used as the key in modules.cfg and as the name of the module's own config file. */
@@ -41,8 +65,8 @@ public abstract class TweakModule {
         return description;
     }
 
-    public final boolean isClientOnly() {
-        return clientOnly;
+    public final ModuleSide getSide() {
+        return side;
     }
 
     public final boolean isEnabled() {
