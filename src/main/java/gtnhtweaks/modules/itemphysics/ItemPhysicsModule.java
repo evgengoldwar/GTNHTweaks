@@ -27,7 +27,7 @@ public final class ItemPhysicsModule extends TweakModule {
         super(
             "itemphysics",
             "Dropped items fall, tumble and lie on the ground instead of hovering and spinning in the air",
-            true);
+            ModuleSide.CLIENT);
     }
 
     @Override

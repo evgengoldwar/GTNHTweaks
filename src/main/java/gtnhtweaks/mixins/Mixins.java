@@ -14,6 +14,7 @@ import gtnhtweaks.modules.logs.LogsModule;
 import gtnhtweaks.modules.mainmenu.MainMenuModule;
 import gtnhtweaks.modules.menus.MenusModule;
 import gtnhtweaks.modules.minecraft.MinecraftModule;
+import gtnhtweaks.modules.minecraft.MinecraftServerModule;
 import gtnhtweaks.modules.nei.NEIModule;
 
 public enum Mixins implements IMixins {
@@ -85,6 +86,27 @@ public enum Mixins implements IMixins {
     MINECRAFT_BLOCK_CHUNKS(new MixinBuilder("Broken blocks fall apart into little cubes").setPhase(Phase.EARLY)
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
         .addClientMixins("minecraft.MixinEffectRenderer_BlockChunks")),
+    // Crouching and swimming: the poses are kept on every player wherever one of the two sides runs, the server
+    // module on a dedicated server and in singleplayer, the client module on the client
+    MINECRAFT_MOVEMENT(new MixinBuilder("Poses of the crouching and swimming of newer versions").setPhase(Phase.EARLY)
+        .setApplyIf(
+            () -> MinecraftServerModule.INSTANCE.isEnabled()
+                || MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.modernMovement)
+        .addCommonMixins(
+            "minecraft.MixinEntityPlayer_Movement",
+            "minecraft.MixinEntity_Movement",
+            "minecraft.MixinNetHandlerPlayServer_Movement")),
+    MINECRAFT_MOVEMENT_CLIENT(
+        new MixinBuilder("Camera, swimming and models of the crouching and swimming").setPhase(Phase.EARLY)
+            .setApplyIf(() -> MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.modernMovement)
+            .addClientMixins(
+                "minecraft.MixinEntityRenderer_Movement",
+                "minecraft.MixinRendererLivingEntity_Movement",
+                "minecraft.MixinModelBiped_Movement",
+                "minecraft.MixinEntityPlayerSP_Movement",
+                "minecraft.MixinMovementInputFromOptions_Movement",
+                "minecraft.MixinRenderPlayer_Movement",
+                "minecraft.MixinEntity_MovementLight")),
     // Applied with the module, the settings are read when the screen is used, so they need no restart
     MINECRAFT_RESOURCE_PACKS(new MixinBuilder("Dragging and presets of the resource packs").setPhase(Phase.EARLY)
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)

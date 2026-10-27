@@ -18,6 +18,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.common.Network;
 import gtnhtweaks.modules.backups.client.BackupClient;
 
 /**
@@ -74,7 +75,7 @@ public class ServerBackupWatcher {
             byte stateBefore = state;
             float progressBefore = progress;
             boolean running = state == BackupPacket.RUNNING;
-            BackupMessages.Kind kind = BackupMessages.classify(text, fromMod, false);
+            BackupMessages.Kind kind = BackupMessages.LOG.classify(text, fromMod, false);
             switch (kind) {
                 case STARTED:
                     if (!running) start(now);
@@ -113,7 +114,7 @@ public class ServerBackupWatcher {
         // In singleplayer the player sees the change right away, even while the integrated server is paused
         if (local != null && FMLCommonHandler.instance()
             .getSide()
-            .isClient()) BackupClient.receive(local);
+            .isClient() && BackupsModule.INSTANCE.isEnabled()) BackupClient.receive(local);
     }
 
     private static void start(long now) {
@@ -130,7 +131,7 @@ public class ServerBackupWatcher {
         BackupPacket packet = null;
         long now = System.currentTimeMillis();
         synchronized (LOCK) {
-            if (state == BackupPacket.RUNNING && now - lastActivity > BackupsModule.timeoutMinutes * 60_000L) {
+            if (state == BackupPacket.RUNNING && now - lastActivity > BackupsServerModule.timeoutMinutes * 60_000L) {
                 packet = new BackupPacket(BackupPacket.CANCELLED, -1, now - startedAt, "");
                 state = IDLE;
                 dirty = false;
@@ -140,18 +141,18 @@ public class ServerBackupWatcher {
                 dirty = false;
             }
         }
-        if (packet != null && BackupsModule.network != null) BackupsModule.network.sendToAll(packet);
+        if (packet != null) Network.backups.sendToAll(packet);
     }
 
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.player instanceof EntityPlayerMP) || BackupsModule.network == null) return;
+        if (!(event.player instanceof EntityPlayerMP)) return;
         BackupPacket packet;
         synchronized (LOCK) {
             if (state != BackupPacket.RUNNING) return;
             packet = new BackupPacket(state, progress, System.currentTimeMillis() - startedAt, size);
         }
-        BackupsModule.network.sendTo(packet, (EntityPlayerMP) event.player);
+        Network.backups.sendTo(packet, (EntityPlayerMP) event.player);
     }
 
     private static final class Capture extends AbstractAppender {

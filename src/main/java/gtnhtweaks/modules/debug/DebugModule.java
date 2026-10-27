@@ -20,7 +20,7 @@ public final class DebugModule extends TweakModule {
     public static boolean screenCloseCrash = false;
 
     private DebugModule() {
-        super("debug", "Tools for mod and pack developers", true);
+        super("debug", "Tools for mod and pack developers", ModuleSide.CLIENT);
     }
 
     @Override

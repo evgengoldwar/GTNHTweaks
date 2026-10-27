@@ -18,7 +18,7 @@ public final class NEIModule extends TweakModule {
     public static boolean fillOneCraftWithCtrl = true;
 
     private NEIModule() {
-        super("nei", "Client side tweaks of NotEnoughItems", true);
+        super("nei", "Client side tweaks of NotEnoughItems", ModuleSide.CLIENT);
     }
 
     @Override

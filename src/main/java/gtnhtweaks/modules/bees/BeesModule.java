@@ -26,7 +26,10 @@ public final class BeesModule extends TweakModule {
     public static boolean moods = true;
 
     private BeesModule() {
-        super("bees", "Bees of Forestry and its addons drawn as 3D bees, each dressed for what it is", true);
+        super(
+            "bees",
+            "Bees of Forestry and its addons drawn as 3D bees, each dressed for what it is",
+            ModuleSide.CLIENT);
     }
 
     @Override

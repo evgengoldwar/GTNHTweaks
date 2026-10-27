@@ -131,7 +131,7 @@ public class BackupClient {
         BackupMessages.Kind kind = keyKind(event.message);
         if (kind == BackupMessages.Kind.NONE || kind == BackupMessages.Kind.OTHER) {
             // A key like "...backup..." that tells nothing: the text may still say it, like "launched a manual backup!"
-            BackupMessages.Kind byText = BackupMessages.classify(text, false, phase == Phase.RUNNING);
+            BackupMessages.Kind byText = BackupMessages.CHAT.classify(text, false, phase == Phase.RUNNING);
             if (byText != BackupMessages.Kind.NONE) kind = byText;
         }
         if (kind == BackupMessages.Kind.NONE) return;

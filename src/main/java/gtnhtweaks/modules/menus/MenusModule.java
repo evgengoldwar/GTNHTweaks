@@ -43,7 +43,7 @@ public final class MenusModule extends TweakModule {
     public static Set<String> excludedScreens = Collections.emptySet();
 
     private MenusModule() {
-        super("menus", "Vanilla, Forge and in-game menus and inventories in the GTNH style", true);
+        super("menus", "Vanilla, Forge and in-game menus and inventories in the GTNH style", ModuleSide.CLIENT);
     }
 
     @Override

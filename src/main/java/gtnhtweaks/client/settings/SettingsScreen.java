@@ -40,18 +40,24 @@ public class SettingsScreen extends GuiScreen {
     private static final int FOOTER_HEIGHT = 28;
     private static final int MODULE_ROW = 18;
     private static final int GROUP_ROW = 14;
+    private static final int SECTION_ROW = 18;
     private static final int GAP = 6;
     private static final int DONE_W = 70, FOLDER_W = 84;
 
     private static final Map<String, String> NAMES = new HashMap<>();
-    /** Groups of the sidebar, in order, with the ids of their modules. Modules in none go to "Other". */
-    private static final Map<String, List<String>> GROUPS = new LinkedHashMap<>();
+    /**
+     * Groups of the client and the server section of the sidebar, in order, with the ids of their modules. Modules in
+     * none go to "Other" of the section of their side; the modules of both sides are in both sections.
+     */
+    private static final Map<String, List<String>> CLIENT_GROUPS = new LinkedHashMap<>();
+    private static final Map<String, List<String>> SERVER_GROUPS = new LinkedHashMap<>();
 
     static {
         NAMES.put("loadingscreen", "Loading screen");
         NAMES.put("mainmenu", "Main menu");
         NAMES.put("menus", "Menus");
         NAMES.put("minecraft", "Minecraft");
+        NAMES.put("minecraftServer", "Minecraft");
         NAMES.put("itemphysics", "Item physics");
         NAMES.put("gregtech", "GregTech");
         NAMES.put("nei", "NEI");
@@ -61,12 +67,16 @@ public class SettingsScreen extends GuiScreen {
         NAMES.put("bees", "Bees");
         NAMES.put("logs", "Logs");
         NAMES.put("backups", "Backups");
+        NAMES.put("backupsServer", "Backups");
         NAMES.put("debug", "Debug");
 
-        GROUPS.put("Interface", Arrays.asList("loadingscreen", "mainmenu", "menus"));
-        GROUPS.put("Game", Arrays.asList("minecraft", "itemphysics"));
-        GROUPS.put("Mods", Arrays.asList("gregtech", "nei", "chromatictooltips", "tinkers", "extrautilities", "bees"));
-        GROUPS.put("Tools", Arrays.asList("logs", "backups", "debug"));
+        CLIENT_GROUPS.put("Interface", Arrays.asList("loadingscreen", "mainmenu", "menus"));
+        CLIENT_GROUPS.put("Game", Arrays.asList("minecraft", "itemphysics"));
+        CLIENT_GROUPS
+            .put("Mods", Arrays.asList("gregtech", "nei", "chromatictooltips", "tinkers", "extrautilities", "bees"));
+        CLIENT_GROUPS.put("Tools", Arrays.asList("logs", "backups", "debug"));
+        SERVER_GROUPS.put("Game", Arrays.asList("minecraftServer"));
+        SERVER_GROUPS.put("Tools", Arrays.asList("logs", "backupsServer"));
     }
 
     /** Page shown when the screen opens again. */
@@ -104,15 +114,18 @@ public class SettingsScreen extends GuiScreen {
     private static final class Page {
 
         final TweakModule module;
+        /** The name with the side, as in the search results; the sidebar shows the short one under its section. */
         final String name;
+        final String shortName;
         final Property enabled;
         final List<Rows.Row> rows = new ArrayList<>();
         final List<Rows.SettingRow> settings = new ArrayList<>();
         float switchPosition;
 
-        Page(TweakModule module, String name, Property enabled) {
+        Page(TweakModule module, String name, String shortName, Property enabled) {
             this.module = module;
             this.name = name;
+            this.shortName = shortName;
             this.enabled = enabled;
             this.switchPosition = isOn() ? 1 : 0;
         }
@@ -130,11 +143,18 @@ public class SettingsScreen extends GuiScreen {
     private static final class SideEntry {
 
         final String group;
+        /** The line is the title of the client or the server section, not of a group. */
+        final boolean section;
         final int page;
         final int y, h;
 
         SideEntry(String group, int page, int y, int h) {
+            this(group, false, page, y, h);
+        }
+
+        SideEntry(String group, boolean section, int page, int y, int h) {
             this.group = group;
+            this.section = section;
             this.page = page;
             this.y = y;
             this.h = h;
@@ -144,6 +164,12 @@ public class SettingsScreen extends GuiScreen {
     public static String displayName(TweakModule module) {
         String name = NAMES.get(module.getId());
         return name != null ? name : UI.humanize(module.getId());
+    }
+
+    /** The name with the side for the server modules, whose names are the same as of their client modules. */
+    static String fullName(TweakModule module) {
+        String name = displayName(module);
+        return module.getSide() == TweakModule.ModuleSide.SERVER ? name + " (server)" : name;
     }
 
     // ---- layout
@@ -187,7 +213,7 @@ public class SettingsScreen extends GuiScreen {
         for (TweakModule module : ModuleManager.getModules()) {
             Property enabled = modules.hasCategory("modules") ? modules.getCategory("modules")
                 .get(module.getId()) : null;
-            Page p = new Page(module, displayName(module), enabled);
+            Page p = new Page(module, fullName(module), displayName(module), enabled);
             p.rows.add(new Rows.TitleRow(this, module, p.name, contentW, p.settings));
             Configuration config = ModuleManager.getConfig(module);
             List<String> categories = new ArrayList<>(config.getCategoryNames());
@@ -226,9 +252,20 @@ public class SettingsScreen extends GuiScreen {
 
     private void buildSidebar() {
         side.clear();
-        Set<Integer> placed = new HashSet<>();
         int y = 2;
-        for (Map.Entry<String, List<String>> group : GROUPS.entrySet()) {
+        y = addSection("Client", CLIENT_GROUPS, true, y);
+        y = addSection("Server", SERVER_GROUPS, false, y);
+        listScroll.content = y + 2;
+        listScroll.view = listH;
+        listScroll.clamp();
+    }
+
+    /** A section of the sidebar with the modules of a side, in groups. */
+    private int addSection(String name, Map<String, List<String>> groups, boolean client, int y) {
+        side.add(new SideEntry(name, true, -1, y, SECTION_ROW));
+        y += SECTION_ROW;
+        Set<Integer> placed = new HashSet<>();
+        for (Map.Entry<String, List<String>> group : groups.entrySet()) {
             List<Integer> members = new ArrayList<>();
             for (String id : group.getValue()) {
                 int index = pageOf(id);
@@ -238,11 +275,12 @@ public class SettingsScreen extends GuiScreen {
             placed.addAll(members);
         }
         List<Integer> others = new ArrayList<>();
-        for (int i = 0; i < pages.size(); i++) if (!placed.contains(i)) others.add(i);
-        y = addGroup("Other", others, y);
-        listScroll.content = y + 2;
-        listScroll.view = listH;
-        listScroll.clamp();
+        for (int i = 0; i < pages.size(); i++) {
+            TweakModule.ModuleSide moduleSide = pages.get(i).module.getSide();
+            boolean onSide = client ? moduleSide.onClient() : moduleSide.onServer();
+            if (onSide && !placed.contains(i)) others.add(i);
+        }
+        return addGroup("Other", others, y) + 4;
     }
 
     private int addGroup(String name, List<Integer> members, int y) {
@@ -435,6 +473,12 @@ public class SettingsScreen extends GuiScreen {
         for (SideEntry entry : side) {
             int y = listY + entry.y - listScroll.offset();
             if (y + entry.h < listY || y > listY + listH) continue;
+            if (entry.section) {
+                // the title of the client or the server section, over its groups
+                UI.rect(listX + 2, y + 2, w, SECTION_ROW - 4, 0x18FFFFFF);
+                UI.text(entry.group.toUpperCase(Locale.ROOT), listX + 6, y + 5, theme.logo);
+                continue;
+            }
             if (entry.group != null) {
                 String group = entry.group.toUpperCase(Locale.ROOT);
                 UI.text(group, listX + 6, y + 4, theme.textDisabled);
@@ -457,7 +501,7 @@ public class SettingsScreen extends GuiScreen {
             boolean on = p.isOn();
             int color = !on ? theme.textDisabled : selected ? theme.hoverText : theme.text;
             int nameW = w - 40;
-            String name = fontRendererObj.trimStringToWidth(p.name, nameW);
+            String name = fontRendererObj.trimStringToWidth(p.shortName, nameW);
             UI.text(name, listX + 9, y + (MODULE_ROW - 8) / 2, color);
             if (on != p.isRunning()) {
                 // waits for a restart

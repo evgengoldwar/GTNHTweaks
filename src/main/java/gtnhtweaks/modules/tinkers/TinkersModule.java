@@ -17,7 +17,7 @@ public final class TinkersModule extends TweakModule {
     public static boolean clearGridToSideInventory = true;
 
     private TinkersModule() {
-        super("tinkers", "Client side tweaks of Tinkers' Construct", true);
+        super("tinkers", "Client side tweaks of Tinkers' Construct", ModuleSide.CLIENT);
     }
 
     @Override
