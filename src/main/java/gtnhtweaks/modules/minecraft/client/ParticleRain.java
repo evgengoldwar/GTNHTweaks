@@ -80,6 +80,8 @@ public final class ParticleRain {
 
     private static final Random RANDOM = new Random();
     private static final List<Particle> PARTICLES = new ArrayList<>();
+    /** Splashes made while the particles move, added to them after the move, not while they are gone through. */
+    private static final List<Particle> BORN = new ArrayList<>();
     private static World world;
     /** The wind, the same for all, turning slowly: blocks per tick at full strength. */
     private static float windAngle = RANDOM.nextFloat() * 6.2832F;
@@ -127,6 +129,9 @@ public final class ParticleRain {
         for (Iterator<Particle> it = PARTICLES.iterator(); it.hasNext();) {
             if (!move(it.next())) it.remove();
         }
+        int room = MAX_PARTICLES - PARTICLES.size();
+        PARTICLES.addAll(BORN.size() <= room ? BORN : BORN.subList(0, Math.max(0, room)));
+        BORN.clear();
         if (active(mc) && world.isRaining()) spawn(mc);
     }
 
@@ -193,7 +198,7 @@ public final class ParticleRain {
     /** A drop hitting the ground: a few bits of water bounce up and out. */
     private static void burst(Particle drop, int top) {
         int count = 2 + RANDOM.nextInt(2);
-        for (int i = 0; i < count && PARTICLES.size() < MAX_PARTICLES; i++) {
+        for (int i = 0; i < count; i++) {
             Particle bit = new Particle(SPLASH, drop.x, top + 0.05, drop.z);
             double angle = RANDOM.nextDouble() * Math.PI * 2;
             double out = 0.03 + RANDOM.nextDouble() * 0.05;
@@ -206,7 +211,7 @@ public final class ParticleRain {
             bit.alpha = 0.8F;
             bit.size = 0.025F;
             bit.life = 6 + RANDOM.nextInt(5);
-            PARTICLES.add(bit);
+            BORN.add(bit);
         }
     }
 
