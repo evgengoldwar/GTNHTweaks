@@ -2,10 +2,16 @@ package gtnhtweaks.modules.minecraft.client;
 
 import static org.lwjgl.opengl.GL11.*;
 
+import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.WeakHashMap;
+
+import javax.imageio.ImageIO;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -17,6 +23,7 @@ import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
@@ -35,8 +42,9 @@ import gtnhtweaks.modules.minecraft.MinecraftModule;
  * textures of the faces of the block, flies out of the place of the block tumbling, bounces on the ground, comes to lie
  * flat and shrinks away after a moment.
  * <p>
- * Only solid blocks: plants, liquids and the like keep the particles of vanilla, and so do the blocks of mods that
- * make break effects of their own.
+ * Solid blocks and plants: liquids and the like keep the particles of vanilla, and so do the blocks of mods that make
+ * break effects of their own. The cubes take their textures only from where the texture is not see-through, so a
+ * flower or grass falls apart into bits of its leaves and petals, not into empty cubes.
  * <p>
  * The cubes are moved and drawn here, not by the particle renderer of vanilla: it draws without writing depth, so cubes
  * lying close showed their back faces and each other in the wrong order. Here they are solid, nearer faces hide the
@@ -117,9 +125,12 @@ public final class BlockChunks {
         if (MinecraftModule.blockChunks <= 0) return true;
         if (mc.gameSettings.particleSetting >= 2) return false;
         Material material = block.getMaterial();
-        if (material == Material.air || material.isLiquid() || !material.isSolid()) return false;
+        if (material == Material.air || material.isLiquid()) return false;
+        if (!material.isSolid() && material != Material.plants && material != Material.vine) return false;
         Layer[][] layers = layers(world, x, y, z, block, meta);
         if (layers == null) return false;
+        boolean[] clear = clear(layers);
+        if (clear == null) return false;
 
         int count = Math.round(MinecraftModule.blockChunks * (mc.gameSettings.particleSetting == 1 ? 0.5F : 1F));
         double minX = block.getBlockBoundsMinX(), maxX = block.getBlockBoundsMaxX();
@@ -129,7 +140,7 @@ public final class BlockChunks {
             double px = x + minX + (maxX - minX) * (0.15 + RANDOM.nextDouble() * 0.7);
             double py = y + minY + (maxY - minY) * (0.15 + RANDOM.nextDouble() * 0.7);
             double pz = z + minZ + (maxZ - minZ) * (0.15 + RANDOM.nextDouble() * 0.7);
-            Chunk chunk = new Chunk(world, px, py, pz, layers);
+            Chunk chunk = new Chunk(world, px, py, pz, layers, clear);
             // out of the middle of the block, and up
             chunk.motionX = (px - x - 0.5) * 0.25 + (RANDOM.nextDouble() - 0.5) * 0.08;
             chunk.motionY = 0.12 + RANDOM.nextDouble() * 0.15;
@@ -182,20 +193,79 @@ public final class BlockChunks {
         return layers;
     }
 
+    /** Which of the 16 by 16 cells of every texture are see-through, null if its image could not be read. */
+    private static final Map<IIcon, boolean[]> CLEAR_CELLS = new WeakHashMap<>();
+
+    /**
+     * The cells see-through on any side of the block, by the bottom layer of each side, where the cubes take no
+     * texture from. Null if every cell is see-through somewhere, so no cube would show.
+     */
+    private static boolean[] clear(Layer[][] layers) {
+        boolean[] clear = new boolean[256];
+        for (Layer[] side : layers) {
+            boolean[] sideClear = clearCells(side[0].icon);
+            if (sideClear == null) continue;
+            for (int cell = 0; cell < 256; cell++) clear[cell] |= sideClear[cell];
+        }
+        for (boolean c : clear) if (!c) return clear;
+        return null;
+    }
+
+    private static boolean[] clearCells(IIcon icon) {
+        if (CLEAR_CELLS.containsKey(icon)) return CLEAR_CELLS.get(icon);
+        boolean[] clear = readClearCells(icon);
+        CLEAR_CELLS.put(icon, clear);
+        return clear;
+    }
+
+    /** Reads the image of the texture: a cell is see-through if most of its pixels are. */
+    private static boolean[] readClearCells(IIcon icon) {
+        String name = icon.getIconName();
+        if (name == null) return null;
+        int colon = name.indexOf(':');
+        String domain = colon < 0 ? "minecraft" : name.substring(0, colon);
+        String path = "textures/blocks/" + name.substring(colon + 1) + ".png";
+        try (InputStream in = Minecraft.getMinecraft()
+            .getResourceManager()
+            .getResource(new ResourceLocation(domain, path))
+            .getInputStream()) {
+            BufferedImage image = ImageIO.read(in);
+            if (image == null) return null;
+            int width = image.getWidth();
+            // the frames of animated textures lie one under another, the first is enough
+            int height = Math.min(image.getHeight(), width);
+            boolean[] clear = new boolean[256];
+            for (int cell = 0; cell < 256; cell++) {
+                int x0 = cell % 16 * width / 16, x1 = Math.max(x0 + 1, (cell % 16 + 1) * width / 16);
+                int y0 = cell / 16 * height / 16, y1 = Math.max(y0 + 1, (cell / 16 + 1) * height / 16);
+                int seen = 0, total = 0;
+                for (int py = y0; py < y1; py++) for (int px = x0; px < x1; px++) {
+                    total++;
+                    if (image.getRGB(px, py) >>> 24 > 25) seen++;
+                }
+                clear[cell] = seen * 2 < total;
+            }
+            return clear;
+        } catch (Exception e) {
+            // made by a loader of its own, or not there: every cell taken as seen
+            return null;
+        }
+    }
+
     /** A little cube of the block, tumbling. */
     private static final class Chunk extends EntityFX {
 
         private final Layer[][] layers;
         private final float size;
         /** Where the cube takes its texture from on every face, in pixels of the texture. */
-        private final float cellU, cellV, cellSize;
+        private float cellU, cellV, cellSize;
         /** Turn of the cube around its three axes in degrees, the tick before, and per tick. */
         private float rotX, rotY, rotZ, prevRotX, prevRotY, prevRotZ, spinX, spinY, spinZ;
         private float shrink = 1, prevShrink = 1;
         private int restTicks;
         private final int rest;
 
-        Chunk(World world, double x, double y, double z, Layer[][] layers) {
+        Chunk(World world, double x, double y, double z, Layer[][] layers, boolean[] clear) {
             super(world, x, y, z);
             this.layers = layers;
             size = (0.06F + rand.nextFloat() * 0.06F) * MinecraftModule.blockChunkSize / 100F;
@@ -206,6 +276,7 @@ public final class BlockChunks {
             cellSize = Math.max(1, Math.min(16, Math.round(size * 2 * 16)));
             cellU = rand.nextInt(Math.max(1, 17 - (int) cellSize));
             cellV = rand.nextInt(Math.max(1, 17 - (int) cellSize));
+            if (!seen(clear)) pickCell(clear);
             rotX = prevRotX = rand.nextFloat() * 360;
             rotY = prevRotY = rand.nextFloat() * 360;
             rotZ = prevRotZ = rand.nextFloat() * 360;
@@ -218,6 +289,35 @@ public final class BlockChunks {
             particleMaxAge = rest + 200;
             particleRed = particleGreen = particleBlue = 1;
             particleAlpha = 1;
+        }
+
+        /** Whether the cell the cube takes its texture from has nothing see-through. */
+        private boolean seen(boolean[] clear) {
+            for (int v = (int) cellV; v < cellV + cellSize; v++)
+                for (int u = (int) cellU; u < cellU + cellSize; u++) if (clear[v * 16 + u]) return false;
+            return true;
+        }
+
+        /**
+         * Moves the cell of the texture off the see-through parts: a few tries at its size, then a single texel that is
+         * seen, stretched over the face. There is one, else the block keeps the particles of vanilla.
+         */
+        private void pickCell(boolean[] clear) {
+            for (int i = 0; i < 20; i++) {
+                cellU = rand.nextInt(Math.max(1, 17 - (int) cellSize));
+                cellV = rand.nextInt(Math.max(1, 17 - (int) cellSize));
+                if (seen(clear)) return;
+            }
+            int seenCells = 0;
+            for (boolean c : clear) if (!c) seenCells++;
+            int pick = rand.nextInt(seenCells);
+            for (int cell = 0; cell < 256; cell++) {
+                if (clear[cell] || pick-- > 0) continue;
+                cellU = cell % 16;
+                cellV = cell / 16;
+                cellSize = 1;
+                return;
+            }
         }
 
         @Override

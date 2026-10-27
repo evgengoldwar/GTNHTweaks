@@ -342,7 +342,7 @@ public final class MinecraftModule extends TweakModule {
             40,
             "A broken block falls apart into this many little cubes of itself, with the textures of its faces, that "
                 + "tumble, bounce, lie flat and shrink away. 0 for no particles at all: the block just disappears. "
-                + "Only solid blocks; half as many with Decreased particles, vanilla with Minimal");
+                + "Solid blocks and plants; half as many with Decreased particles, vanilla with Minimal");
         blockChunkSize = config.getInt(
             "size",
             CATEGORY_BLOCK_CHUNKS,
