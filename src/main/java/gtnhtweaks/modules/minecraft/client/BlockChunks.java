@@ -24,8 +24,10 @@ import net.minecraftforge.common.MinecraftForge;
 import org.lwjgl.opengl.GL20;
 
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.modules.minecraft.MinecraftModule;
 
 /**
@@ -113,14 +115,8 @@ public final class BlockChunks {
         if (MinecraftModule.blockChunks <= 0 || mc.gameSettings.particleSetting >= 2) return false;
         Material material = block.getMaterial();
         if (material == Material.air || material.isLiquid() || !material.isSolid()) return false;
-        IIcon[] icons = new IIcon[6];
-        for (int side = 0; side < 6; side++) {
-            icons[side] = block.getIcon(side, meta);
-            if (icons[side] == null) return false;
-        }
-        int color = block.colorMultiplier(world, x, y, z);
-        // grass is green only on top
-        boolean tintTopOnly = block == Blocks.grass;
+        Layer[][] layers = layers(world, x, y, z, block, meta);
+        if (layers == null) return false;
 
         int count = Math.round(MinecraftModule.blockChunks * (mc.gameSettings.particleSetting == 1 ? 0.5F : 1F));
         double minX = block.getBlockBoundsMinX(), maxX = block.getBlockBoundsMaxX();
@@ -130,7 +126,7 @@ public final class BlockChunks {
             double px = x + minX + (maxX - minX) * (0.15 + RANDOM.nextDouble() * 0.7);
             double py = y + minY + (maxY - minY) * (0.15 + RANDOM.nextDouble() * 0.7);
             double pz = z + minZ + (maxZ - minZ) * (0.15 + RANDOM.nextDouble() * 0.7);
-            Chunk chunk = new Chunk(world, px, py, pz, icons, color, tintTopOnly);
+            Chunk chunk = new Chunk(world, px, py, pz, layers);
             // out of the middle of the block, and up
             chunk.motionX = (px - x - 0.5) * 0.25 + (RANDOM.nextDouble() - 0.5) * 0.08;
             chunk.motionY = 0.12 + RANDOM.nextDouble() * 0.15;
@@ -140,26 +136,65 @@ public final class BlockChunks {
         return true;
     }
 
+    /** A texture drawn on a face of the cubes, in a color. */
+    static final class Layer {
+
+        final IIcon icon;
+        final float red, green, blue;
+
+        Layer(IIcon icon, int rgb) {
+            this.icon = icon;
+            this.red = (rgb >> 16 & 0xFF) / 255F;
+            this.green = (rgb >> 8 & 0xFF) / 255F;
+            this.blue = (rgb & 0xFF) / 255F;
+        }
+    }
+
+    private static boolean gregtech = Loader.isModLoaded("gregtech");
+
+    /**
+     * The textures of every side of the block, bottom first, as drawn in the world: one per side for most blocks; for
+     * the blocks of GregTech, drawn by layers in the colors of their materials, its layers. Null if a side has none.
+     */
+    private static Layer[][] layers(World world, int x, int y, int z, Block block, int meta) {
+        if (gregtech) {
+            try {
+                Layer[][] layers = GregTechTextures.layers(world, x, y, z, block, meta);
+                if (layers != null) return layers;
+            } catch (Exception | LinkageError e) {
+                // another version of GregTech: its blocks break as the others
+                gregtech = false;
+                GTNHTweaks.LOG.warn("Could not read the textures of the GregTech blocks for the block chunks", e);
+            }
+        }
+        int color = block.colorMultiplier(world, x, y, z);
+        Layer[][] layers = new Layer[6][];
+        for (int side = 0; side < 6; side++) {
+            IIcon icon = block.getIcon(side, meta);
+            if (icon == null) return null;
+            // grass is green only on top
+            boolean tinted = block != Blocks.grass || side == 1;
+            layers[side] = new Layer[] { new Layer(icon, tinted ? color : 0xFFFFFF) };
+        }
+        return layers;
+    }
+
     /** A little cube of the block, tumbling. */
     private static final class Chunk extends EntityFX {
 
-        private final IIcon[] icons;
+        private final Layer[][] layers;
         private final float size;
         /** Where the cube takes its texture from on every face, in pixels of the texture. */
         private final float cellU, cellV, cellSize;
-        private final int color;
-        private final boolean tintTopOnly;
         /** Turn of the cube around its three axes in degrees, the tick before, and per tick. */
         private float rotX, rotY, rotZ, prevRotX, prevRotY, prevRotZ, spinX, spinY, spinZ;
         private float shrink = 1, prevShrink = 1;
         private int restTicks;
         private final int rest;
 
-        Chunk(World world, double x, double y, double z, IIcon[] icons, int color, boolean tintTopOnly) {
+        Chunk(World world, double x, double y, double z, Layer[][] layers) {
             super(world, x, y, z);
-            this.icons = icons;
-            this.color = color;
-            this.tintTopOnly = tintTopOnly;
+            this.layers = layers;
             size = (0.06F + rand.nextFloat() * 0.06F) * MinecraftModule.blockChunkSize / 100F;
             setSize(size * 2, size * 2);
             // the position is the bottom of the cube, where it touches the ground
@@ -175,8 +210,9 @@ public final class BlockChunks {
             spinY = (rand.nextFloat() - 0.5F) * 40;
             spinZ = (rand.nextFloat() - 0.5F) * 40;
             particleGravity = 0;
-            particleMaxAge = 400;
-            rest = 30 + rand.nextInt(40);
+            // lies its time, a bit more or less for each cube, so they do not all go at once
+            rest = Math.max(1, Math.round(MinecraftModule.blockChunkSeconds * 20 * (0.7F + rand.nextFloat() * 0.6F)));
+            particleMaxAge = rest + 200;
             particleRed = particleGreen = particleBlue = 1;
             particleAlpha = 1;
         }
@@ -250,31 +286,33 @@ public final class BlockChunks {
                 // two axes along the face, so its corners are n + a * u + b * v
                 float[] u = Math.abs(n[1]) > 0 ? new float[] { 1, 0, 0 } : new float[] { 0, 1, 0 };
                 float[] v = cross(n, u);
-                IIcon icon = icons[side];
-                float u0 = icon.getInterpolatedU(cellU), u1 = icon.getInterpolatedU(cellU + cellSize);
-                float v0 = icon.getInterpolatedV(cellV), v1 = icon.getInterpolatedV(cellV + cellSize);
                 // lit from above, as the faces of blocks are
                 float worldNormalY = m[3] * n[0] + m[4] * n[1] + m[5] * n[2];
                 float shade = 0.65F + 0.35F * (worldNormalY * 0.5F + 0.5F);
-                boolean tinted = !tintTopOnly || side == 1;
-                float r = shade * (tinted ? (color >> 16 & 0xFF) / 255F : 1);
-                float g = shade * (tinted ? (color >> 8 & 0xFF) / 255F : 1);
-                float b = shade * (tinted ? (color & 0xFF) / 255F : 1);
-                tessellator.setColorRGBA_F(r, g, b, 1);
-                // counterclockwise seen from outside, so the faces turned away are the ones culled
-                float[][] corners = { { -1, -1 }, { 1, -1 }, { 1, 1 }, { -1, 1 } };
-                float[] us = { u0, u1, u1, u0 };
-                float[] vs = { v1, v1, v0, v0 };
-                for (int c = 0; c < 4; c++) {
-                    float lx = (n[0] + u[0] * corners[c][0] + v[0] * corners[c][1]) * half;
-                    float ly = (n[1] + u[1] * corners[c][0] + v[1] * corners[c][1]) * half;
-                    float lz = (n[2] + u[2] * corners[c][0] + v[2] * corners[c][1]) * half;
-                    tessellator.addVertexWithUV(
-                        x + m[0] * lx + m[1] * ly + m[2] * lz,
-                        y + m[3] * lx + m[4] * ly + m[5] * lz,
-                        z + m[6] * lx + m[7] * ly + m[8] * lz,
-                        us[c],
-                        vs[c]);
+                Layer[] faceLayers = layers[side];
+                for (int l = 0; l < faceLayers.length; l++) {
+                    Layer layer = faceLayers[l];
+                    IIcon icon = layer.icon;
+                    float u0 = icon.getInterpolatedU(cellU), u1 = icon.getInterpolatedU(cellU + cellSize);
+                    float v0 = icon.getInterpolatedV(cellV), v1 = icon.getInterpolatedV(cellV + cellSize);
+                    tessellator.setColorRGBA_F(shade * layer.red, shade * layer.green, shade * layer.blue, 1);
+                    // every layer a hair over the one under it, so they do not flicker
+                    float out = half + l * 0.002F;
+                    // counterclockwise seen from outside, so the faces turned away are the ones culled
+                    float[][] corners = { { -1, -1 }, { 1, -1 }, { 1, 1 }, { -1, 1 } };
+                    float[] us = { u0, u1, u1, u0 };
+                    float[] vs = { v1, v1, v0, v0 };
+                    for (int c = 0; c < 4; c++) {
+                        float lx = n[0] * out + (u[0] * corners[c][0] + v[0] * corners[c][1]) * half;
+                        float ly = n[1] * out + (u[1] * corners[c][0] + v[1] * corners[c][1]) * half;
+                        float lz = n[2] * out + (u[2] * corners[c][0] + v[2] * corners[c][1]) * half;
+                        tessellator.addVertexWithUV(
+                            x + m[0] * lx + m[1] * ly + m[2] * lz,
+                            y + m[3] * lx + m[4] * ly + m[5] * lz,
+                            z + m[6] * lx + m[7] * ly + m[8] * lz,
+                            us[c],
+                            vs[c]);
+                    }
                 }
             }
         }

@@ -118,6 +118,8 @@ public final class MinecraftModule extends TweakModule {
     public static int blockChunks = 14;
     /** Size of the cubes in percent. */
     public static int blockChunkSize = 100;
+    /** Seconds the cubes lie before they shrink away. */
+    public static float blockChunkSeconds = 2.5F;
 
     /** Leaves falling from the trees, in percent of the usual amount, 0 for none. */
     public static int fallingLeaves = 100;
@@ -339,6 +341,14 @@ public final class MinecraftModule extends TweakModule {
             25,
             300,
             "Size of the cubes in percent: 100 makes them 2 to 4 pixels of a block wide, 200 twice as big");
+        blockChunkSeconds = config.getFloat(
+            "seconds",
+            CATEGORY_BLOCK_CHUNKS,
+            blockChunkSeconds,
+            0.25F,
+            30F,
+            "How long the cubes lie on the ground before they shrink away, in seconds: less to have them gone "
+                + "sooner. Every cube lies a bit more or less, so they do not all go at once");
 
         fallingLeaves = config.getInt(
             "amount",
