@@ -53,6 +53,10 @@ public final class MenuStyle {
     /** Textures bound while an inventory draws its background, to find out if a resource pack replaces them. */
     private static final List<ResourceLocation> INVENTORY_TEXTURES = new ArrayList<>();
     private static boolean recordingInventoryTextures;
+    /** The texture bound last, to know if a resource pack replaces what the creative inventory draws. */
+    private static ResourceLocation boundTexture;
+    /** True while a creative inventory texture is drawn with the tint color. */
+    private static boolean tintingCreativeTexture;
     /** True while a themed button runs mouseDragged, where sliders draw their knob. */
     private static boolean inSliderKnob;
     /** True while a tooltip is drawn: tooltips keep their own dark background, so their text is not recolored. */
@@ -138,6 +142,7 @@ public final class MenuStyle {
     }
 
     public static void onBindTexture(ResourceLocation texture) {
+        boundTexture = texture;
         if (recordingInventoryTextures && texture != null && INVENTORY_TEXTURES.size() < 16) {
             INVENTORY_TEXTURES.add(texture);
         }
@@ -336,17 +341,40 @@ public final class MenuStyle {
      * panel color, slots and borders keep their relative shading.
      */
     public static void tintInventory(int x, int y, int width, int height) {
+        begin();
+        try {
+            glBlendFunc(GL_DST_COLOR, GL_ZERO);
+            GLDraw.rect(x, y, width, height, inventoryTint());
+        } finally {
+            end();
+        }
+    }
+
+    /**
+     * The creative inventory draws its tab icons and the player in its background layer, and its tabs outside of it,
+     * so it is not tinted as a whole: each of its textures is drawn in the tint color instead. Called before a texture
+     * part of the creative inventory is drawn; the texture keeps its colors if a resource pack replaces it.
+     */
+    public static void beginCreativeTexture(GuiContainer gui) {
+        if (!tintsInventory(gui) || boundTexture != null && ResourcePackOverrides.isOverridden(boundTexture)) return;
+        int tint = inventoryTint();
+        glColor4f((tint >> 16 & 0xFF) / 255f, (tint >> 8 & 0xFF) / 255f, (tint & 0xFF) / 255f, 1);
+        tintingCreativeTexture = true;
+    }
+
+    public static void endCreativeTexture() {
+        if (!tintingCreativeTexture) return;
+        tintingCreativeTexture = false;
+        glColor4f(1, 1, 1, 1);
+    }
+
+    /** The color the vanilla inventory textures are multiplied with to get the theme panel color. */
+    private static int inventoryTint() {
         int target = theme().panelFill();
         int r = Math.min(255, (target >> 16 & 0xFF) * 255 / VANILLA_INVENTORY_GRAY);
         int g = Math.min(255, (target >> 8 & 0xFF) * 255 / VANILLA_INVENTORY_GRAY);
         int b = Math.min(255, (target & 0xFF) * 255 / VANILLA_INVENTORY_GRAY);
-        begin();
-        try {
-            glBlendFunc(GL_DST_COLOR, GL_ZERO);
-            GLDraw.rect(x, y, width, height, 0xFF000000 | r << 16 | g << 8 | b);
-        } finally {
-            end();
-        }
+        return 0xFF000000 | r << 16 | g << 8 | b;
     }
 
     private static void begin() {

@@ -1,10 +1,14 @@
 package gtnhtweaks.modules.menus;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
 
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
@@ -14,7 +18,7 @@ import gtnhtweaks.core.TweakModule;
 /**
  * Restyles every vanilla, Forge and FML screen like the GTNH loading screen: themed background and lists, flat buttons,
  * sliders and text fields, theme text colors. In game the world stays behind the menus under the vanilla dark
- * gradient, and vanilla inventories get a dark tint in the DARK and SHADOW themes.
+ * gradient, and vanilla inventories, the creative one included, get a dark tint in the DARK and SHADOW themes.
  */
 public final class MenusModule extends TweakModule {
 
@@ -23,10 +27,8 @@ public final class MenusModule extends TweakModule {
     private static final String CATEGORY_GENERAL = "general";
     private static final String CATEGORY_SCREENS = "screens";
 
-    private static final String[] DEFAULT_EXCLUDED = { //
-        "net.minecraft.client.gui.GuiChat", //
-        "net.minecraft.client.gui.inventory.GuiContainerCreative", //
-    };
+    private static final String[] DEFAULT_EXCLUDED = { "net.minecraft.client.gui.GuiChat" };
+    private static final String CREATIVE_INVENTORY = "net.minecraft.client.gui.inventory.GuiContainerCreative";
 
     public static GTNHTheme style = GTNHTheme.SHADOW;
     public static boolean recolorText = true;
@@ -102,10 +104,26 @@ public final class MenusModule extends TweakModule {
                 "Full class names of other mod screens to restyle. Subclasses are restyled too"));
         excludedScreens = trimmed(
             config.getStringList(
-                "excludedScreens",
+                "untouchedScreens",
                 CATEGORY_SCREENS,
-                DEFAULT_EXCLUDED,
+                oldExcludedScreens(config),
                 "Full class names of screens that keep the vanilla look. Subclasses are excluded too"));
+    }
+
+    /**
+     * The list of the old excludedScreens key, which had the creative inventory in it by default, from before it could
+     * be tinted. The list is kept without it.
+     */
+    private static String[] oldExcludedScreens(Configuration config) {
+        ConfigCategory category = config.getCategory(CATEGORY_SCREENS);
+        if (!category.containsKey("excludedScreens")) return DEFAULT_EXCLUDED;
+        List<String> names = new ArrayList<>(
+            Arrays.asList(
+                category.get("excludedScreens")
+                    .getStringList()));
+        category.remove("excludedScreens");
+        names.remove(CREATIVE_INVENTORY);
+        return names.toArray(new String[0]);
     }
 
     private static Set<String> trimmed(String[] names) {

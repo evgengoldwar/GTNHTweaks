@@ -1,6 +1,7 @@
 package gtnhtweaks.mixins.early.menus;
 
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.client.gui.inventory.GuiContainerCreative;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -43,7 +44,9 @@ public class MixinGuiContainer_Menus {
         require = 0)
     private void gtnhtweaks$tintBackground(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         boolean replacedByPack = MenuStyle.endInventoryBackground();
-        if (!replacedByPack && MenuStyle.tintsInventory((GuiContainer) (Object) this)) {
+        // The creative inventory tints its textures itself, see MixinGuiContainerCreative_Menus
+        if (!replacedByPack && !((Object) this instanceof GuiContainerCreative)
+            && MenuStyle.tintsInventory((GuiContainer) (Object) this)) {
             MenuStyle.tintInventory(guiLeft, guiTop, xSize, ySize);
         }
     }
