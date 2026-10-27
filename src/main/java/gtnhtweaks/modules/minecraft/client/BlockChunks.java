@@ -112,7 +112,10 @@ public final class BlockChunks {
      */
     public static boolean breakBlock(World world, int x, int y, int z, Block block, int meta) {
         Minecraft mc = Minecraft.getMinecraft();
-        if (MinecraftModule.blockChunks <= 0 || mc.gameSettings.particleSetting >= 2) return false;
+        if (!MinecraftModule.blockChunksEnabled) return false;
+        // no particles at all, the block just disappears
+        if (MinecraftModule.blockChunks <= 0) return true;
+        if (mc.gameSettings.particleSetting >= 2) return false;
         Material material = block.getMaterial();
         if (material == Material.air || material.isLiquid() || !material.isSolid()) return false;
         Layer[][] layers = layers(world, x, y, z, block, meta);

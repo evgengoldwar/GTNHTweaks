@@ -115,7 +115,9 @@ public final class MinecraftModule extends TweakModule {
     /** Ripples of the rain on water, in percent of the usual amount, 0 for none. */
     public static int rainRipples = 100;
 
-    /** Little cubes a broken block falls apart into, 0 for the particles of vanilla. */
+    /** A broken block falls apart into little cubes instead of the particles of vanilla. */
+    public static boolean blockChunksEnabled = true;
+    /** Little cubes a broken block falls apart into, 0 for no particles at all. */
     public static int blockChunks = 14;
     /** Size of the cubes in percent. */
     public static int blockChunkSize = 100;
@@ -326,6 +328,12 @@ public final class MinecraftModule extends TweakModule {
             "Little ripple rings where the rain falls on still water open to the sky, in percent of the usual "
                 + "amount: 0 for none, 200 for twice as many. More in heavier rain, none in snow or deserts");
 
+        blockChunksEnabled = config.getBoolean(
+            "enabled",
+            CATEGORY_BLOCK_CHUNKS,
+            blockChunksEnabled,
+            "A broken block falls apart into little cubes of itself instead of the flat pixels of vanilla. Off for "
+                + "the pixels of vanilla");
         blockChunks = config.getInt(
             "count",
             CATEGORY_BLOCK_CHUNKS,
@@ -333,8 +341,8 @@ public final class MinecraftModule extends TweakModule {
             0,
             40,
             "A broken block falls apart into this many little cubes of itself, with the textures of its faces, that "
-                + "tumble, bounce, lie flat and shrink away, instead of the flat pixels of vanilla. 0 for the pixels "
-                + "of vanilla. Only solid blocks; half as many with Decreased particles, vanilla with Minimal");
+                + "tumble, bounce, lie flat and shrink away. 0 for no particles at all: the block just disappears. "
+                + "Only solid blocks; half as many with Decreased particles, vanilla with Minimal");
         blockChunkSize = config.getInt(
             "size",
             CATEGORY_BLOCK_CHUNKS,
