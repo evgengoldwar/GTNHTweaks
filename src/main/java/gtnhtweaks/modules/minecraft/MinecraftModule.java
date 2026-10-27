@@ -14,7 +14,6 @@ import gtnhtweaks.modules.minecraft.client.OutlineClient;
 import gtnhtweaks.modules.minecraft.client.OutlineScreen;
 import gtnhtweaks.modules.minecraft.client.ParticleRain;
 import gtnhtweaks.modules.minecraft.client.PickupNotifier;
-import gtnhtweaks.modules.minecraft.client.ScreenAnimation;
 import gtnhtweaks.modules.minecraft.client.ScreenBackground;
 import gtnhtweaks.modules.minecraft.client.WaterSplashes;
 
@@ -37,7 +36,6 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_PICKUPS = "pickupNotifier";
     public static final String CATEGORY_LEAVES = "fallingLeaves";
     public static final String CATEGORY_WEATHER = "particleRain";
-    public static final String CATEGORY_SCREEN_ANIMATION = "screenAnimation";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -49,13 +47,6 @@ public final class MinecraftModule extends TweakModule {
     public enum BackgroundMode {
         DIM,
         BLUR
-    }
-
-    /** How the screens open: growing, rising from below, or both. */
-    public enum ScreenAnimationStyle {
-        SCALE,
-        SLIDE,
-        SCALE_AND_SLIDE
     }
 
     /** Where the list of picked up items is: in a corner or the middle of a side. */
@@ -128,16 +119,6 @@ public final class MinecraftModule extends TweakModule {
     public static int particleRain = 100;
     /** The streaks of rain and snow of vanilla are hidden while the particles fall. */
     public static boolean hideVanillaRain = true;
-
-    /** Every screen, of vanilla and of mods, opens with a short animation. */
-    public static boolean screenAnimation = true;
-    public static ScreenAnimationStyle screenAnimationStyle = ScreenAnimationStyle.SCALE_AND_SLIDE;
-    public static int screenAnimationMs = 180;
-    /** A screen opened over another one, as the video settings out of the options, is animated too. */
-    public static boolean animateBetweenScreens = true;
-    /** The screens left still, by the simple or full name of their class. */
-    public static String[] screenAnimationExcluded = { "GuiChat", "GuiMainMenu", "GuiDownloadTerrain", "GuiGameOver",
-        "GuiConnecting", "GuiSleepMP", "GuiScreenWorking" };
 
     /** A list at the side of the screen of the items picked up. */
     public static boolean pickupNotifier = true;
@@ -367,50 +348,6 @@ public final class MinecraftModule extends TweakModule {
                 + "sound of the rain stays. Worlds with a weather of their own, as on other planets, keep it");
 
         config.addCustomCategoryComment(
-            CATEGORY_SCREEN_ANIMATION,
-            "Every screen opens with a short animation, the screens of mods too: it grows and rises into its place. "
-                + "The background stays still. Only on the client");
-        screenAnimation = config
-            .getBoolean("enabled", CATEGORY_SCREEN_ANIMATION, screenAnimation, "Animate the opening of the screens");
-        String[] styles = new String[ScreenAnimationStyle.values().length];
-        for (int i = 0; i < styles.length; i++) styles[i] = ScreenAnimationStyle.values()[i].name();
-        try {
-            screenAnimationStyle = ScreenAnimationStyle.valueOf(
-                config
-                    .getString(
-                        "style",
-                        CATEGORY_SCREEN_ANIMATION,
-                        ScreenAnimationStyle.SCALE_AND_SLIDE.name(),
-                        "SCALE: the screen grows from a bit smaller. SLIDE: it rises from a bit lower. "
-                            + "SCALE_AND_SLIDE: both",
-                        styles)
-                    .trim()
-                    .toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            screenAnimationStyle = ScreenAnimationStyle.SCALE_AND_SLIDE;
-        }
-        screenAnimationMs = config.getInt(
-            "durationMs",
-            CATEGORY_SCREEN_ANIMATION,
-            screenAnimationMs,
-            50,
-            1000,
-            "How long the animation lasts, in milliseconds");
-        animateBetweenScreens = config.getBoolean(
-            "betweenScreens",
-            CATEGORY_SCREEN_ANIMATION,
-            animateBetweenScreens,
-            "Animate a screen opened out of another one too, as the video settings out of the options. Off: only "
-                + "the screens opened from the game are animated");
-        screenAnimationExcluded = config.getStringList(
-            "excluded",
-            CATEGORY_SCREEN_ANIMATION,
-            screenAnimationExcluded,
-            "Screens opened without the animation, by the simple or full name of their class, as GuiChat or "
-                + "net.minecraft.client.gui.GuiChat. Ctrl + Shift + F12 in a screen tells its class, with the debug "
-                + "module");
-
-        config.addCustomCategoryComment(
             CATEGORY_PICKUPS,
             "A list at the side of the screen of the items you pick up, like \"64x Cobblestone\" with the icon of "
                 + "the item, in the color of its rarity. Only on the client");
@@ -568,6 +505,5 @@ public final class MinecraftModule extends TweakModule {
         PickupNotifier.register();
         FallingLeaves.register();
         ParticleRain.register();
-        ScreenAnimation.register();
     }
 }
