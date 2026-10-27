@@ -34,5 +34,20 @@
  * For more details, see https://docs.gradle.org/8.0.1/userguide/java_library_plugin.html#sec:java_library_configurations_graph
  */
 dependencies {
-    //runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.69-GTNH:dev")
+    // GregTech is optional: compiled against and loaded in the dev client (runClient) with its own dependencies,
+    // but not published, so the mod still runs without it
+    devOnlyNonPublishable("com.github.GTNewHorizons:GT5-Unofficial:5.09.54.241:dev")
+    devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.69-GTNH:dev")
+    // Extra Utilities and Backhand are optional: only loaded in the dev client (runClient) to test the Healing Axe
+    // plant in both hands, the mod finds them by reflection
+    runtimeOnlyNonPublishable(rfg.deobf("curse.maven:extra-utilities-225561:2264384"))
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Backhand:1.8.17:dev")
+    // Chromatic Tooltips and BetterQuesting are optional: only compiled against for the chromatictooltips module,
+    // which applies its mixins when they are installed. ModularUI 1 and 2 come with GregTech
+    compileOnly("com.github.slprime:ChromaticTooltips:1.0.13:dev") { transitive = false }
+    compileOnly("com.github.GTNewHorizons:BetterQuesting:3.8.30-GTNH:dev") { transitive = false }
+    // Forestry is optional: compiled against for the bees module, which draws its bees when it is installed. It is
+    // loaded in the dev client (runClient), where GregTech adds its bees to it, to test the bees of an addon too
+    compileOnly("com.github.GTNewHorizons:ForestryMC:4.11.39:dev") { transitive = false }
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:ForestryMC:4.11.39:dev")
 }
