@@ -95,6 +95,8 @@ public final class MinecraftModule extends TweakModule {
     public static boolean resourcePackPresets = true;
     /** Choosing a preset applies it at once, as the Done button does, instead of only filling the lists. */
     public static boolean applyPresetAtOnce = false;
+    /** Done without a change of the packs closes the screen at once, without reloading the resources. */
+    public static boolean skipReloadWithoutChanges = true;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
@@ -260,7 +262,7 @@ public final class MinecraftModule extends TweakModule {
 
         config.addCustomCategoryComment(
             CATEGORY_RESOURCE_PACKS,
-            "The resource pack screen: dragging the packs with the mouse and presets of selected packs");
+            "The resource pack screen: dragging the packs with the mouse, presets of selected packs and a quick Done");
         dragResourcePacks = config.getBoolean(
             "dragAndDrop",
             CATEGORY_RESOURCE_PACKS,
@@ -280,6 +282,12 @@ public final class MinecraftModule extends TweakModule {
             applyPresetAtOnce,
             "With presets: choosing a preset applies it at once and reloads the resources, as the Done button does. "
                 + "Off: it only puts the packs into the lists, to look at them and press Done");
+        skipReloadWithoutChanges = config.getBoolean(
+            "skipReloadWithoutChanges",
+            CATEGORY_RESOURCE_PACKS,
+            skipReloadWithoutChanges,
+            "Done closes the resource pack screen at once, like Esc, when the selected packs and their order did not "
+                + "change: vanilla reloads all the resources anyway, which takes long in a big pack");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */

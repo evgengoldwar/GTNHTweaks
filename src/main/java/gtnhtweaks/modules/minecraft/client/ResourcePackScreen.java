@@ -44,6 +44,7 @@ public final class ResourcePackScreen {
     private static Field[] slotFields;
     private static Field[] listFields;
     private static Field entryField;
+    private static Field parentField;
 
     /** The open screen and its lists, found on its init. */
     private static GuiScreen screen;
@@ -59,6 +60,8 @@ public final class ResourcePackScreen {
     /** Order of the selected packs to put back when the screen comes back from the presets screen. */
     private static GuiScreen pendingScreen;
     private static List<String> pendingPacks;
+    /** The selected packs as they are applied, the top one first, read when the screen builds its lists. */
+    private static List<String> appliedPacks;
     /** Names of all the packs of the screen, selected or not, when the presets screen was opened. */
     private static List<String> knownPacks = Collections.emptyList();
 
@@ -71,6 +74,8 @@ public final class ResourcePackScreen {
         dragging = false;
         screen = gui;
         find(gui);
+        // vanilla builds the lists from the applied packs, so before they are arranged they show them
+        appliedPacks = available == null ? null : selectedPacks();
         if (pendingScreen == gui && pendingPacks != null && available != null) arrange(pendingPacks);
         pendingScreen = null;
         pendingPacks = null;
@@ -103,6 +108,8 @@ public final class ResourcePackScreen {
     }
 
     public static boolean actionPerformed(GuiScreen gui, GuiButton button) {
+        // the vanilla Done button
+        if (button.id == 1) return closeUnchanged(gui);
         if (button.id != PRESETS_BUTTON || gui != screen || available == null) return false;
         // the screen builds its lists anew when it comes back: they are put back as they are now
         pendingScreen = gui;
@@ -111,6 +118,25 @@ public final class ResourcePackScreen {
         Minecraft.getMinecraft()
             .displayGuiScreen(new PackPresetsScreen(gui));
         return true;
+    }
+
+    /**
+     * Done without a change of the selected packs or their order only goes back to the previous screen: vanilla would
+     * reload all the resources for nothing, which takes long in a big pack.
+     */
+    private static boolean closeUnchanged(GuiScreen gui) {
+        if (!MinecraftModule.skipReloadWithoutChanges || gui != screen || available == null || parentField == null) {
+            return false;
+        }
+        if (appliedPacks == null || !appliedPacks.equals(selectedPacks())) return false;
+        try {
+            Minecraft.getMinecraft()
+                .displayGuiScreen((GuiScreen) parentField.get(gui));
+            return true;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            GTNHTweaks.LOG.warn("Could not find the previous screen of the resource pack screen", e);
+            return false;
+        }
     }
 
     public static void draw(GuiScreen gui, int mouseX, int mouseY) {
@@ -218,10 +244,12 @@ public final class ResourcePackScreen {
     private static void findFields() {
         List<Field> slots = new ArrayList<>();
         List<Field> lists = new ArrayList<>();
+        List<Field> parents = new ArrayList<>();
         for (Field field : GuiScreenResourcePacks.class.getDeclaredFields()) {
             if (Modifier.isStatic(field.getModifiers())) continue;
             if (GuiSlot.class.isAssignableFrom(field.getType())) slots.add(field);
             else if (List.class.isAssignableFrom(field.getType())) lists.add(field);
+            else if (field.getType() == GuiScreen.class) parents.add(field);
             else continue;
             field.setAccessible(true);
         }
@@ -230,6 +258,8 @@ public final class ResourcePackScreen {
         }
         slotFields = slots.toArray(new Field[0]);
         listFields = lists.toArray(new Field[0]);
+        // the screen to go back to; without it Done always applies the packs, as in vanilla
+        parentField = parents.size() == 1 ? parents.get(0) : null;
     }
 
     @SuppressWarnings("unchecked")
