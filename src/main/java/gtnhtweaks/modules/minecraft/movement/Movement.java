@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
@@ -55,25 +56,53 @@ public final class Movement {
 
     private static void update(EntityPlayer player, boolean crouch, boolean swim) {
         MovementState state = state(player);
-        state.pose = crouch || swim ? choose(player, state, crouch, swim) : Pose.STAND;
+        if (crouch || swim) state.pose = choose(player, state, crouch, swim);
+        else {
+            state.pose = Pose.STAND;
+            state.swimming = false;
+        }
         resize(player, state);
     }
 
+    /** The pose as newer versions choose it: the swimming, then the room around the player. */
     private static Pose choose(EntityPlayer player, MovementState state, boolean crouch, boolean swim) {
-        if (player.isDead || player.isPlayerSleeping() || player.isRiding()) return Pose.STAND;
-        Pose wanted = Pose.STAND;
-        if (!player.capabilities.isFlying) {
-            // starts with the eyes under water, goes on while sprinting in water
-            if (swim && player.isSprinting()
-                && player.isInWater()
-                && (state.pose == Pose.SWIM || player.isInsideOfMaterial(Material.water))) wanted = Pose.SWIM;
-            else if (crouch && player.isSneaking()) wanted = Pose.CROUCH;
-        }
-        if (wanted == Pose.SWIM || fits(player, wanted)) return wanted;
-        // no room to stand up: stays low
+        state.swimming = swim && swimming(player, state);
+        // where not even the swimming pose fits, the pose stays as it is
+        if (!fits(player, Pose.SWIM)) return state.pose;
+        Pose wanted;
+        if (player.isPlayerSleeping()) wanted = Pose.STAND;
+        else if (state.swimming) wanted = Pose.SWIM;
+        else if (crouch && player.isSneaking() && !player.capabilities.isFlying) wanted = Pose.CROUCH;
+        else wanted = Pose.STAND;
+        if (player.isRiding() || fits(player, wanted)) return wanted;
+        // no room for the pose: crouches if that fits, else crawls
         if (crouch && fits(player, Pose.CROUCH)) return Pose.CROUCH;
-        if (swim) return Pose.SWIM;
-        return wanted;
+        return swim ? Pose.SWIM : wanted;
+    }
+
+    /**
+     * Swimming of newer versions: starts sprinting with the eyes under water, goes on while sprinting in water. Not
+     * while flying or riding. Crawling in a low gap is the same pose but not swimming.
+     */
+    private static boolean swimming(EntityPlayer player, MovementState state) {
+        if (player.capabilities.isFlying || player.isRiding() || !player.isSprinting()) return false;
+        return state.swimming ? player.isInWater() : eyesInWater(player, state);
+    }
+
+    /**
+     * Whether the eyes of the pose are under the water surface. Counted from the bottom of the box, the same on the
+     * server and on the client, whose players have their eyes at other heights in vanilla.
+     */
+    private static boolean eyesInWater(EntityPlayer player, MovementState state) {
+        double eye = player.boundingBox.minY + state.pose.eye;
+        int x = MathHelper.floor_double(player.posX);
+        int y = MathHelper.floor_double(eye);
+        int z = MathHelper.floor_double(player.posZ);
+        if (player.worldObj.getBlock(x, y, z)
+            .getMaterial() != Material.water) return false;
+        float surface = y + 1
+            - (BlockLiquid.getLiquidHeightPercent(player.worldObj.getBlockMetadata(x, y, z)) - 0.11111111F);
+        return eye < surface;
     }
 
     /** Whether the box of the pose is free of blocks where the player is. */

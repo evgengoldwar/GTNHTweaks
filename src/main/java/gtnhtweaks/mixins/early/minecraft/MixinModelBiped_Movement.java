@@ -21,8 +21,8 @@ public class MixinModelBiped_Movement {
     }
 
     @Inject(method = "setRotationAngles", at = @At("TAIL"))
-    private void gtnhtweaks$afterPose(float limbSwing, float limbSwingAmount, float age, float headYaw,
-        float headPitch, float scale, Entity entity, CallbackInfo ci) {
+    private void gtnhtweaks$afterPose(float limbSwing, float limbSwingAmount, float age, float headYaw, float headPitch,
+        float scale, Entity entity, CallbackInfo ci) {
         MovementClient.afterPose((ModelBiped) (Object) this, limbSwing, entity);
     }
 }

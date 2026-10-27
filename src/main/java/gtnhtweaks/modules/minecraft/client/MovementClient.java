@@ -33,6 +33,8 @@ public final class MovementClient {
 
     /** The partial tick of the player being drawn, for its model. */
     private static float renderPartialTicks;
+    /** The arm of the own player is drawn in the first person view, with no pose of the body. */
+    private static boolean firstPersonArm;
     private static boolean forwardWasDown;
     private static int tapTimer;
 
@@ -83,7 +85,10 @@ public final class MovementClient {
      * the movement of vanilla in the tick, which then moves the player as usual.
      */
     private static void swim(EntityPlayerSP player, MovementState state) {
-        if (state.pose != Pose.SWIM || !player.isInWater() || player.capabilities.isFlying) return;
+        if (!Movement.clientSwim || !player.isInWater() || player.capabilities.isFlying) return;
+        // sneaking in water sinks, as in newer versions
+        if (player.movementInput.sneak) player.motionY -= 0.04;
+        if (!state.swimming) return;
         // vanilla keeps 0.8 of the speed in water each tick, swimming keeps 0.9
         player.motionX *= 0.9 / 0.8;
         player.motionZ *= 0.9 / 0.8;
@@ -107,13 +112,33 @@ public final class MovementClient {
         EntityPlayerSP player = mc.thePlayer;
         if (player == null || !Movement.clientSwim) return;
         boolean down = mc.gameSettings.keyBindForward.getIsKeyPressed();
-        if (down && !forwardWasDown && !player.isSprinting()
+        if (down && !forwardWasDown
+            && !player.isSprinting()
             && player.isInWater()
             && player.isInsideOfMaterial(Material.water)) {
             if (tapTimer > 0) player.setSprinting(true);
             else tapTimer = DOUBLE_TAP_TICKS;
         }
         forwardWasDown = down;
+    }
+
+    /** Around the drawing of the arm of the own player in the first person view. */
+    public static void drawingFirstPersonArm(boolean drawing) {
+        firstPersonArm = drawing;
+    }
+
+    /**
+     * Whether the own player keeps sprinting where vanilla stops it. While swimming, newer versions stop the sprint
+     * only out of the water, or when the player no longer swims forward off the ground: running into a block, a wall
+     * or the shore keeps it swimming.
+     */
+    public static boolean keepSprinting(EntityPlayerSP player) {
+        MovementState state = Movement.state(player);
+        if (!state.swimming || !player.isInWater()) return false;
+        boolean canSprint = player.getFoodStats()
+            .getFoodLevel() > 6 || player.capabilities.allowFlying;
+        boolean forward = player.movementInput.moveForward > 1.0E-5F;
+        return player.onGround || player.movementInput.sneak || forward && canSprint;
     }
 
     /** How far the camera of the own player is lowered under the camera of vanilla. */
@@ -143,6 +168,11 @@ public final class MovementClient {
     /** Before the model of a player is posed: the crouching pose bends it even without the sneak key. */
     public static void beforePose(ModelBiped model, Entity entity) {
         if (!(entity instanceof EntityPlayer)) return;
+        if (firstPersonArm) {
+            // the arm in the hand view is never bent by the crouching
+            model.isSneak = false;
+            return;
+        }
         Pose pose = Movement.state((EntityPlayer) entity).pose;
         if (pose == Pose.CROUCH) model.isSneak = true;
         else if (pose == Pose.SWIM) model.isSneak = false;
@@ -150,13 +180,12 @@ public final class MovementClient {
 
     /** After the model of a player is posed: the head and the strokes of the arms and legs of swimming. */
     public static void afterPose(ModelBiped model, float limbSwing, Entity entity) {
-        if (!(entity instanceof EntityPlayer)) return;
+        if (firstPersonArm || !(entity instanceof EntityPlayer)) return;
         MovementState state = Movement.state((EntityPlayer) entity);
         float swim = state.swim(renderPartialTicks);
         if (swim <= 0) return;
         // looks ahead along the swimming or crawling, not at the ground
-        if (state.pose == Pose.SWIM)
-            model.bipedHead.rotateAngleX = turn(model.bipedHead.rotateAngleX, -PI / 4, swim);
+        if (state.pose == Pose.SWIM) model.bipedHead.rotateAngleX = turn(model.bipedHead.rotateAngleX, -PI / 4, swim);
         model.bipedHeadwear.rotateAngleX = model.bipedHead.rotateAngleX;
 
         // a stroke takes 26 steps of the walking animation: arms forward over the head, out to the sides and back

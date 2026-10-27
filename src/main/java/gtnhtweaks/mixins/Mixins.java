@@ -102,7 +102,8 @@ public enum Mixins implements IMixins {
                 "minecraft.MixinRendererLivingEntity_Movement",
                 "minecraft.MixinModelBiped_Movement",
                 "minecraft.MixinEntityPlayerSP_Movement",
-                "minecraft.MixinMovementInputFromOptions_Movement")),
+                "minecraft.MixinMovementInputFromOptions_Movement",
+                "minecraft.MixinRenderPlayer_Movement")),
     // Applied with the module, the settings are read when the screen is used, so they need no restart
     MINECRAFT_RESOURCE_PACKS(new MixinBuilder("Dragging and presets of the resource packs").setPhase(Phase.EARLY)
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
