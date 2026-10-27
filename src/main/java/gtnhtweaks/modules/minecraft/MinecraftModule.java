@@ -11,6 +11,7 @@ import gtnhtweaks.core.TweakModule;
 import gtnhtweaks.modules.minecraft.client.NewItems;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
 import gtnhtweaks.modules.minecraft.client.OutlineScreen;
+import gtnhtweaks.modules.minecraft.client.PickupNotifier;
 import gtnhtweaks.modules.minecraft.client.ScreenBackground;
 import gtnhtweaks.modules.minecraft.client.WaterSplashes;
 
@@ -30,6 +31,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_SPLASHES = "waterSplashes";
     public static final String CATEGORY_RESOURCE_PACKS = "resourcePacks";
     public static final String CATEGORY_SCREEN_SHAKE = "screenShake";
+    public static final String CATEGORY_PICKUPS = "pickupNotifier";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -41,6 +43,20 @@ public final class MinecraftModule extends TweakModule {
     public enum BackgroundMode {
         DIM,
         BLUR
+    }
+
+    /** Where the list of picked up items is: in a corner or the middle of a side. */
+    public enum PickupPosition {
+        BOTTOM_RIGHT,
+        MIDDLE_RIGHT,
+        TOP_RIGHT,
+        BOTTOM_LEFT,
+        MIDDLE_LEFT,
+        TOP_LEFT;
+
+        public boolean right() {
+            return this == BOTTOM_RIGHT || this == MIDDLE_RIGHT || this == TOP_RIGHT;
+        }
     }
 
     public static final int VANILLA_COLOR = 0x66000000;
@@ -91,6 +107,14 @@ public final class MinecraftModule extends TweakModule {
     public static int maxSplashes = 48;
     /** Ripples of the rain on water, in percent of the usual amount, 0 for none. */
     public static int rainRipples = 100;
+
+    /** A list at the side of the screen of the items picked up. */
+    public static boolean pickupNotifier = true;
+    public static PickupPosition pickupPosition = PickupPosition.BOTTOM_RIGHT;
+    /** Seconds a line stays. */
+    public static int pickupSeconds = 5;
+    /** Most lines at the same time: the oldest go first. */
+    public static int pickupMaxLines = 10;
 
     /** The camera shakes when something explodes near the player. */
     public static boolean screenShake = true;
@@ -281,6 +305,42 @@ public final class MinecraftModule extends TweakModule {
                 + "amount: 0 for none, 200 for twice as many. More in heavier rain, none in snow or deserts");
 
         config.addCustomCategoryComment(
+            CATEGORY_PICKUPS,
+            "A list at the side of the screen of the items you pick up, like \"64x Cobblestone\" with the icon of "
+                + "the item, in the color of its rarity. Only on the client");
+        pickupNotifier = config.getBoolean(
+            "enabled",
+            CATEGORY_PICKUPS,
+            pickupNotifier,
+            "Show the picked up items. Picking up more of an item while its line is shown adds to its count. Items "
+                + "taken from chests or crafted are not shown");
+        String[] positions = new String[PickupPosition.values().length];
+        for (int i = 0; i < positions.length; i++) positions[i] = PickupPosition.values()[i].name();
+        try {
+            pickupPosition = PickupPosition.valueOf(
+                config
+                    .getString(
+                        "position",
+                        CATEGORY_PICKUPS,
+                        PickupPosition.BOTTOM_RIGHT.name(),
+                        "Where the list is: a corner or the middle of the left or right side of the screen",
+                        positions)
+                    .trim()
+                    .toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            pickupPosition = PickupPosition.BOTTOM_RIGHT;
+        }
+        pickupSeconds = config
+            .getInt("seconds", CATEGORY_PICKUPS, pickupSeconds, 1, 30, "How many seconds a line stays on the screen");
+        pickupMaxLines = config.getInt(
+            "maxLines",
+            CATEGORY_PICKUPS,
+            pickupMaxLines,
+            1,
+            30,
+            "Most lines at the same time: with more, the oldest go first");
+
+        config.addCustomCategoryComment(
             CATEGORY_SCREEN_SHAKE,
             "The camera shakes when something explodes near the player: TNT, creepers, GregTech machines and "
                 + "every other explosion. Only on the client");
@@ -399,5 +459,6 @@ public final class MinecraftModule extends TweakModule {
         ScreenBackground.register();
         WaterSplashes.register();
         NewItems.register();
+        PickupNotifier.register();
     }
 }
