@@ -16,7 +16,7 @@ import gtnhtweaks.modules.minecraft.client.WaterSplashes;
 
 /**
  * Tweaks of Minecraft itself: the outline of the looked at block, the chat, the inventories, the background of the
- * screens and the splashes in water.
+ * screens, the splashes in water and the resource pack screen.
  */
 public final class MinecraftModule extends TweakModule {
 
@@ -28,6 +28,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_INVENTORY = "inventory";
     public static final String CATEGORY_BACKGROUND = "screenBackground";
     public static final String CATEGORY_SPLASHES = "waterSplashes";
+    public static final String CATEGORY_RESOURCE_PACKS = "resourcePacks";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -87,6 +88,13 @@ public final class MinecraftModule extends TweakModule {
     public static boolean splashPlayers = true;
     /** Most splashes at the same time. */
     public static int maxSplashes = 48;
+
+    /** The resource packs are dragged with the mouse between and inside the lists of the resource pack screen. */
+    public static boolean dragResourcePacks = true;
+    /** Up to 10 saved sets of selected resource packs, chosen on the resource pack screen. */
+    public static boolean resourcePackPresets = true;
+    /** Choosing a preset applies it at once, as the Done button does, instead of only filling the lists. */
+    public static boolean applyPresetAtOnce = false;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", true);
@@ -249,6 +257,29 @@ public final class MinecraftModule extends TweakModule {
             1,
             256,
             "Most splashes at the same time: more falling at once make none, so a mass of items does not lag");
+
+        config.addCustomCategoryComment(
+            CATEGORY_RESOURCE_PACKS,
+            "The resource pack screen: dragging the packs with the mouse and presets of selected packs");
+        dragResourcePacks = config.getBoolean(
+            "dragAndDrop",
+            CATEGORY_RESOURCE_PACKS,
+            dragResourcePacks,
+            "Drag the resource packs with the mouse by their name: from one list to the other and to any place in a "
+                + "list. A line shows where the pack goes; near the top or bottom edge the list scrolls. The arrows on "
+                + "the icons work as before");
+        resourcePackPresets = config.getBoolean(
+            "presets",
+            CATEGORY_RESOURCE_PACKS,
+            resourcePackPresets,
+            "A Presets button on the resource pack screen: up to 10 saved sets of selected packs in their order, "
+                + "to switch between them in one click. Kept in config/GTNHTweaks/resourcepack_presets.json");
+        applyPresetAtOnce = config.getBoolean(
+            "applyPresetAtOnce",
+            CATEGORY_RESOURCE_PACKS,
+            applyPresetAtOnce,
+            "With presets: choosing a preset applies it at once and reloads the resources, as the Done button does. "
+                + "Off: it only puts the packs into the lists, to look at them and press Done");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
