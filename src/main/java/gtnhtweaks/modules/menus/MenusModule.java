@@ -35,6 +35,8 @@ public final class MenusModule extends TweakModule {
     public static boolean themeInGame = true;
     public static boolean fullFramerate = true;
     public static boolean themeInventories = true;
+    /** The mod list of GTNHTweaks in place of the one of FML. */
+    public static boolean modList = true;
     public static Set<String> extraScreens = Collections.emptySet();
     public static Set<String> excludedScreens = Collections.emptySet();
 
@@ -86,6 +88,12 @@ public final class MenusModule extends TweakModule {
             themeInventories,
             "Dark tint of the vanilla inventory textures in the DARK and SHADOW themes. Mod inventories keep their "
                 + "own textures");
+        modList = config.getBoolean(
+            "modList",
+            CATEGORY_SCREENS,
+            modList,
+            "Open the mod list of GTNHTweaks from the Mods button of the main menu and Mod Options of the pause "
+                + "menu: logos, search by name, id and author, all the details of a mod and its config");
         extraScreens = trimmed(
             config.getStringList(
                 "extraScreens",
@@ -112,5 +120,6 @@ public final class MenusModule extends TweakModule {
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(new MenuStyle.ScreenDrawTracker());
+        MinecraftForge.EVENT_BUS.register(new ModListReplacer());
     }
 }
