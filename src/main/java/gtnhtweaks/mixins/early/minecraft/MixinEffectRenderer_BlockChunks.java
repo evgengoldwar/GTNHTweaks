@@ -28,6 +28,6 @@ public class MixinEffectRenderer_BlockChunks {
             ci.cancel();
             return;
         }
-        if (BlockChunks.breakBlock(worldObj, self, x, y, z, block, meta)) ci.cancel();
+        if (BlockChunks.breakBlock(worldObj, x, y, z, block, meta)) ci.cancel();
     }
 }

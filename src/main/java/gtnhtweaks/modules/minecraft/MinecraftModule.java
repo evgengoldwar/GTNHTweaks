@@ -8,6 +8,7 @@ import net.minecraftforge.common.config.Property;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
+import gtnhtweaks.modules.minecraft.client.BlockChunks;
 import gtnhtweaks.modules.minecraft.client.FallingLeaves;
 import gtnhtweaks.modules.minecraft.client.NewItems;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
@@ -115,6 +116,8 @@ public final class MinecraftModule extends TweakModule {
 
     /** Little cubes a broken block falls apart into, 0 for the particles of vanilla. */
     public static int blockChunks = 14;
+    /** Size of the cubes in percent. */
+    public static int blockChunkSize = 100;
 
     /** Leaves falling from the trees, in percent of the usual amount, 0 for none. */
     public static int fallingLeaves = 100;
@@ -329,6 +332,13 @@ public final class MinecraftModule extends TweakModule {
             "A broken block falls apart into this many little cubes of itself, with the textures of its faces, that "
                 + "tumble, bounce, lie flat and shrink away, instead of the flat pixels of vanilla. 0 for the pixels "
                 + "of vanilla. Only solid blocks; half as many with Decreased particles, vanilla with Minimal");
+        blockChunkSize = config.getInt(
+            "size",
+            CATEGORY_BLOCK_CHUNKS,
+            blockChunkSize,
+            25,
+            300,
+            "Size of the cubes in percent: 100 makes them 2 to 4 pixels of a block wide, 200 twice as big");
 
         fallingLeaves = config.getInt(
             "amount",
@@ -518,6 +528,7 @@ public final class MinecraftModule extends TweakModule {
         NewItems.register();
         PickupNotifier.register();
         FallingLeaves.register();
+        BlockChunks.register();
         ParticleRain.register();
     }
 }

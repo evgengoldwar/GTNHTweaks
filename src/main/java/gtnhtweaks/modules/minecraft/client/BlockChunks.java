@@ -1,18 +1,31 @@
 package gtnhtweaks.modules.minecraft.client;
 
+import static org.lwjgl.opengl.GL11.*;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.particle.EffectRenderer;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.common.MinecraftForge;
 
+import org.lwjgl.opengl.GL20;
+
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
 import gtnhtweaks.modules.minecraft.MinecraftModule;
 
 /**
@@ -22,19 +35,80 @@ import gtnhtweaks.modules.minecraft.MinecraftModule;
  * <p>
  * Only solid blocks: plants, liquids and the like keep the particles of vanilla, and so do the blocks of mods that
  * make break effects of their own.
+ * <p>
+ * The cubes are moved and drawn here, not by the particle renderer of vanilla: it draws without writing depth, so cubes
+ * lying close showed their back faces and each other in the wrong order. Here they are solid, nearer faces hide the
+ * farther ones.
  */
 public final class BlockChunks {
 
     private static final Random RANDOM = new Random();
+    /** Most cubes at the same time: more breaking at once makes fewer. */
+    private static final int MAX_CHUNKS = 1500;
+    private static final List<Chunk> CHUNKS = new ArrayList<>();
+    private static World world;
 
     private BlockChunks() {}
+
+    public static void register() {
+        BlockChunks chunks = new BlockChunks();
+        MinecraftForge.EVENT_BUS.register(chunks);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(chunks);
+    }
+
+    @SubscribeEvent
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld != world) {
+            world = mc.theWorld;
+            CHUNKS.clear();
+        }
+        if (world == null || mc.isGamePaused()) return;
+        for (Iterator<Chunk> it = CHUNKS.iterator(); it.hasNext();) {
+            Chunk chunk = it.next();
+            chunk.onUpdate();
+            if (chunk.isDead) it.remove();
+        }
+    }
+
+    @SubscribeEvent
+    public void onRenderWorldLast(RenderWorldLastEvent event) {
+        if (CHUNKS.isEmpty()) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        int program = glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        GL20.glUseProgram(0);
+        // lit by the light map, with the light of where each cube is
+        mc.entityRenderer.enableLightmap(event.partialTicks);
+        glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_DEPTH_BUFFER_BIT);
+        mc.getTextureManager()
+            .bindTexture(TextureMap.locationBlocksTexture);
+        // solid cubes: depth written, faces turned away culled, see-through pixels of the texture left out
+        glEnable(GL_TEXTURE_2D);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(true);
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_ALPHA_TEST);
+        glAlphaFunc(GL_GREATER, 0.1F);
+        Tessellator tessellator = Tessellator.instance;
+        tessellator.startDrawingQuads();
+        for (Chunk chunk : CHUNKS) chunk.draw(tessellator, event.partialTicks);
+        tessellator.draw();
+        glPopAttrib();
+        glColor4f(1, 1, 1, 1);
+        GL20.glUseProgram(program);
+    }
 
     /**
      * Breaks the block into cubes, in place of the particles of vanilla.
      *
      * @return false if the particles of vanilla are made instead
      */
-    public static boolean breakBlock(World world, EffectRenderer renderer, int x, int y, int z, Block block, int meta) {
+    public static boolean breakBlock(World world, int x, int y, int z, Block block, int meta) {
         Minecraft mc = Minecraft.getMinecraft();
         if (MinecraftModule.blockChunks <= 0 || mc.gameSettings.particleSetting >= 2) return false;
         Material material = block.getMaterial();
@@ -52,7 +126,7 @@ public final class BlockChunks {
         double minX = block.getBlockBoundsMinX(), maxX = block.getBlockBoundsMaxX();
         double minY = block.getBlockBoundsMinY(), maxY = block.getBlockBoundsMaxY();
         double minZ = block.getBlockBoundsMinZ(), maxZ = block.getBlockBoundsMaxZ();
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < count && CHUNKS.size() < MAX_CHUNKS; i++) {
             double px = x + minX + (maxX - minX) * (0.15 + RANDOM.nextDouble() * 0.7);
             double py = y + minY + (maxY - minY) * (0.15 + RANDOM.nextDouble() * 0.7);
             double pz = z + minZ + (maxZ - minZ) * (0.15 + RANDOM.nextDouble() * 0.7);
@@ -61,7 +135,7 @@ public final class BlockChunks {
             chunk.motionX = (px - x - 0.5) * 0.25 + (RANDOM.nextDouble() - 0.5) * 0.08;
             chunk.motionY = 0.12 + RANDOM.nextDouble() * 0.15;
             chunk.motionZ = (pz - z - 0.5) * 0.25 + (RANDOM.nextDouble() - 0.5) * 0.08;
-            renderer.addEffect(chunk);
+            CHUNKS.add(chunk);
         }
         return true;
     }
@@ -86,12 +160,12 @@ public final class BlockChunks {
             this.icons = icons;
             this.color = color;
             this.tintTopOnly = tintTopOnly;
-            size = 0.06F + rand.nextFloat() * 0.06F;
+            size = (0.06F + rand.nextFloat() * 0.06F) * MinecraftModule.blockChunkSize / 100F;
             setSize(size * 2, size * 2);
             // the position is the bottom of the cube, where it touches the ground
             yOffset = 0;
             setPosition(x, y, z);
-            cellSize = Math.max(1, Math.round(size * 2 * 16));
+            cellSize = Math.max(1, Math.min(16, Math.round(size * 2 * 16)));
             cellU = rand.nextInt(Math.max(1, 17 - (int) cellSize));
             cellV = rand.nextInt(Math.max(1, 17 - (int) cellSize));
             rotX = prevRotX = rand.nextFloat() * 360;
@@ -105,11 +179,6 @@ public final class BlockChunks {
             rest = 30 + rand.nextInt(40);
             particleRed = particleGreen = particleBlue = 1;
             particleAlpha = 1;
-        }
-
-        @Override
-        public int getFXLayer() {
-            return 1;
         }
 
         @Override
@@ -159,12 +228,10 @@ public final class BlockChunks {
             return angle + (target - angle) * 0.5F;
         }
 
-        @Override
-        public void renderParticle(Tessellator tessellator, float partialTicks, float rotationX, float rotationXZ,
-            float rotationZ, float rotationYZ, float rotationXY) {
-            float x = (float) (prevPosX + (posX - prevPosX) * partialTicks - interpPosX);
-            float y = (float) (prevPosY + (posY - prevPosY) * partialTicks - interpPosY);
-            float z = (float) (prevPosZ + (posZ - prevPosZ) * partialTicks - interpPosZ);
+        void draw(Tessellator tessellator, float partialTicks) {
+            float x = (float) (prevPosX + (posX - prevPosX) * partialTicks - RenderManager.renderPosX);
+            float y = (float) (prevPosY + (posY - prevPosY) * partialTicks - RenderManager.renderPosY);
+            float z = (float) (prevPosZ + (posZ - prevPosZ) * partialTicks - RenderManager.renderPosZ);
             float half = size * (prevShrink + (shrink - prevShrink) * partialTicks);
             if (half <= 0.001F) return;
             // lies on its bottom: its middle is half its size above the box of the entity
@@ -173,6 +240,8 @@ public final class BlockChunks {
             float ay = (prevRotY + (rotY - prevRotY) * partialTicks) * 0.01745F;
             float az = (prevRotZ + (rotZ - prevRotZ) * partialTicks) * 0.01745F;
             float[] m = matrix(ax, ay, az);
+            // the light of where it lies, through the light map
+            tessellator.setBrightness(getBrightnessForRender(partialTicks));
 
             // the faces of the cube: down, up, north, south, west, east, as the sides of a block
             float[][] normals = { { 0, -1, 0 }, { 0, 1, 0 }, { 0, 0, -1 }, { 0, 0, 1 }, { -1, 0, 0 }, { 1, 0, 0 } };
