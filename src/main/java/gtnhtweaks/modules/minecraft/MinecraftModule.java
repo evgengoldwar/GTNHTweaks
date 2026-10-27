@@ -8,6 +8,7 @@ import net.minecraftforge.common.config.Property;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
+import gtnhtweaks.modules.minecraft.client.FallingLeaves;
 import gtnhtweaks.modules.minecraft.client.NewItems;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
 import gtnhtweaks.modules.minecraft.client.OutlineScreen;
@@ -32,6 +33,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_RESOURCE_PACKS = "resourcePacks";
     public static final String CATEGORY_SCREEN_SHAKE = "screenShake";
     public static final String CATEGORY_PICKUPS = "pickupNotifier";
+    public static final String CATEGORY_LEAVES = "fallingLeaves";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -107,6 +109,9 @@ public final class MinecraftModule extends TweakModule {
     public static int maxSplashes = 48;
     /** Ripples of the rain on water, in percent of the usual amount, 0 for none. */
     public static int rainRipples = 100;
+
+    /** Leaves falling from the trees, in percent of the usual amount, 0 for none. */
+    public static int fallingLeaves = 100;
 
     /** A list at the side of the screen of the items picked up. */
     public static boolean pickupNotifier = true;
@@ -304,6 +309,17 @@ public final class MinecraftModule extends TweakModule {
             "Little ripple rings where the rain falls on still water open to the sky, in percent of the usual "
                 + "amount: 0 for none, 200 for twice as many. More in heavier rain, none in snow or deserts");
 
+        fallingLeaves = config.getInt(
+            "amount",
+            CATEGORY_LEAVES,
+            fallingLeaves,
+            0,
+            300,
+            "Leaves falling from the trees around you: bits of the leaf texture in the color of the biome that flutter "
+                + "down with the wind, lie on the ground or float on water and fade. In percent of the usual amount: "
+                + "0 for none, 200 for twice as many. For the leaves of every mod. Half as many with Decreased "
+                + "particles, none with Minimal");
+
         config.addCustomCategoryComment(
             CATEGORY_PICKUPS,
             "A list at the side of the screen of the items you pick up, like \"64x Cobblestone\" with the icon of "
@@ -460,5 +476,6 @@ public final class MinecraftModule extends TweakModule {
         WaterSplashes.register();
         NewItems.register();
         PickupNotifier.register();
+        FallingLeaves.register();
     }
 }
