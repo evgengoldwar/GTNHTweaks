@@ -29,6 +29,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_BACKGROUND = "screenBackground";
     public static final String CATEGORY_SPLASHES = "waterSplashes";
     public static final String CATEGORY_RESOURCE_PACKS = "resourcePacks";
+    public static final String CATEGORY_SCREEN_SHAKE = "screenShake";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
     public enum OutlineMode {
@@ -88,6 +89,13 @@ public final class MinecraftModule extends TweakModule {
     public static boolean splashPlayers = true;
     /** Most splashes at the same time. */
     public static int maxSplashes = 48;
+    /** Ripples of the rain on water, in percent of the usual amount, 0 for none. */
+    public static int rainRipples = 100;
+
+    /** The camera shakes when something explodes near the player. */
+    public static boolean screenShake = true;
+    /** Strength of the shake in percent. */
+    public static int screenShakeStrength = 100;
 
     /** The resource packs are dragged with the mouse between and inside the lists of the resource pack screen. */
     public static boolean dragResourcePacks = true;
@@ -263,6 +271,31 @@ public final class MinecraftModule extends TweakModule {
             1,
             256,
             "Most splashes at the same time: more falling at once make none, so a mass of items does not lag");
+        rainRipples = config.getInt(
+            "rainRipples",
+            CATEGORY_SPLASHES,
+            rainRipples,
+            0,
+            300,
+            "Little ripple rings where the rain falls on still water open to the sky, in percent of the usual "
+                + "amount: 0 for none, 200 for twice as many. More in heavier rain, none in snow or deserts");
+
+        config.addCustomCategoryComment(
+            CATEGORY_SCREEN_SHAKE,
+            "The camera shakes when something explodes near the player: TNT, creepers, GregTech machines and "
+                + "every other explosion. Only on the client");
+        screenShake = config.getBoolean(
+            "enabled",
+            CATEGORY_SCREEN_SHAKE,
+            screenShake,
+            "Shake the camera on explosions. The bigger and the closer, the stronger; it calms down in about a second");
+        screenShakeStrength = config.getInt(
+            "strength",
+            CATEGORY_SCREEN_SHAKE,
+            screenShakeStrength,
+            0,
+            300,
+            "How strong the shake is, in percent: 50 half as strong, 200 twice as strong");
 
         config.addCustomCategoryComment(
             CATEGORY_RESOURCE_PACKS,

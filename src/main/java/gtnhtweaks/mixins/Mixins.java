@@ -75,6 +75,9 @@ public enum Mixins implements IMixins {
     MINECRAFT_HOVER_BOUNCE(new MixinBuilder("Items in slots bounce when hovered").setPhase(Phase.EARLY)
         .setApplyIf(() -> MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.hoverBounce)
         .addClientMixins("minecraft.MixinGuiContainer_HoverBounce")),
+    MINECRAFT_SCREEN_SHAKE(new MixinBuilder("Camera shake on explosions").setPhase(Phase.EARLY)
+        .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
+        .addClientMixins("minecraft.MixinExplosion_ScreenShake", "minecraft.MixinEntityRenderer_ScreenShake")),
     // Applied with the module, the settings are read when the screen is used, so they need no restart
     MINECRAFT_RESOURCE_PACKS(
         new MixinBuilder("Dragging and presets of the resource packs").setPhase(Phase.EARLY)

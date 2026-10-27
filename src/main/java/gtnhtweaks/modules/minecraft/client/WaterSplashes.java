@@ -23,6 +23,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 
@@ -42,6 +43,7 @@ import gtnhtweaks.modules.minecraft.MinecraftModule;
  * <li>a square ring of foam lies on the surface under the wall and breaks into its corners at the end;</li>
  * <li>pixel droplets fly out and fall back, and each one makes a little ripple ring where it falls into water.</li>
  * </ul>
+ * The rain makes the same ripples on the water it falls on.
  * The wall is as wide as twice the entity and as high as its speed times that width, so a dropped item makes a small
  * splash and a player jumping from high a big one. Its color is the one of the water of the biome, its brightness the
  * light there. The animation frames are drawn by code, once.
@@ -81,6 +83,10 @@ public final class WaterSplashes {
     private static final double DROP_HALF = 0.03;
     private static final int MAX_DROPS = 600;
     private static final int DROP_LIFE = 100;
+    /** Rain: columns tried per tick at full rain and 100 %, how far from the player, most ripples at once. */
+    private static final int RAIN_COLUMNS = 30;
+    private static final int RAIN_REACH = 16;
+    private static final int MAX_RIPPLES = 400;
 
     private static final class Tracked {
 
@@ -143,16 +149,16 @@ public final class WaterSplashes {
         final int life;
         int age;
 
-        Ripple(double x, double y, double z, Drop drop) {
+        Ripple(double x, double y, double z, float red, float green, float blue) {
             this.x = x;
             this.y = y;
             this.z = z;
             int spread = 1 + RANDOM.nextInt(10);
             this.size = 0.3F + RANDOM.nextFloat() * 0.015F * spread;
             this.life = 10 + RANDOM.nextInt(spread);
-            this.red = drop.red;
-            this.green = drop.green;
-            this.blue = drop.blue;
+            this.red = red;
+            this.green = green;
+            this.blue = blue;
         }
     }
 
@@ -196,6 +202,7 @@ public final class WaterSplashes {
             Ripple ripple = it.next();
             if (++ripple.age >= ripple.life) it.remove();
         }
+        rainRipples(mc);
 
         boolean on = MinecraftModule.waterSplashes && mc.gameSettings.particleSetting < 2;
         if (!on) {
@@ -272,7 +279,7 @@ public final class WaterSplashes {
                 int y = MathHelper.floor_double(nextY);
                 double surface = surface(x, y, z);
                 if (!Double.isNaN(surface) && drop.y >= surface - 0.5) {
-                    RIPPLES.add(new Ripple(drop.x, surface, drop.z, drop));
+                    RIPPLES.add(new Ripple(drop.x, surface, drop.z, drop.red, drop.green, drop.blue));
                 }
                 it.remove();
                 continue;
@@ -288,6 +295,43 @@ public final class WaterSplashes {
             drop.x += drop.motionX;
             drop.y = nextY;
             drop.z += drop.motionZ;
+        }
+    }
+
+    /**
+     * Rain falling on water: little ripple rings on the surface, wherever the rain reaches it. Columns around the
+     * player are tried at random, more in heavier rain, so the ripples are spread evenly over the water.
+     */
+    private static void rainRipples(Minecraft mc) {
+        if (MinecraftModule.rainRipples <= 0 || mc.gameSettings.particleSetting >= 2 || !world.isRaining()) return;
+        Entity viewer = mc.renderViewEntity;
+        if (viewer == null) return;
+        float rain = world.getRainStrength(1F) * MinecraftModule.rainRipples / 100F;
+        if (mc.gameSettings.particleSetting == 1) rain *= 0.5F;
+        int count = Math.round(RAIN_COLUMNS * rain);
+        int centerX = MathHelper.floor_double(viewer.posX);
+        int centerZ = MathHelper.floor_double(viewer.posZ);
+        for (int i = 0; i < count && RIPPLES.size() < MAX_RIPPLES; i++) {
+            int x = centerX + RANDOM.nextInt(RAIN_REACH * 2 + 1) - RAIN_REACH;
+            int z = centerZ + RANDOM.nextInt(RAIN_REACH * 2 + 1) - RAIN_REACH;
+            // the first block the rain passes through: the water is right under it, open to the sky
+            int top = world.getPrecipitationHeight(x, z);
+            if (Math.abs(top - viewer.posY) > RAIN_REACH * 1.5) continue;
+            int y = top - 1;
+            if (world.getBlock(x, y, z)
+                .getMaterial() != Material.water || world.getBlockMetadata(x, y, z) != 0) continue;
+            BiomeGenBase biome = world.getBiomeGenForCoords(x, z);
+            // no rain in deserts, snow in cold biomes
+            if (!biome.canSpawnLightningBolt() || biome.getFloatTemperature(x, top, z) < 0.15F) continue;
+            double surface = surface(x, y, z);
+            if (Double.isNaN(surface)) continue;
+            int color = tint(Blocks.water, x, y, z);
+            float light = Math.max(0.25F, world.getLightBrightness(x, top, z));
+            // lighter than the water, as the droplets
+            float red = Math.min(1, ((color >> 16 & 0xFF) / 255F * light + light) * 0.5F);
+            float green = Math.min(1, ((color >> 8 & 0xFF) / 255F * light + light) * 0.5F);
+            float blue = Math.min(1, ((color & 0xFF) / 255F * light + light) * 0.5F);
+            RIPPLES.add(new Ripple(x + RANDOM.nextDouble(), surface, z + RANDOM.nextDouble(), red, green, blue));
         }
     }
 
