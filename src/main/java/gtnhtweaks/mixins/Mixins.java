@@ -92,7 +92,11 @@ public enum Mixins implements IMixins {
         .setApplyIf(
             () -> MinecraftServerModule.INSTANCE.isEnabled()
                 || MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.modernMovement)
-        .addCommonMixins("minecraft.MixinEntityPlayer_Movement", "minecraft.MixinNetHandlerPlayServer_Movement")),
+        .addCommonMixins(
+            "minecraft.MixinEntityPlayer_Movement",
+            "minecraft.MixinEntityPlayerMP_Movement",
+            "minecraft.MixinEntity_Movement",
+            "minecraft.MixinNetHandlerPlayServer_Movement")),
     MINECRAFT_MOVEMENT_CLIENT(
         new MixinBuilder("Camera, swimming and models of the crouching and swimming").setPhase(Phase.EARLY)
             .setApplyIf(() -> MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.modernMovement)

@@ -5,11 +5,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
+import net.minecraft.world.World;
 
 import gtnhtweaks.modules.minecraft.MinecraftServerModule;
 
@@ -103,11 +103,39 @@ public final class Movement {
         int x = MathHelper.floor_double(player.posX);
         int y = MathHelper.floor_double(eye);
         int z = MathHelper.floor_double(player.posZ);
-        if (player.worldObj.getBlock(x, y, z)
-            .getMaterial() != Material.water) return false;
-        float surface = y + 1
-            - (BlockLiquid.getLiquidHeightPercent(player.worldObj.getBlockMetadata(x, y, z)) - 0.11111111F);
-        return eye < surface;
+        return isWater(player.worldObj, x, y, z) && eye <= y + waterHeight(player.worldObj, x, y, z);
+    }
+
+    /**
+     * Whether water touches the box of the player, as newer versions tell a player in water: anywhere in the box, not
+     * only in its middle as vanilla checks it, which misses the water around the low box of the swimming pose.
+     */
+    public static boolean touchingWater(EntityPlayer player) {
+        AxisAlignedBB box = player.boundingBox.contract(0.001, 0.001, 0.001);
+        int minX = MathHelper.floor_double(box.minX), maxX = MathHelper.ceiling_double_int(box.maxX);
+        int minY = MathHelper.floor_double(box.minY), maxY = MathHelper.ceiling_double_int(box.maxY);
+        int minZ = MathHelper.floor_double(box.minZ), maxZ = MathHelper.ceiling_double_int(box.maxZ);
+        World world = player.worldObj;
+        for (int x = minX; x < maxX; x++) for (int y = minY; y < maxY; y++) for (int z = minZ; z < maxZ; z++) {
+            if (isWater(world, x, y, z) && y + waterHeight(world, x, y, z) >= box.minY) return true;
+        }
+        return false;
+    }
+
+    private static boolean isWater(World world, int x, int y, int z) {
+        return world.getBlock(x, y, z)
+            .getMaterial() == Material.water;
+    }
+
+    /**
+     * Height of the water in a block, as newer versions take it: full under more water, else 8/9 for a source or
+     * falling water and less for each step it flowed.
+     */
+    private static double waterHeight(World world, int x, int y, int z) {
+        if (isWater(world, x, y + 1, z)) return 1;
+        int meta = world.getBlockMetadata(x, y, z);
+        int amount = meta >= 8 ? 8 : 8 - meta;
+        return amount / 9.0;
     }
 
     /** Whether the box of the pose is free of blocks where the player is. */

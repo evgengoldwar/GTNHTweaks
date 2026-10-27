@@ -77,9 +77,7 @@ public final class MovementClient {
 
     /** The camera follows the eyes of the pose, smoothly as in newer versions. */
     private static void moveCamera(EntityPlayerSP player, MovementState state) {
-        // vanilla lowers the camera of the sneaking own player a little by itself
-        float dip = player.isSneaking() ? 0.08F : 0;
-        float target = state.pose == Pose.STAND ? 0 : Math.max(0, Pose.STAND.eye - state.pose.eye - dip);
+        float target = targetDrop(player, state);
         state.prevDrop = state.drop;
         state.drop += (target - state.drop) * 0.5F;
         if (Math.abs(target - state.drop) < 0.001F) state.drop = target;
@@ -115,7 +113,8 @@ public final class MovementClient {
         if (player.isSprinting()) {
             player.motionX *= 0.9 / 0.8;
             player.motionZ *= 0.9 / 0.8;
-            player.motionY += 0.02;
+            // vanilla sets 0.3 up against a wall it can climb out over, as newer versions do: kept as it is
+            if (!player.isCollidedHorizontally || player.motionY != 0.30000001192092896D) player.motionY += 0.02;
         }
         if (player.isSprinting() && !state.swimming && !Movement.eyesInWater(player)) player.setSprinting(false);
     }
@@ -155,6 +154,55 @@ public final class MovementClient {
         return player.onGround || player.movementInput.sneak || forward && canSprint;
     }
 
+    /**
+     * How far the eyes of the own player are under those of vanilla, at once: newer versions look at blocks and
+     * entities from the eyes of the pose, only the camera follows them smoothly.
+     */
+    public static float eyeDrop(Entity viewer) {
+        if (!(viewer instanceof EntityPlayerSP)) return 0;
+        return targetDrop((EntityPlayerSP) viewer, Movement.state((EntityPlayer) viewer));
+    }
+
+    private static float targetDrop(EntityPlayerSP player, MovementState state) {
+        // vanilla lowers the camera of the sneaking own player a little by itself
+        float dip = player.isSneaking() ? 0.08F : 0;
+        return state.pose == Pose.STAND ? 0 : Math.max(0, Pose.STAND.eye - state.pose.eye - dip);
+    }
+
+    /**
+     * Pushes the own player out of a block it is in toward the nearest free side, as newer versions do, in place of
+     * vanilla: only the blocks in the box of its pose count, so a crouching, swimming or crawling player stays in its
+     * low gap. Called with the corners vanilla checks.
+     */
+    public static void pushOutOfBlocks(EntityPlayerSP player, double x, double z) {
+        int bx = MathHelper.floor_double(x), bz = MathHelper.floor_double(z);
+        if (!suffocatesAt(player, bx, bz)) return;
+        double dx = x - bx, dz = z - bz;
+        int[][] sides = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
+        int[] best = null;
+        double closest = Double.MAX_VALUE;
+        for (int[] side : sides) {
+            double along = side[0] != 0 ? dx : dz;
+            double distance = side[0] + side[1] > 0 ? 1 - along : along;
+            if (distance < closest && !suffocatesAt(player, bx + side[0], bz + side[1])) {
+                closest = distance;
+                best = side;
+            }
+        }
+        if (best == null) return;
+        if (best[0] != 0) player.motionX = 0.1 * best[0];
+        else player.motionZ = 0.1 * best[1];
+    }
+
+    /** Whether a full block is in the column of the box of the player at a block position. */
+    private static boolean suffocatesAt(EntityPlayerSP player, int x, int z) {
+        int minY = MathHelper.floor_double(player.boundingBox.minY + 1.0E-7);
+        int maxY = MathHelper.floor_double(player.boundingBox.maxY - 1.0E-7);
+        for (int y = minY; y <= maxY; y++) if (player.worldObj.getBlock(x, y, z)
+            .isNormalCube()) return true;
+        return false;
+    }
+
     /** How far the camera of the own player is lowered under the camera of vanilla. */
     public static float cameraDrop(Entity viewer, float partialTicks) {
         if (!(viewer instanceof EntityPlayerSP)) return 0;
@@ -181,11 +229,14 @@ public final class MovementClient {
     }
 
     /**
-     * A player crouching by its pose without the sneak key is drawn lower too, as vanilla draws the sneaking ones:
-     * called where the body is turned, before it is turned into the swimming pose.
+     * A crouching player is drawn 0.125 lower, as newer versions draw it: vanilla does so only for the other sneaking
+     * players. Called where the body is turned, before it is turned into the swimming pose.
      */
     private static void lowerCrouching(EntityPlayer player, MovementState state) {
-        if (state.pose == Pose.CROUCH && !player.isSneaking()) glTranslatef(0, -0.125F, 0);
+        if (state.pose != Pose.CROUCH) return;
+        // the own player is drawn at its camera, already lowered by the sneaking of vanilla
+        if (player instanceof EntityPlayerSP) glTranslatef(0, -0.125F + player.yOffset2, 0);
+        else if (!player.isSneaking()) glTranslatef(0, -0.125F, 0);
     }
 
     /** Before the model of a player is posed: the crouching pose bends it even without the sneak key. */
@@ -210,13 +261,13 @@ public final class MovementClient {
         float swim = state.swim(renderPartialTicks);
         if (swim <= 0) return;
         // looks ahead along the swimming or crawling, not at the ground
-        if (state.pose == Pose.SWIM) model.bipedHead.rotateAngleX = turn(model.bipedHead.rotateAngleX, -PI / 4, swim);
+        model.bipedHead.rotateAngleX = turn(model.bipedHead.rotateAngleX, -PI / 4, swim);
         model.bipedHeadwear.rotateAngleX = model.bipedHead.rotateAngleX;
 
         // a stroke takes 26 steps of the walking animation: arms forward over the head, out to the sides and back
         float step = limbSwing % 26;
         // a hand that hits does its swing instead of the stroke, a player using an item makes no strokes
-        float right = model.onGround > 0 ? 0 : swim;
+        float right = model.swingProgress > 0 ? 0 : swim;
         if (((EntityPlayer) entity).isUsingItem()) right = 0;
         float left = ((EntityPlayer) entity).isUsingItem() ? 0 : swim;
         float leftZ, rightZ, armX;
@@ -254,8 +305,9 @@ public final class MovementClient {
     }
 
     /**
-     * The crouching model of newer versions, lower than the sneaking one of 1.7.10: the body and the head go down
-     * with the arms, the legs stay under them. Undone when the player stands, as vanilla moves only the head and legs.
+     * The crouching model of newer versions, lower than the sneaking one of 1.7.10: the body goes down by 3.2, the
+     * head by 4.2 and the arms with the body, the legs stay where they stand and step back. Undone when the player
+     * stands, as vanilla moves only the head and legs.
      */
     private static void crouchModel(ModelBiped model, boolean crouching) {
         if (crouching) {
@@ -264,8 +316,8 @@ public final class MovementClient {
             model.bipedBody.rotationPointY = 3.2F;
             model.bipedRightArm.rotationPointY = 5.2F;
             model.bipedLeftArm.rotationPointY = 5.2F;
-            model.bipedRightLeg.rotationPointY = 12.2F;
-            model.bipedLeftLeg.rotationPointY = 12.2F;
+            model.bipedRightLeg.rotationPointY = 12;
+            model.bipedLeftLeg.rotationPointY = 12;
             model.bipedRightLeg.rotationPointZ = 4;
             model.bipedLeftLeg.rotationPointZ = 4;
         } else if (model.bipedBody.rotationPointY == 3.2F) {
