@@ -235,7 +235,7 @@ public final class MovementClient {
     private static void lowerCrouching(EntityPlayer player, MovementState state) {
         if (state.pose != Pose.CROUCH) return;
         // the own player is drawn at its camera, already lowered by the sneaking of vanilla
-        if (player instanceof EntityPlayerSP) glTranslatef(0, -0.125F + player.yOffset2, 0);
+        if (player instanceof EntityPlayerSP) glTranslatef(0, -0.125F + player.ySize, 0);
         else if (!player.isSneaking()) glTranslatef(0, -0.125F, 0);
     }
 
@@ -267,7 +267,7 @@ public final class MovementClient {
         // a stroke takes 26 steps of the walking animation: arms forward over the head, out to the sides and back
         float step = limbSwing % 26;
         // a hand that hits does its swing instead of the stroke, a player using an item makes no strokes
-        float right = model.swingProgress > 0 ? 0 : swim;
+        float right = model.onGround > 0 ? 0 : swim;
         if (((EntityPlayer) entity).isUsingItem()) right = 0;
         float left = ((EntityPlayer) entity).isUsingItem() ? 0 : swim;
         float leftZ, rightZ, armX;

@@ -20,7 +20,7 @@ import gtnhtweaks.modules.minecraft.movement.Pose;
 @Mixin(EntityPlayerSP.class)
 public class MixinEntityPlayerSP_Movement {
 
-    @Inject(method = "pushOutOfBlocks", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "func_145771_j", at = @At("HEAD"), cancellable = true)
     private void gtnhtweaks$stayInGap(double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
         EntityPlayerSP player = (EntityPlayerSP) (Object) this;
         if (Movement.state(player).pose == Pose.STAND) return;
