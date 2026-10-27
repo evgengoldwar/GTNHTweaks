@@ -28,7 +28,8 @@ import gtnhtweaks.modules.minecraft.MinecraftModule;
 
 /**
  * The resource pack screen of vanilla, made friendlier: the packs are dragged with the mouse by their name, from one
- * list to the other and to any place in a list, and a Presets button opens the saved sets of packs.
+ * list to the other and to any place in a list, and the saved sets of packs are left of the lists, or behind a Presets
+ * button when the screen has no room for them.
  * <p>
  * The lists and the entries are found by their types, not their names, so the unnamed fields of the screen are not
  * needed. Nothing is applied before Done, as in vanilla: only the lists of the screen change.
@@ -62,7 +63,7 @@ public final class ResourcePackScreen {
     private static List<String> pendingPacks;
     /** The selected packs as they are applied, the top one first, read when the screen builds its lists. */
     private static List<String> appliedPacks;
-    /** Names of all the packs of the screen, selected or not, when the presets screen was opened. */
+    /** Names of all the packs of the screen, selected or not. */
     private static List<String> knownPacks = Collections.emptyList();
 
     private ResourcePackScreen() {}
@@ -79,13 +80,17 @@ public final class ResourcePackScreen {
         if (pendingScreen == gui && pendingPacks != null && available != null) arrange(pendingPacks);
         pendingScreen = null;
         pendingPacks = null;
-        if (MinecraftModule.resourcePackPresets && available != null) {
+        if (available == null) return;
+        knownPacks = allPacks();
+        if (MinecraftModule.resourcePackPresets
+            && !PresetPanel.init(gui, buttons, availableSlot.left, availableSlot.top, availableSlot.bottom)) {
             buttons.add(new GuiButton(PRESETS_BUTTON, 4, 6, 70, 20, "Presets"));
         }
     }
 
     /** True if the press is taken by a pack about to be dragged, so vanilla does not handle it. */
     public static boolean mouseClicked(GuiScreen gui, int mouseX, int mouseY, int button) {
+        PresetPanel.mouseClicked(gui, mouseX, mouseY, button);
         if (gui != screen || button != 0 || available == null || !MinecraftModule.dragResourcePacks) return false;
         for (int side = 0; side < 2; side++) {
             GuiSlot slot = side == 0 ? availableSlot : selectedSlot;
@@ -110,11 +115,11 @@ public final class ResourcePackScreen {
     public static boolean actionPerformed(GuiScreen gui, GuiButton button) {
         // the vanilla Done button
         if (button.id == 1) return closeUnchanged(gui);
+        if (PresetPanel.actionPerformed(gui, button)) return true;
         if (button.id != PRESETS_BUTTON || gui != screen || available == null) return false;
         // the screen builds its lists anew when it comes back: they are put back as they are now
         pendingScreen = gui;
         pendingPacks = selectedPacks();
-        knownPacks = allPacks();
         Minecraft.getMinecraft()
             .displayGuiScreen(new PackPresetsScreen(gui));
         return true;
@@ -139,7 +144,23 @@ public final class ResourcePackScreen {
         }
     }
 
-    public static void draw(GuiScreen gui, int mouseX, int mouseY) {
+    /** True if the key is taken by the presets. */
+    public static boolean keyTyped(GuiScreen gui, char c, int code) {
+        return held == null && PresetPanel.keyTyped(gui, c, code);
+    }
+
+    public static void update(GuiScreen gui) {
+        PresetPanel.update(gui);
+    }
+
+    /** Draws the presets and the dragged pack; gives the tooltip to draw over the screen, or null. */
+    public static List<String> draw(GuiScreen gui, int mouseX, int mouseY) {
+        List<String> tooltip = PresetPanel.draw(gui, mouseX, mouseY);
+        drawDrag(gui, mouseX, mouseY);
+        return held == null ? tooltip : null;
+    }
+
+    private static void drawDrag(GuiScreen gui, int mouseX, int mouseY) {
         long now = Minecraft.getSystemTime();
         float frameMs = lastFrame == 0 ? 0 : Math.min(100, now - lastFrame);
         lastFrame = now;
@@ -303,7 +324,7 @@ public final class ResourcePackScreen {
         }
     }
 
-    private static List<String> selectedPacks() {
+    static List<String> selectedPacks() {
         List<String> names = new ArrayList<>();
         for (Object entry : selected) {
             String name = name(entry);
@@ -322,7 +343,7 @@ public final class ResourcePackScreen {
     }
 
     /** Selects the named packs in their order; the others go to the available list, keeping their order. */
-    private static void arrange(List<String> packs) {
+    static void arrange(List<String> packs) {
         Map<String, Object> entries = new LinkedHashMap<>();
         List<Object> fixed = new ArrayList<>();
         for (Object entry : available) {

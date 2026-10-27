@@ -274,8 +274,9 @@ public final class MinecraftModule extends TweakModule {
             "presets",
             CATEGORY_RESOURCE_PACKS,
             resourcePackPresets,
-            "A Presets button on the resource pack screen: up to 10 saved sets of selected packs in their order, "
-                + "to switch between them in one click. Kept in config/GTNHTweaks/resourcepack_presets.json");
+            "Up to 10 saved sets of selected packs in their order, to switch between them in one click or with the "
+                + "keys 1 to 0. Shown left of the lists of the resource pack screen, or behind a Presets button when "
+                + "the screen is too narrow. Kept in config/GTNHTweaks/resourcepack_presets.json");
         applyPresetAtOnce = config.getBoolean(
             "applyPresetAtOnce",
             CATEGORY_RESOURCE_PACKS,
