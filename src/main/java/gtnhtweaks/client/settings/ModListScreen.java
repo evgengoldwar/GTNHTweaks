@@ -405,9 +405,12 @@ public class ModListScreen extends GuiScreen {
         search.drawTextBox();
     }
 
-    /** Top of the row of the buttons and the search, under the list. */
+    /**
+     * Top of the row of the buttons and the search: in the middle of the strip between the list and the bottom edge of
+     * the window, less its frame of about 4 pixels.
+     */
     private int footerY() {
-        return windowY + windowH - FOOTER_HEIGHT + 6;
+        return listY + listH + (FOOTER_HEIGHT - 4 - 20) / 2;
     }
 
     private void drawList(int mouseX, int mouseY, GTNHTheme theme) {
