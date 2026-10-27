@@ -10,9 +10,11 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 
@@ -98,6 +100,13 @@ public class ModListScreen extends GuiScreen {
     private final GuiScreen parent;
     private final List<ModContainer> all = new ArrayList<>();
     private final List<ModContainer> shown = new ArrayList<>();
+    /** The modules of a mod, and the mod each module belongs to: its top one when it is a module of a module. */
+    private final Map<ModContainer, List<ModContainer>> modules = new HashMap<>();
+    private final Map<ModContainer, ModContainer> heads = new HashMap<>();
+    /** The ids of the mods whose modules are shown, kept while the game runs. */
+    private static final Set<String> EXPANDED = new HashSet<>();
+    /** False while searching: the list is flat then. */
+    private boolean grouped = true;
     private ModContainer selected;
     private final List<Line> lines = new ArrayList<>();
     private final Scroll listScroll = new Scroll();
@@ -117,6 +126,53 @@ public class ModListScreen extends GuiScreen {
         all.addAll(Loader.instance()
             .getModList());
         all.sort((a, b) -> stripped(a.getName()).compareToIgnoreCase(stripped(b.getName())));
+        group();
+    }
+
+    /** Puts every module under its mod; see {@link #parentOf}. */
+    private void group() {
+        for (ModContainer mod : all) {
+            ModContainer head = parentOf(mod);
+            // a module of a module goes under the top mod
+            for (int depth = 0; head != null && depth < 8; depth++) {
+                ModContainer up = parentOf(head);
+                if (up == null || up == mod) break;
+                head = up;
+            }
+            if (head == null || head == mod) continue;
+            heads.put(mod, head);
+            modules.computeIfAbsent(head, k -> new ArrayList<>())
+                .add(mod);
+        }
+    }
+
+    /**
+     * The mod a mod is a module of, or null. The mod says so itself (its parent in mcmod.info), the other mod lists it
+     * among its child mods, or its name starts with the whole name of another mod and a space, a dash or a colon:
+     * "EndlessIDs Biome Module" is a module of "EndlessIDs". The longest such name wins.
+     */
+    private ModContainer parentOf(ModContainer mod) {
+        ModMetadata meta = mod.getMetadata();
+        if (meta != null && meta.parentMod != null && meta.parentMod != mod && all.contains(meta.parentMod)) {
+            return meta.parentMod;
+        }
+        String name = stripped(mod.getName());
+        ModContainer best = null;
+        int bestLength = 0;
+        for (ModContainer other : all) {
+            if (other == mod) continue;
+            ModMetadata otherMeta = other.getMetadata();
+            if (otherMeta != null && otherMeta.childMods != null && otherMeta.childMods.contains(mod)) return other;
+            String otherName = stripped(other.getName());
+            int length = otherName.length();
+            if (length < 3 || length <= bestLength || name.length() <= length + 1) continue;
+            char next = name.charAt(length);
+            if ((next == ' ' || next == '-' || next == ':') && name.regionMatches(true, 0, otherName, 0, length)) {
+                best = other;
+                bestLength = length;
+            }
+        }
+        return best;
     }
 
     private static String stripped(String text) {
@@ -163,12 +219,21 @@ public class ModListScreen extends GuiScreen {
                 .toLowerCase(Locale.ROOT);
     }
 
-    /** The mods matching the search, by name, id or author. */
+    /**
+     * The mods shown: without a search, the mods with their modules under them when opened; with one, every mod
+     * matching it, by name, id or author, modules too.
+     */
     private void filter() {
         String query = query();
         shown.clear();
+        grouped = query.isEmpty();
         for (ModContainer mod : all) {
-            if (query.isEmpty() || matches(mod, query)) shown.add(mod);
+            if (grouped) {
+                if (heads.containsKey(mod)) continue;
+                shown.add(mod);
+                List<ModContainer> parts = modules.get(mod);
+                if (parts != null && EXPANDED.contains(mod.getModId())) shown.addAll(parts);
+            } else if (matches(mod, query)) shown.add(mod);
         }
         listScroll.content = shown.size() * ROW + 4;
         listScroll.view = listH - 4;
@@ -190,6 +255,15 @@ public class ModListScreen extends GuiScreen {
             }
         }
         return false;
+    }
+
+    /** Shows or hides the modules of a mod. */
+    private void toggle(ModContainer mod) {
+        if (!EXPANDED.remove(mod.getModId())) EXPANDED.add(mod.getModId());
+        // a hidden module gives the selection to its mod
+        if (heads.get(selected) == mod && !EXPANDED.contains(mod.getModId())) selected = mod;
+        filter();
+        select(selected);
     }
 
     private void select(ModContainer mod) {
@@ -225,10 +299,21 @@ public class ModListScreen extends GuiScreen {
             if (version != null) requirements.add(version.getLabel());
         }
         if (!requirements.isEmpty()) section("Requires", String.join(", ", requirements), textW);
-        if (meta != null && meta.childMods != null && !meta.childMods.isEmpty()) {
-            List<String> children = new ArrayList<>();
+        List<String> children = new ArrayList<>();
+        if (meta != null && meta.childMods != null) {
             for (ModContainer child : meta.childMods) children.add(stripped(child.getName()));
-            section("Contains", String.join(", ", children), textW);
+        }
+        List<ModContainer> parts = modules.get(selected);
+        if (parts != null) {
+            for (ModContainer part : parts) {
+                String name = stripped(part.getName());
+                if (!children.contains(name)) children.add(name);
+            }
+        }
+        if (!children.isEmpty()) section("Contains", String.join(", ", children), textW);
+        ModContainer head = heads.get(selected);
+        if (head != null && (meta == null || meta.parentMod != head)) {
+            section("Module of", stripped(head.getName()), textW);
         }
         if (meta != null && meta.parentMod != null) {
             section("Part of", stripped(meta.parentMod.getName()), textW);
@@ -342,9 +427,23 @@ public class ModListScreen extends GuiScreen {
             else if (hovered) UI.rect(listX + 2, y, w, ROW, 0x14FFFFFF);
             if (isSelected) UI.rect(listX + 3, y + 4, 2, ROW - 8, theme.barFill);
 
-            drawIcon(mod, listX + 8, y + (ROW - ICON) / 2, ICON, ICON);
-            int textX = listX + 8 + ICON + 6;
-            int textW = listX + 2 + w - 4 - textX;
+            // modules are indented under their mod, which has an arrow to show or hide them and their count
+            boolean module = grouped && heads.containsKey(mod);
+            List<ModContainer> parts = grouped ? modules.get(mod) : null;
+            int iconX = listX + 16 + (module ? 12 : 0);
+            if (module) UI.rect(listX + 19, y, 1, ROW, theme.textDisabled & 0x60FFFFFF);
+            int right = listX + 2 + w - 4;
+            if (parts != null) {
+                boolean open = EXPANDED.contains(mod.getModId());
+                boolean arrowHovered = over && UI.inside(mouseX, mouseY, listX + 2, y, 14, ROW);
+                arrow(listX + 6, y + ROW / 2, open, arrowHovered ? theme.hoverText : theme.textDim);
+                String count = "+" + parts.size();
+                right -= fontRendererObj.getStringWidth(count) + 4;
+                UI.text(count, right + 4, y + (ROW - 8) / 2, theme.textDisabled);
+            }
+            drawIcon(mod, iconX, y + (ROW - ICON) / 2, ICON, ICON);
+            int textX = iconX + ICON + 6;
+            int textW = right - textX;
             String name = fontRendererObj.trimStringToWidth(stripped(mod.getName()), textW);
             UI.text(name, textX, y + 4, isSelected ? theme.hoverText : theme.text);
             String version = fontRendererObj.trimStringToWidth(stripped(mod.getDisplayVersion()), textW);
@@ -352,6 +451,14 @@ public class ModListScreen extends GuiScreen {
         }
         UI.endScissor();
         listScroll.drawBar(listX + listW - Scroll.BAR_WIDTH - 2, listY + 2, listH - 4, mouseX, mouseY);
+    }
+
+    /** A small pixel triangle pointing right, or down when open, centered on its left middle. */
+    private static void arrow(int x, int middleY, boolean open, int color) {
+        for (int i = 0; i < 4; i++) {
+            if (open) UI.rect(x + i, middleY - 2 + i, 7 - i * 2, 1, color);
+            else UI.rect(x + 1 + i, middleY - 3 + i, 1, 7 - i * 2, color);
+        }
     }
 
     private void drawDetails(int mouseX, int mouseY, GTNHTheme theme) {
@@ -543,7 +650,10 @@ public class ModListScreen extends GuiScreen {
             int index = (mouseY - listY - 2 + listScroll.offset()) / ROW;
             if (index >= 0 && index < shown.size() && mouseY - listY - 2 + listScroll.offset() >= 0) {
                 UI.playClick();
-                select(shown.get(index));
+                ModContainer mod = shown.get(index);
+                // the arrow shows or hides the modules
+                if (grouped && modules.containsKey(mod) && mouseX < listX + 16) toggle(mod);
+                else select(mod);
             }
             return;
         }
@@ -627,6 +737,13 @@ public class ModListScreen extends GuiScreen {
             mc.displayGuiScreen(parent);
             return;
         }
+        if ((code == Keyboard.KEY_RIGHT || code == Keyboard.KEY_LEFT) && grouped && selected != null) {
+            // right opens the modules of the mod, left closes them or goes back to the mod of a module
+            boolean open = EXPANDED.contains(selected.getModId());
+            if (modules.containsKey(selected) && open == (code == Keyboard.KEY_LEFT)) toggle(selected);
+            else if (code == Keyboard.KEY_LEFT && heads.containsKey(selected)) select(heads.get(selected));
+            return;
+        }
         if (code == Keyboard.KEY_UP || code == Keyboard.KEY_DOWN) {
             int index = shown.indexOf(selected) + (code == Keyboard.KEY_UP ? -1 : 1);
             if (index >= 0 && index < shown.size()) select(shown.get(index));
@@ -644,6 +761,12 @@ public class ModListScreen extends GuiScreen {
 
     private void searched() {
         filter();
+        // a module found by a search stays selected when the search is cleared: its mod opens
+        ModContainer head = heads.get(selected);
+        if (grouped && head != null && !shown.contains(selected)) {
+            EXPANDED.add(head.getModId());
+            filter();
+        }
         listScroll.reset();
         if (!shown.isEmpty() && !shown.contains(selected)) select(shown.get(0));
         else if (shown.isEmpty()) {
