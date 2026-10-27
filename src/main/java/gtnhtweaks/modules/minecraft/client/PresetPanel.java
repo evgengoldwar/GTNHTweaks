@@ -253,8 +253,7 @@ final class PresetPanel {
                         ResourcePackScreen.isInstalled(pack) ? EnumChatFormatting.GRAY + pack
                             : EnumChatFormatting.RED + pack + " (missing)");
                 }
-                lines.add(
-                    EnumChatFormatting.DARK_GRAY + "Click or key " + (slot + 1) % 10 + ": select these packs");
+                lines.add(EnumChatFormatting.DARK_GRAY + "Click or key " + (slot + 1) % 10 + ": select these packs");
                 break;
             case 1:
                 lines.add("Save the selected packs here, in their order");

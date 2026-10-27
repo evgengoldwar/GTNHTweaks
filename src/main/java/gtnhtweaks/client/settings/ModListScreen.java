@@ -123,8 +123,9 @@ public class ModListScreen extends GuiScreen {
 
     public ModListScreen(GuiScreen parent) {
         this.parent = parent;
-        all.addAll(Loader.instance()
-            .getModList());
+        all.addAll(
+            Loader.instance()
+                .getModList());
         all.sort((a, b) -> stripped(a.getName()).compareToIgnoreCase(stripped(b.getName())));
         group();
     }
@@ -496,8 +497,12 @@ public class ModListScreen extends GuiScreen {
         glPopMatrix();
         UI.text("Version " + stripped(selected.getDisplayVersion()), nameX, y + 22, theme.textDim);
         UI.text("ID: " + selected.getModId(), nameX, y + 33, theme.textDisabled);
-        UI.rect(x, y + headerH - 6, detailW - 16 - Scroll.BAR_WIDTH, 1, theme.isBeveled() ? theme.inset.topLeft
-            : theme.barBorder);
+        UI.rect(
+            x,
+            y + headerH - 6,
+            detailW - 16 - Scroll.BAR_WIDTH,
+            1,
+            theme.isBeveled() ? theme.inset.topLeft : theme.barBorder);
 
         y += headerH;
         for (Line line : lines) {
@@ -508,8 +513,8 @@ public class ModListScreen extends GuiScreen {
             if (y + 10 >= detailY && y <= detailY + detailH) {
                 if (line.kind == LABEL) UI.text(line.text.toUpperCase(Locale.ROOT), x, y, theme.textDisabled);
                 else if (line.kind == LINK) {
-                    boolean hovered = over && UI.inside(mouseX, mouseY, x, y - 1, fontRendererObj.getStringWidth(
-                        line.text), 10);
+                    boolean hovered = over
+                        && UI.inside(mouseX, mouseY, x, y - 1, fontRendererObj.getStringWidth(line.text), 10);
                     UI.text(line.text, x, y, hovered ? theme.hoverText : theme.barFill);
                     if (hovered) UI.rect(x, y + 9, fontRendererObj.getStringWidth(line.text), 1, theme.hoverText);
                 } else UI.text(line.text, x, y, theme.text);
@@ -559,8 +564,9 @@ public class ModListScreen extends GuiScreen {
         UI.rect(bx, by, size, size, color);
         UI.rect(bx, by + size - 2, size, 2, 0x40000000);
         String name = stripped(mod.getName());
-        String letter = name.isEmpty() ? "?" : name.substring(0, 1)
-            .toUpperCase(Locale.ROOT);
+        String letter = name.isEmpty() ? "?"
+            : name.substring(0, 1)
+                .toUpperCase(Locale.ROOT);
         float scale = size >= 32 ? 2 : 1;
         glPushMatrix();
         glTranslatef(bx + size / 2F, by + size / 2F, 0);

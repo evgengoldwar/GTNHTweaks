@@ -71,8 +71,7 @@ final class GregTechTextures {
             if (icon != null) out.add(new Layer(icon, color(texture)));
             if (texture instanceof GTRenderedTexture) {
                 // drawn over the colored base as it is, uncolored
-                IIcon overlay = ((GTRenderedTexture) texture)
-                    .getIcon(ForgeDirection.getOrientation(side), true, null);
+                IIcon overlay = ((GTRenderedTexture) texture).getIcon(ForgeDirection.getOrientation(side), true, null);
                 if (overlay != null) out.add(new Layer(overlay, 0xFFFFFF));
             }
             return;

@@ -89,7 +89,12 @@ public final class FallingLeaves {
             if (RANDOM.nextFloat() >= CHANCE) continue;
             IIcon icon = block.getIcon(world, x, y, z, 0);
             if (icon == null) continue;
-            Leaf leaf = new Leaf(world, x + RANDOM.nextDouble(), y - 0.05, z + RANDOM.nextDouble(), icon,
+            Leaf leaf = new Leaf(
+                world,
+                x + RANDOM.nextDouble(),
+                y - 0.05,
+                z + RANDOM.nextDouble(),
+                icon,
                 block.colorMultiplier(world, x, y, z));
             LEAVES.add(leaf);
             mc.effectRenderer.addEffect(leaf);

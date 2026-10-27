@@ -85,10 +85,9 @@ public enum Mixins implements IMixins {
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
         .addClientMixins("minecraft.MixinEffectRenderer_BlockChunks")),
     // Applied with the module, the settings are read when the screen is used, so they need no restart
-    MINECRAFT_RESOURCE_PACKS(
-        new MixinBuilder("Dragging and presets of the resource packs").setPhase(Phase.EARLY)
-            .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
-            .addClientMixins("minecraft.MixinGuiScreenResourcePacks_Packs", "minecraft.MixinGuiSlot_Packs")),
+    MINECRAFT_RESOURCE_PACKS(new MixinBuilder("Dragging and presets of the resource packs").setPhase(Phase.EARLY)
+        .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
+        .addClientMixins("minecraft.MixinGuiScreenResourcePacks_Packs", "minecraft.MixinGuiSlot_Packs")),
 
     // Item physics module
     ITEM_PHYSICS(new MixinBuilder("Dropped items lie on the ground and tumble when they fall").setPhase(Phase.EARLY)

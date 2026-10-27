@@ -53,6 +53,7 @@ public final class MinecraftModule extends TweakModule {
 
     /** Where the list of picked up items is: in a corner or the middle of a side. */
     public enum PickupPosition {
+
         BOTTOM_RIGHT,
         MIDDLE_RIGHT,
         TOP_RIGHT,

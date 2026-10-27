@@ -274,10 +274,12 @@ public final class ParticleRain {
     }
 
     private static float light(double x, double y, double z) {
-        return Math.max(0.15F, world.getLightBrightness(
-            MathHelper.floor_double(x),
-            MathHelper.floor_double(y),
-            MathHelper.floor_double(z)));
+        return Math.max(
+            0.15F,
+            world.getLightBrightness(
+                MathHelper.floor_double(x),
+                MathHelper.floor_double(y),
+                MathHelper.floor_double(z)));
     }
 
     // ---- drawing
