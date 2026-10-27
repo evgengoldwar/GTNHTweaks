@@ -81,6 +81,9 @@ public enum Mixins implements IMixins {
     MINECRAFT_PARTICLE_RAIN(new MixinBuilder("Rain and snow of particles in place of vanilla").setPhase(Phase.EARLY)
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
         .addClientMixins("minecraft.MixinEntityRenderer_ParticleRain")),
+    MINECRAFT_BLOCK_CHUNKS(new MixinBuilder("Broken blocks fall apart into little cubes").setPhase(Phase.EARLY)
+        .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
+        .addClientMixins("minecraft.MixinEffectRenderer_BlockChunks")),
     // Applied with the module, the settings are read when the screen is used, so they need no restart
     MINECRAFT_RESOURCE_PACKS(
         new MixinBuilder("Dragging and presets of the resource packs").setPhase(Phase.EARLY)

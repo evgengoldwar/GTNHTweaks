@@ -35,6 +35,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_SCREEN_SHAKE = "screenShake";
     public static final String CATEGORY_PICKUPS = "pickupNotifier";
     public static final String CATEGORY_LEAVES = "fallingLeaves";
+    public static final String CATEGORY_BLOCK_CHUNKS = "blockChunks";
     public static final String CATEGORY_WEATHER = "particleRain";
 
     /** NORMAL: hidden by other blocks, like vanilla. THROUGH_BLOCKS: seen through every block. */
@@ -111,6 +112,9 @@ public final class MinecraftModule extends TweakModule {
     public static int maxSplashes = 48;
     /** Ripples of the rain on water, in percent of the usual amount, 0 for none. */
     public static int rainRipples = 100;
+
+    /** Little cubes a broken block falls apart into, 0 for the particles of vanilla. */
+    public static int blockChunks = 14;
 
     /** Leaves falling from the trees, in percent of the usual amount, 0 for none. */
     public static int fallingLeaves = 100;
@@ -315,6 +319,16 @@ public final class MinecraftModule extends TweakModule {
             300,
             "Little ripple rings where the rain falls on still water open to the sky, in percent of the usual "
                 + "amount: 0 for none, 200 for twice as many. More in heavier rain, none in snow or deserts");
+
+        blockChunks = config.getInt(
+            "count",
+            CATEGORY_BLOCK_CHUNKS,
+            blockChunks,
+            0,
+            40,
+            "A broken block falls apart into this many little cubes of itself, with the textures of its faces, that "
+                + "tumble, bounce, lie flat and shrink away, instead of the flat pixels of vanilla. 0 for the pixels "
+                + "of vanilla. Only solid blocks; half as many with Decreased particles, vanilla with Minimal");
 
         fallingLeaves = config.getInt(
             "amount",
