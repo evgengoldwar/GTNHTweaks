@@ -5,17 +5,19 @@ import net.minecraft.util.ResourceLocation;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 import gtnhtweaks.modules.menus.MenuStyle;
 
-/** Records the textures an inventory background uses, see MenuStyle.beginInventoryBackground. */
+/**
+ * Records the textures an inventory background uses, see MenuStyle.beginInventoryBackground, and draws the inventory
+ * texture of a resource pack for the inventory of Hodgepodge, see PackInventoryTexture.
+ */
 @Mixin(TextureManager.class)
 public class MixinTextureManager_Menus {
 
-    @Inject(method = "bindTexture", at = @At("HEAD"))
-    private void gtnhtweaks$recordTexture(ResourceLocation texture, CallbackInfo ci) {
-        MenuStyle.onBindTexture(texture);
+    @ModifyVariable(method = "bindTexture", at = @At("HEAD"), argsOnly = true)
+    private ResourceLocation gtnhtweaks$recordTexture(ResourceLocation texture) {
+        return MenuStyle.onBindTexture(texture);
     }
 }

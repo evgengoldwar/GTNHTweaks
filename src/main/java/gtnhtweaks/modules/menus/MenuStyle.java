@@ -179,11 +179,16 @@ public final class MenuStyle {
         return note + ", textures " + INVENTORY_TEXTURES;
     }
 
-    public static void onBindTexture(ResourceLocation texture) {
-        boundTexture = texture;
-        if (recordingInventoryTextures && texture != null && INVENTORY_TEXTURES.size() < 16) {
-            INVENTORY_TEXTURES.add(texture);
+    /** A texture is bound: recorded, and the one to bind in its place given back. */
+    public static ResourceLocation onBindTexture(ResourceLocation texture) {
+        ResourceLocation drawn = PackInventoryTexture.replace(texture);
+        // the inventory texture of a pack drawn for Hodgepodge counts as the texture of that pack
+        ResourceLocation source = drawn != texture ? PackInventoryTexture.VANILLA : texture;
+        boundTexture = source;
+        if (recordingInventoryTextures && source != null && INVENTORY_TEXTURES.size() < 16) {
+            INVENTORY_TEXTURES.add(source);
         }
+        return drawn;
     }
 
     private static boolean matches(Class<?> type) {
