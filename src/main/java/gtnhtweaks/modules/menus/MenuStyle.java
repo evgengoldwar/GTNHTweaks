@@ -137,6 +137,9 @@ public final class MenuStyle {
     public static boolean endInventoryBackground() {
         recordingInventoryTextures = false;
         for (ResourceLocation texture : INVENTORY_TEXTURES) {
+            // only the panels count: the background also draws the player, its shadow and other models
+            if (!texture.getResourcePath()
+                .startsWith("textures/gui/")) continue;
             if (ResourcePackOverrides.isOverridden(texture) && !ResourcePackOverrides.keepsVanillaGray(texture)) {
                 packTexture = texture;
                 return true;

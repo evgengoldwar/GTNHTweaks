@@ -22,7 +22,7 @@ import gtnhtweaks.modules.minecraft.MinecraftModule;
 
 /**
  * Marks the items that are new in the inventory of the player with a little star in the corner of their slot, until
- * the mouse is brought onto them in an inventory.
+ * the mouse is brought onto them in an inventory or they are chosen in the hotbar.
  * <p>
  * An item is new when it comes into the inventory and was not in it before in this session, whether picked up, crafted
  * or taken from a chest. What is in the inventory on joining a world is not new. Damage of items without subtypes,
@@ -33,9 +33,22 @@ public final class NewItems {
 
     /** Ticks after joining a world in which the items coming in are the inventory sent by the server, not new. */
     private static final int JOIN_TICKS = 40;
-    private static final int OUTLINE = 0xFF5A3A00;
-    private static final int FILL = 0xFFFFD23C;
-    private static final int SHINE = 0xFFFFFFF0;
+    /**
+     * The star, a sparkle of four rays: tips, rays, the glow around the middle and the middle. The second frame is the
+     * twinkle, rays drawn in and the middle flashing.
+     */
+    private static final String[] STAR = { "...a...", "...b...", "..bcb..", "abcwcba", "..bcb..", "...b...",
+        "...a..." };
+    private static final String[] TWINKLE = { ".......", "...c...", "..cwc..", ".cwwwc.", "..cwc..", "...c...",
+        "......." };
+    private static final int TIP = 0xFFFFA820;
+    private static final int RAY = 0xFFFFD84A;
+    private static final int GLOW = 0xFFFFF3A6;
+    private static final int MIDDLE = 0xFFFFFFFF;
+    /** The shadow under the star, a pixel down and right, so it stands out on light items too. */
+    private static final int SHADOW = 0x90301800;
+    /** A twinkle every so many milliseconds, for a short while. */
+    private static final long TWINKLE_EVERY = 1500, TWINKLE_FOR = 220;
 
     /** The items that were in the inventory in this session, by {@link #key}. */
     private static final Set<String> KNOWN = new HashSet<>();
@@ -75,6 +88,9 @@ public final class NewItems {
         for (Iterator<String> it = NEW.iterator(); it.hasNext();) {
             if (!present.contains(it.next())) it.remove();
         }
+        // chosen in the hotbar is looked at, as the mouse on its slot in an inventory
+        String held = key(mc.thePlayer.inventory.getCurrentItem());
+        if (held != null) NEW.remove(held);
     }
 
     /** The stars on the hotbar, so a picked up item shows as new at once. */
@@ -132,13 +148,13 @@ public final class NewItems {
     }
 
     /**
-     * A little star, twinkling, its upper left corner a pixel out of the corner of the slot.
+     * A little golden sparkle, twinkling now and then, its upper left corner a pixel out of the corner of the slot.
      *
      * @param x the left of the slot
      * @param y the top of the slot
      */
     private static void drawStar(int x, int y) {
-        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT);
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT | GL11.GL_COLOR_BUFFER_BIT);
         GL11.glPushMatrix();
         // over the item and its count
         GL11.glTranslatef(0, 0, 320);
@@ -146,27 +162,44 @@ public final class NewItems {
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glDisable(GL11.GL_ALPHA_TEST);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
         x -= 1;
         y -= 1;
-        // a diamond of 5 by 5 pixels in an outline, its middle shining now and then
-        cross(x, y, 3, OUTLINE);
-        cross(x, y, 2, FILL);
-        boolean twinkle = Minecraft.getSystemTime() % 1200 < 300;
-        pixel(x + 3, y + 3, twinkle ? SHINE : FILL);
+        // each slot twinkles at its own time, so the stars do not blink all at once
+        long time = Minecraft.getSystemTime() + (x * 31L + y * 17L) * 7;
+        String[] frame = time % TWINKLE_EVERY < TWINKLE_FOR ? TWINKLE : STAR;
+        drawPixels(frame, x + 1, y + 1, true);
+        drawPixels(frame, x, y, false);
         GL11.glPopMatrix();
         GL11.glPopAttrib();
     }
 
-    /** The pixels within the given distance of (x + 3, y + 3), in steps along x and y. */
-    private static void cross(int x, int y, int reach, int argb) {
-        for (int dy = -reach; dy <= reach; dy++) {
-            int half = reach - Math.abs(dy);
-            rect(x + 3 - half, y + 3 + dy, x + 4 + half, y + 4 + dy, argb);
+    /** Draws a frame of the star, or its shadow in one color. */
+    private static void drawPixels(String[] frame, int x, int y, boolean shadow) {
+        for (int row = 0; row < frame.length; row++) {
+            for (int column = 0; column < frame[row].length(); column++) {
+                int argb;
+                switch (frame[row].charAt(column)) {
+                    case 'a':
+                        argb = TIP;
+                        break;
+                    case 'b':
+                        argb = RAY;
+                        break;
+                    case 'c':
+                        argb = GLOW;
+                        break;
+                    case 'w':
+                        argb = MIDDLE;
+                        break;
+                    default:
+                        continue;
+                }
+                int px = x + column, py = y + row;
+                rect(px, py, px + 1, py + 1, shadow ? SHADOW : argb);
+            }
         }
-    }
-
-    private static void pixel(int x, int y, int argb) {
-        rect(x, y, x + 1, y + 1, argb);
     }
 
     private static void rect(int x0, int y0, int x1, int y1, int argb) {

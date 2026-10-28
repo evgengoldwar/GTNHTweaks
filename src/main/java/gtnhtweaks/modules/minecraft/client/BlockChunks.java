@@ -112,7 +112,6 @@ public final class BlockChunks {
     private static boolean destroyEffectsReached;
     /** The digging particles added during the break effect, to take away if the cubes are made after all. */
     private static final List<EntityFX> BREAK_PARTICLES = new ArrayList<>();
-    private static boolean toldReplaced, toldFirst;
 
     /** Before the world event of a broken block plays its sound and its particles. */
     public static void beginBreakEffect() {
@@ -142,12 +141,6 @@ public final class BlockChunks {
             Block block = Block.getBlockById(data & 4095);
             int meta = data >> 12 & 255;
             if (block != null && block.getMaterial() != Material.air) {
-                if (!toldReplaced) {
-                    toldReplaced = true;
-                    GTNHTweaks.LOG.info(
-                        "Block chunks: another mod made the destroy effects first (like the bounded particles of Et "
-                            + "Futurum), the cubes are made from the break event instead");
-                }
                 if (breakBlock(world, x, y, z, block, meta))
                     for (EntityFX particle : BREAK_PARTICLES) particle.setDead();
             }
@@ -185,11 +178,6 @@ public final class BlockChunks {
             chunk.motionY = 0.12 + RANDOM.nextDouble() * 0.15;
             chunk.motionZ = (pz - z - 0.5) * 0.25 + (RANDOM.nextDouble() - 0.5) * 0.08;
             CHUNKS.add(chunk);
-        }
-        if (!toldFirst) {
-            // tells in the log whether breaking reaches the cubes at all, and how many there are to draw
-            toldFirst = true;
-            GTNHTweaks.LOG.info("Block chunks: the first broken block, {}, fell apart into {} cubes", block, count);
         }
         return true;
     }
