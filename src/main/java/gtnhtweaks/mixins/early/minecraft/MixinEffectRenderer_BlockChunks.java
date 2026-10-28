@@ -2,6 +2,7 @@ package gtnhtweaks.mixins.early.minecraft;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.particle.EffectRenderer;
+import net.minecraft.client.particle.EntityFX;
 import net.minecraft.world.World;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,6 +22,7 @@ public class MixinEffectRenderer_BlockChunks {
 
     @Inject(method = "addBlockDestroyEffects", at = @At("HEAD"), cancellable = true, require = 0)
     private void gtnhtweaks$chunks(int x, int y, int z, Block block, int meta, CallbackInfo ci) {
+        BlockChunks.reachedDestroyEffects();
         if (block == null || block.isAir(worldObj, x, y, z)) return;
         EffectRenderer self = (EffectRenderer) (Object) this;
         // a mod with break effects of its own keeps them, as Forge does
@@ -29,5 +31,10 @@ public class MixinEffectRenderer_BlockChunks {
             return;
         }
         if (BlockChunks.breakBlock(worldObj, x, y, z, block, meta)) ci.cancel();
+    }
+
+    @Inject(method = "addEffect", at = @At("HEAD"), require = 0)
+    private void gtnhtweaks$seeParticle(EntityFX particle, CallbackInfo ci) {
+        BlockChunks.addedParticle(particle);
     }
 }

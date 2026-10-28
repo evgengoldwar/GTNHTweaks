@@ -85,7 +85,7 @@ public enum Mixins implements IMixins {
         .addClientMixins("minecraft.MixinEntityRenderer_ParticleRain")),
     MINECRAFT_BLOCK_CHUNKS(new MixinBuilder("Broken blocks fall apart into little cubes").setPhase(Phase.EARLY)
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
-        .addClientMixins("minecraft.MixinEffectRenderer_BlockChunks")),
+        .addClientMixins("minecraft.MixinEffectRenderer_BlockChunks", "minecraft.MixinRenderGlobal_BlockChunks")),
     // Crouching and swimming: the poses are kept on every player wherever one of the two sides runs, the server
     // module on a dedicated server and in singleplayer, the client module on the client
     MINECRAFT_MOVEMENT(new MixinBuilder("Poses of the crouching and swimming of newer versions").setPhase(Phase.EARLY)

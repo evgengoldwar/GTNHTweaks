@@ -10,6 +10,7 @@ import java.util.Random;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.particle.EntityDiggingFX;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderManager;
@@ -105,6 +106,55 @@ public final class BlockChunks {
         GL20.glUseProgram(program);
     }
 
+    /** Inside the break effect of a block, from the world event of vanilla. */
+    private static boolean inBreakEffect;
+    /** The particles of EffectRenderer, where the cubes take the place of the particles, ran for this break. */
+    private static boolean destroyEffectsReached;
+    /** The digging particles added during the break effect, to take away if the cubes are made after all. */
+    private static final List<EntityFX> BREAK_PARTICLES = new ArrayList<>();
+    private static boolean toldReplaced, toldFirst;
+
+    /** Before the world event of a broken block plays its sound and its particles. */
+    public static void beginBreakEffect() {
+        inBreakEffect = true;
+        destroyEffectsReached = false;
+        BREAK_PARTICLES.clear();
+    }
+
+    /** The particles of the broken block got to EffectRenderer, where the cubes are made. */
+    public static void reachedDestroyEffects() {
+        destroyEffectsReached = true;
+    }
+
+    /** A particle added to EffectRenderer, kept if it is a digging particle of the block being broken. */
+    public static void addedParticle(EntityFX particle) {
+        if (inBreakEffect && particle instanceof EntityDiggingFX && BREAK_PARTICLES.size() < 1024)
+            BREAK_PARTICLES.add(particle);
+    }
+
+    /**
+     * After the world event of a broken block. If another mod made its particles without the destroy effects of
+     * EffectRenderer, the cubes are made here, from the block and meta of the event, and its digging particles go.
+     */
+    public static void endBreakEffect(World world, int x, int y, int z, int data) {
+        inBreakEffect = false;
+        if (!destroyEffectsReached && world != null) {
+            Block block = Block.getBlockById(data & 4095);
+            int meta = data >> 12 & 255;
+            if (block != null && block.getMaterial() != Material.air) {
+                if (!toldReplaced) {
+                    toldReplaced = true;
+                    GTNHTweaks.LOG.info(
+                        "Block chunks: the destroy effects of EffectRenderer are replaced by another mod, the cubes are "
+                            + "made from the break event instead");
+                }
+                if (breakBlock(world, x, y, z, block, meta))
+                    for (EntityFX particle : BREAK_PARTICLES) particle.setDead();
+            }
+        }
+        BREAK_PARTICLES.clear();
+    }
+
     /**
      * Breaks the block into cubes, in place of the particles of vanilla.
      *
@@ -135,6 +185,11 @@ public final class BlockChunks {
             chunk.motionY = 0.12 + RANDOM.nextDouble() * 0.15;
             chunk.motionZ = (pz - z - 0.5) * 0.25 + (RANDOM.nextDouble() - 0.5) * 0.08;
             CHUNKS.add(chunk);
+        }
+        if (!toldFirst) {
+            // tells in the log whether breaking reaches the cubes at all, and how many there are to draw
+            toldFirst = true;
+            GTNHTweaks.LOG.info("Block chunks: the first broken block, {}, fell apart into {} cubes", block, count);
         }
         return true;
     }
