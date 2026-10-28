@@ -23,8 +23,7 @@ public class MixinRenderGlobal_BlockChunks {
     private WorldClient theWorld;
 
     @Inject(method = "playAuxSFX", at = @At("HEAD"), require = 0)
-    private void gtnhtweaks$beginBreak(EntityPlayer player, int type, int x, int y, int z, int data,
-        CallbackInfo ci) {
+    private void gtnhtweaks$beginBreak(EntityPlayer player, int type, int x, int y, int z, int data, CallbackInfo ci) {
         if (type == 2001) BlockChunks.beginBreakEffect();
     }
 

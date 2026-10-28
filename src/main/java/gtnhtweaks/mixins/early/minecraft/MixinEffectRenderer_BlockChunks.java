@@ -13,8 +13,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import gtnhtweaks.modules.minecraft.client.BlockChunks;
 
-/** A broken block falls apart into little cubes of itself instead of the particles of vanilla. */
-@Mixin(EffectRenderer.class)
+/**
+ * A broken block falls apart into little cubes of itself instead of the particles of vanilla. Applied before the
+ * mixins of the same priority, so the cubes come before the particles mods make at the same place and cancel them, as
+ * the bounded particles of Et Futurum do; if another one comes first, the break event of RenderGlobal makes them.
+ */
+@Mixin(value = EffectRenderer.class, priority = 500)
 public class MixinEffectRenderer_BlockChunks {
 
     @Shadow

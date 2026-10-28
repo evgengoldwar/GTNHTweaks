@@ -145,8 +145,8 @@ public final class BlockChunks {
                 if (!toldReplaced) {
                     toldReplaced = true;
                     GTNHTweaks.LOG.info(
-                        "Block chunks: the destroy effects of EffectRenderer are replaced by another mod, the cubes are "
-                            + "made from the break event instead");
+                        "Block chunks: another mod made the destroy effects first (like the bounded particles of Et "
+                            + "Futurum), the cubes are made from the break event instead");
                 }
                 if (breakBlock(world, x, y, z, block, meta))
                     for (EntityFX particle : BREAK_PARTICLES) particle.setDead();
