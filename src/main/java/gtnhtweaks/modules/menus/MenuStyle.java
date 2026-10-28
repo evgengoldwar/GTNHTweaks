@@ -130,15 +130,50 @@ public final class MenuStyle {
     }
 
     /**
-     * @return true if a resource pack replaces one of the textures the inventory background used. Such textures are
-     *         never tinted, whatever yieldToResourcePacks says: the pack already gives them its own colors.
+     * @return true if a resource pack gives one of the textures the inventory background used colors of its own. Such
+     *         textures are never tinted, whatever yieldToResourcePacks says. A pack that only draws more on the light
+     *         gray of vanilla, like a slot for the other hand, is tinted as vanilla is.
      */
     public static boolean endInventoryBackground() {
         recordingInventoryTextures = false;
         for (ResourceLocation texture : INVENTORY_TEXTURES) {
-            if (ResourcePackOverrides.isOverridden(texture)) return true;
+            if (ResourcePackOverrides.isOverridden(texture) && !ResourcePackOverrides.keepsVanillaGray(texture)) {
+                packTexture = texture;
+                return true;
+            }
         }
+        packTexture = null;
         return false;
+    }
+
+    /** The texture of a resource pack that kept the last inventory background from being tinted, or null. */
+    private static ResourceLocation packTexture;
+    /** The inventory whose background passed the tinting last, and what came of it, for the GUI info. */
+    private static GuiContainer noted;
+    private static String note;
+
+    /** Remembers what came of the tinting of an inventory background. */
+    public static void noteInventory(GuiContainer gui, boolean replacedByPack, boolean tinted) {
+        noted = gui;
+        if (tinted) note = "tinted";
+        else if (replacedByPack)
+            note = "not tinted: the resource pack texture " + packTexture + " has colors of its own";
+        else if (!MenusModule.themeInventories) note = "not tinted: themeInventories is off";
+        else if (isExcluded(gui.getClass())) note = "not tinted: the screen is in excludedScreens";
+        else if (theme() == GTNHTheme.LIGHT) note = "not tinted: the LIGHT theme keeps the vanilla look";
+        else if (!isVanilla(
+            gui.getClass()
+                .getName()))
+            note = "not tinted: not a vanilla screen class";
+        else note = "tinted by its own hook";
+    }
+
+    /** What came of the tinting of an inventory, with the textures its background was drawn with, for the GUI info. */
+    public static String describeInventory(GuiContainer gui) {
+        if (!MenusModule.INSTANCE.isEnabled()) return "menus module off";
+        if (noted != gui) return "not tinted: its background is not drawn through GuiContainer.drawScreen (another "
+            + "mod draws the screen)";
+        return note + ", textures " + INVENTORY_TEXTURES;
     }
 
     public static void onBindTexture(ResourceLocation texture) {

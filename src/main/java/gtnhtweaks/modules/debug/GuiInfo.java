@@ -22,6 +22,7 @@ import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.modules.menus.MenuStyle;
 
 /**
  * Ctrl + Shift + F12 in an open screen: writes the mod, name, class and FPS of the screen to the chat and copies the
@@ -87,6 +88,7 @@ public class GuiInfo {
             rows.add(new String[] { "Container", container.getName() });
             String containerMod = ModLookup.describe(container);
             if (!containerMod.equals(rows.get(0)[1])) rows.add(new String[] { "Container mod", containerMod });
+            rows.add(new String[] { "Menus theme", MenuStyle.describeInventory((GuiContainer) screen) });
         }
         rows.add(new String[] { "FPS", fps(mc) });
         rows.add(

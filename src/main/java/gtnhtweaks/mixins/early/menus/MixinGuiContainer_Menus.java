@@ -44,10 +44,10 @@ public class MixinGuiContainer_Menus {
         require = 0)
     private void gtnhtweaks$tintBackground(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         boolean replacedByPack = MenuStyle.endInventoryBackground();
+        GuiContainer gui = (GuiContainer) (Object) this;
         // The creative inventory tints its textures itself, see MixinGuiContainerCreative_Menus
-        if (!replacedByPack && !((Object) this instanceof GuiContainerCreative)
-            && MenuStyle.tintsInventory((GuiContainer) (Object) this)) {
-            MenuStyle.tintInventory(guiLeft, guiTop, xSize, ySize);
-        }
+        boolean tint = !replacedByPack && !(gui instanceof GuiContainerCreative) && MenuStyle.tintsInventory(gui);
+        if (tint) MenuStyle.tintInventory(guiLeft, guiTop, xSize, ySize);
+        MenuStyle.noteInventory(gui, replacedByPack, tint);
     }
 }

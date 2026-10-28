@@ -1,7 +1,11 @@
 package gtnhtweaks.common;
 
+import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
@@ -19,6 +23,9 @@ import gtnhtweaks.GTNHTweaks;
 public final class ResourcePackOverrides {
 
     private static final Map<ResourceLocation, Boolean> CACHE = new HashMap<>();
+    private static final Map<ResourceLocation, Boolean> GRAY = new HashMap<>();
+    /** The light gray of the vanilla inventory textures. */
+    private static final int VANILLA_GRAY = 0xC6C6C6;
     private static boolean listenerRegistered;
 
     private ResourcePackOverrides() {}
@@ -40,6 +47,41 @@ public final class ResourcePackOverrides {
             if (isOverridden(location)) return true;
         }
         return false;
+    }
+
+    /**
+     * True if the texture as the resources now give it is still mostly the light gray of the vanilla inventories: a
+     * pack that only draws more on it, like a slot for the other hand, and not one with colors of its own.
+     */
+    public static boolean keepsVanillaGray(ResourceLocation location) {
+        registerListener();
+        Boolean gray = GRAY.get(location);
+        if (gray == null) {
+            gray = readGray(location);
+            GRAY.put(location, gray);
+        }
+        return gray;
+    }
+
+    private static boolean readGray(ResourceLocation location) {
+        try (InputStream in = Minecraft.getMinecraft()
+            .getResourceManager()
+            .getResource(location)
+            .getInputStream()) {
+            BufferedImage image = ImageIO.read(in);
+            if (image == null) return false;
+            int opaque = 0, gray = 0;
+            for (int y = 0; y < image.getHeight(); y++) for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                if (argb >>> 24 < 128) continue;
+                opaque++;
+                if ((argb & 0xFFFFFF) == VANILLA_GRAY) gray++;
+            }
+            // the gray panel is the most of an inventory texture, with the slots, borders and the player box
+            return opaque > 0 && gray * 4 >= opaque;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private static boolean lookup(ResourceLocation location) {
@@ -68,6 +110,7 @@ public final class ResourcePackOverrides {
                 @Override
                 public void onResourceManagerReload(IResourceManager resourceManager) {
                     CACHE.clear();
+                    GRAY.clear();
                 }
             });
         }
