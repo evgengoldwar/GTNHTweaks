@@ -33,7 +33,7 @@ import gtnhtweaks.modules.minecraft.client.PackCatalog.Page;
 import gtnhtweaks.modules.minecraft.client.PackCatalog.Source;
 
 /**
- * Resource packs for Minecraft 1.7.10 from Modrinth and CurseForge, opened by the Get packs button of the resource pack
+ * Resource packs for Minecraft 1.7.10 from Modrinth, opened by the Get packs button of the resource pack
  * screen: searched, looked at and installed into the resource pack folder, from where the resource pack screen shows
  * them when it comes back.
  * <p>
@@ -248,8 +248,10 @@ public class PackBrowserScreen extends GuiScreen {
             }
             state.download = null;
         }
-        if (state.file != null && state.download == null && PackCatalog.target(folder, state.file)
-            .exists()) state.installed = true;
+        if (state.file != null && state.download == null
+            && PackCatalog.target(folder, state.file)
+                .exists())
+            state.installed = true;
     }
 
     private static String message(Throwable t) {
@@ -368,8 +370,7 @@ public class PackBrowserScreen extends GuiScreen {
                     y + 5,
                     isSelected ? theme.hoverText : theme.text);
             }
-            String byline = (pack.author.isEmpty() ? "" : "by " + pack.author + "  ")
-                + formatCount(pack.downloads)
+            String byline = (pack.author.isEmpty() ? "" : "by " + pack.author + "  ") + formatCount(pack.downloads)
                 + " downloads";
             UI.text(fontRendererObj.trimStringToWidth(byline, textW), textX, y + 15, theme.textDisabled);
             UI.text(
