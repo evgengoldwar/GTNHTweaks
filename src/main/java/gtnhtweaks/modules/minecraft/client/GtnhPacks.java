@@ -460,7 +460,7 @@ final class GtnhPacks {
                     name,
                     fileVersion,
                     name.substring(0, name.length() - 4),
-                    false));
+                    false).sized(PackCatalog.number(asset, "size")));
         }
         if (files.isEmpty()) {
             // no file of its own: the sources of the release are the pack

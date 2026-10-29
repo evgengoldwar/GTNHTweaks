@@ -14,6 +14,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -23,7 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.DoubleConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -31,6 +32,8 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import javax.imageio.ImageIO;
+
+import net.minecraft.client.Minecraft;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -190,6 +193,20 @@ public final class PackCatalog {
             this.variantKey = InstalledPacks.normalize(fileName);
             this.exact = exact;
         }
+
+        /** The size of the file in bytes, 0 when not known before it is downloaded. */
+        public long size;
+
+        PackFile sized(long size) {
+            this.size = size;
+            return this;
+        }
+    }
+
+    /** How far a download is: the bytes done, and of how many, 0 when the size is not known. */
+    public interface Progress {
+
+        void update(long done, long total);
     }
 
     /** The files of a pack to download, and a word on them, as the release being for another GTNH version. */
@@ -300,7 +317,7 @@ public final class PackCatalog {
                 string(chosen, "filename"),
                 string(version, "version_number"),
                 pack.title,
-                false);
+                false).sized(number(chosen, "size"));
         }
         return null;
     }
@@ -340,27 +357,77 @@ public final class PackCatalog {
         return new File(folder, name);
     }
 
+    /** A download stopped by its Cancel button. */
+    public static final class CancelledException extends IOException {
+
+        CancelledException() {
+            super("Cancelled");
+        }
+    }
+
     /**
-     * Downloads the file into the folder, reporting the share done from 0 to 1, or the bytes done as a negative number
-     * when the size is not known. A pack inside a folder of the zip, as in the archives of GitHub, is moved to its
-     * root. Gives the saved file.
+     * Downloads the file into the folder, reporting its progress, until it is done or {@code cancelled} says so. A pack
+     * inside a folder of the zip, as in the archives of GitHub, is moved to its root. Gives the saved file.
      */
-    public static File download(PackFile file, File folder, DoubleConsumer progress) throws IOException {
-        File target = target(folder, file);
-        File part = new File(folder, target.getName() + ".part");
+    public static File download(PackFile file, File folder, Progress progress, BooleanSupplier cancelled)
+        throws IOException {
+        File part = new File(folder, target(folder, file).getName() + ".part");
+        fetch(file, part, progress, cancelled);
+        return place(part, folder, file);
+    }
+
+    /**
+     * The folder the packs downloaded only to be looked at are kept in until they are installed. It is emptied when
+     * the browser closes and at the start of the game, so a pack looked at and not installed takes no room.
+     */
+    public static File previewFolder() {
+        return new File(new File(Minecraft.getMinecraft().mcDataDir, "gtnhtweaks"), "pack-preview");
+    }
+
+    /** Downloads the file into the preview folder, to look at it before it is installed. */
+    public static File downloadPreview(PackFile file, Progress progress, BooleanSupplier cancelled) throws IOException {
+        File folder = previewFolder();
+        if (!folder.isDirectory() && !folder.mkdirs()) throw new IOException("Could not make " + folder);
+        String name = Integer.toHexString(file.url.hashCode()) + "-" + target(folder, file).getName();
+        File part = new File(folder, name + ".part");
+        fetch(file, part, progress, cancelled);
+        File zip = new File(folder, name);
+        if (zip.exists() && !zip.delete() || !part.renameTo(zip)) {
+            part.delete();
+            throw new IOException("Could not save " + zip);
+        }
+        return zip;
+    }
+
+    /** Installs a pack downloaded to be looked at: it is moved into the folder, under the name of its file. */
+    public static File installPreview(File preview, File folder, PackFile file) throws IOException {
+        return place(preview, folder, file);
+    }
+
+    /** Deletes the packs downloaded to be looked at; the ones still read are left for the next time. */
+    public static void clearPreviews() {
+        File[] files = previewFolder().listFiles();
+        if (files != null) for (File file : files) file.delete();
+    }
+
+    private static void fetch(PackFile file, File part, Progress progress, BooleanSupplier cancelled)
+        throws IOException {
         HttpURLConnection connection = open(file.url, false);
         try {
             long length = connection.getContentLengthLong();
+            long total = length > 0 ? length : file.size;
             long done = 0;
             try (InputStream in = connection.getInputStream(); OutputStream out = new FileOutputStream(part)) {
                 byte[] buffer = new byte[64 * 1024];
                 int read;
                 while ((read = in.read(buffer)) > 0) {
+                    if (cancelled.getAsBoolean()) throw new CancelledException();
                     out.write(buffer, 0, read);
                     done += read;
-                    progress.accept(length > 0 ? Math.min(1, done / (double) length) : -done);
+                    progress.update(done, total);
                 }
             }
+            if (cancelled.getAsBoolean()) throw new CancelledException();
             moveToRoot(part);
         } catch (IOException e) {
             part.delete();
@@ -368,12 +435,22 @@ public final class PackCatalog {
         } finally {
             connection.disconnect();
         }
+    }
+
+    /** Moves the downloaded file into the folder under the name of the pack file. */
+    private static File place(File downloaded, File folder, PackFile file) throws IOException {
+        File target = target(folder, file);
         // a pack in use is locked on Windows: the new version then goes beside it
         for (int n = 2; target.exists() && !target.delete(); n++) {
             String name = target(folder, file).getName();
             target = new File(folder, name.substring(0, name.length() - 4) + " (" + n + ").zip");
         }
-        if (!part.renameTo(target)) throw new IOException("Could not save " + target);
+        try {
+            Files.move(downloaded.toPath(), target.toPath());
+        } catch (IOException e) {
+            downloaded.delete();
+            throw new IOException("Could not save " + target, e);
+        }
         return target;
     }
 
@@ -498,7 +575,7 @@ public final class PackCatalog {
         return element != null && element.isJsonPrimitive() && element.getAsBoolean();
     }
 
-    private static long number(JsonObject object, String key) {
+    static long number(JsonObject object, String key) {
         JsonElement element = object.get(key);
         return element == null || element.isJsonNull() ? 0 : (long) element.getAsDouble();
     }

@@ -59,6 +59,7 @@ public class PackBrowserScreen extends GuiScreen {
     private static final long SEARCH_DELAY_MS = 400;
     private static final int FILE_ROW = 26;
     private static final int FILE_BUTTON_W = 86;
+    private static final int PREVIEW_BUTTON_W = 56;
     private static final int OK = 0xFF55C060;
     private static final int UPDATE = 0xFFE0B040;
 
@@ -78,6 +79,7 @@ public class PackBrowserScreen extends GuiScreen {
     /** What is known of the files of a pack, and their downloads. */
     private static final class FileState {
 
+        Pack pack;
         Future<Release> lookup;
         Release release;
         String error;
@@ -98,8 +100,12 @@ public class PackBrowserScreen extends GuiScreen {
     private static final class Download {
 
         Future<File> future;
-        /** The share done, or the bytes done as a negative number when the size is not known. */
-        volatile double progress;
+        /** The bytes done, and of how many: 0 when the size is not known. */
+        volatile long done, total;
+        /** Set by its Cancel button; the download stops at its next bytes. */
+        volatile boolean cancelled;
+        /** Downloaded only to be looked at, into the preview folder. */
+        boolean preview;
         String error;
     }
 
@@ -107,17 +113,23 @@ public class PackBrowserScreen extends GuiScreen {
     private static final class FileButton {
 
         final PackFile file;
-        final int x, y;
+        final int x, y, w;
+        /** The Preview button, or Cancel while the file downloads; else the Install button. */
+        final boolean second;
 
-        FileButton(PackFile file, int x, int y) {
+        FileButton(PackFile file, int x, int y, int w, boolean second) {
             this.file = file;
             this.x = x;
             this.y = y;
+            this.w = w;
+            this.second = second;
         }
     }
 
     private static final Map<String, Icon> ICONS = new HashMap<>();
     private static final Map<String, FileState> FILES = new HashMap<>();
+    /** The files downloaded to be looked at, until they are installed or the browser closes. */
+    private static final Map<PackFile, File> PREVIEWS = new IdentityHashMap<>();
 
     private final GuiScreen parent;
     private final File folder;
@@ -257,6 +269,7 @@ public class PackBrowserScreen extends GuiScreen {
         FileState state = FILES.get(key(pack));
         if (state == null) {
             state = new FileState();
+            state.pack = pack;
             state.lookup = PackCatalog.run(() -> PackCatalog.files(pack, folder));
             FILES.put(key(pack), state);
         }
@@ -280,14 +293,24 @@ public class PackBrowserScreen extends GuiScreen {
             Download download = entry.getValue();
             if (download.future == null || !download.future.isDone()) continue;
             try {
-                installed(
-                    entry.getKey(),
-                    download.future.get()
-                        .getName());
+                File result = download.future.get();
                 download.error = null;
+                if (download.preview && download.cancelled) {
+                    // done just as it was cancelled, or as the browser closed
+                    result.delete();
+                } else if (download.preview) {
+                    PREVIEWS.put(entry.getKey(), result);
+                    // opened as soon as it is there, unless the browser was left meanwhile
+                    if (mc.currentScreen == this) openPreview(state.pack, entry.getKey(), result);
+                } else {
+                    installed(entry.getKey(), result.getName());
+                }
             } catch (ExecutionException e) {
-                download.error = message(e.getCause());
-                GTNHTweaks.LOG.warn("Could not download the resource pack", e.getCause());
+                if (e.getCause() instanceof PackCatalog.CancelledException) download.error = null;
+                else {
+                    download.error = message(e.getCause());
+                    GTNHTweaks.LOG.warn("Could not download the resource pack", e.getCause());
+                }
             } catch (Exception e) {
                 download.error = "Cancelled";
             }
@@ -313,15 +336,59 @@ public class PackBrowserScreen extends GuiScreen {
             .getSimpleName() : text;
     }
 
-    private void install(Pack pack, PackFile file) {
+    private Download download(Pack pack, PackFile file) {
         FileState state = fileState(pack);
         Download download = state.downloads.get(file);
         if (download == null) state.downloads.put(file, download = new Download());
-        if (download.future != null || file.url == null || file.url.isEmpty()) return;
-        Download job = download;
+        return download;
+    }
+
+    /** Installs the file: the one downloaded for its preview if there is one, else downloaded now. */
+    private void install(Pack pack, PackFile file) {
+        Download job = download(pack, file);
+        if (job.future != null || file.url == null || file.url.isEmpty()) return;
         job.error = null;
-        job.progress = 0;
-        job.future = PackCatalog.run(() -> PackCatalog.download(file, folder, done -> job.progress = done));
+        job.done = job.total = 0;
+        job.cancelled = false;
+        job.preview = false;
+        File previewed = PREVIEWS.remove(file);
+        if (previewed != null && previewed.isFile()) {
+            job.future = PackCatalog.run(() -> PackCatalog.installPreview(previewed, folder, file));
+        } else {
+            job.future = PackCatalog.run(() -> PackCatalog.download(file, folder, (done, total) -> {
+                job.done = done;
+                job.total = total;
+            }, () -> job.cancelled));
+        }
+    }
+
+    /** Shows what the file changes: downloaded into the preview folder first, then opened. */
+    private void preview(Pack pack, PackFile file) {
+        File previewed = PREVIEWS.get(file);
+        if (previewed != null && previewed.isFile()) {
+            openPreview(pack, file, previewed);
+            return;
+        }
+        Download job = download(pack, file);
+        if (job.future != null || file.url == null || file.url.isEmpty()) return;
+        job.error = null;
+        job.done = job.total = 0;
+        job.cancelled = false;
+        job.preview = true;
+        job.future = PackCatalog.run(() -> PackCatalog.downloadPreview(file, (done, total) -> {
+            job.done = done;
+            job.total = total;
+        }, () -> job.cancelled));
+    }
+
+    private void openPreview(Pack pack, PackFile file, File zip) {
+        mc.displayGuiScreen(new PackPreviewScreen(this, pack, file, zip));
+    }
+
+    /** Install on the preview screen: the file it showed goes into the resource pack folder. */
+    void installPreviewed(Pack pack, PackFile file, File zip) {
+        PREVIEWS.put(file, zip);
+        install(pack, file);
     }
 
     private void select(Pack pack) {
@@ -534,42 +601,62 @@ public class PackBrowserScreen extends GuiScreen {
         detailScroll.drawBar(detailX + detailW - Scroll.BAR_WIDTH - 2, top, bottom - top, mouseX, mouseY);
     }
 
-    /** A file of the pack: its name and version, and the button to install or update it. */
+    /**
+     * A file of the pack: its name and version, the Preview button and the button to install or update it. While it
+     * downloads, the Preview button cancels it and a bar under its name shows how far it is.
+     */
     private void drawFile(PackFile file, Download download, int x, int y, int w, int mouseX, int mouseY,
         GTNHTheme theme) {
         boolean busy = download != null && download.future != null;
+        boolean link = file.url == null || file.url.isEmpty();
         String label;
-        boolean enabled = true;
-        if (busy) {
-            label = download.progress < 0 ? formatBytes(-download.progress)
-                : "Downloading " + Math.round(download.progress * 100) + "%";
-            enabled = false;
-        } else if (file.url == null || file.url.isEmpty()) {
-            label = "Open the page";
-        } else if (download != null && download.error != null) {
-            label = "Retry";
-        } else if (file.outdated) {
-            label = "Update";
-        } else if (file.installedAs != null) {
+        boolean enabled = !busy;
+        if (busy && !download.preview)
+            label = download.total > 0 ? Math.min(100, Math.round(download.done * 100F / download.total)) + "%"
+                : formatBytes(download.done);
+        else if (link) label = "Open the page";
+        else if (download != null && download.error != null && !download.preview) label = "Retry";
+        else if (file.outdated) label = "Update";
+        else if (file.installedAs != null) {
             label = "Installed";
             enabled = false;
-        } else {
-            label = "Install";
-        }
+        } else label = "Install";
         int bx = x + w - FILE_BUTTON_W;
+        int px = bx - 4 - PREVIEW_BUTTON_W;
         boolean visible = y + 20 > detailTop && y < detailBottom;
         boolean over = visible && mouseY >= detailTop && mouseY < detailBottom;
-        UI.button(bx, y, FILE_BUTTON_W, 20, label, over ? mouseX : -1, over ? mouseY : -1, enabled);
-        if (busy && download.progress > 0) {
-            UI.rect(bx + 3, y + 16, Math.round((FILE_BUTTON_W - 6) * (float) download.progress), 2, theme.barFill);
+        int mx = over ? mouseX : -1, my = over ? mouseY : -1;
+        UI.button(bx, y, FILE_BUTTON_W, 20, label, mx, my, enabled);
+        if (!link) UI.button(px, y, PREVIEW_BUTTON_W, 20, busy ? "Cancel" : "Preview", mx, my, true);
+        if (visible) {
+            fileButtons.add(new FileButton(file, bx, y, FILE_BUTTON_W, false));
+            if (!link) fileButtons.add(new FileButton(file, px, y, PREVIEW_BUTTON_W, true));
         }
-        if (visible) fileButtons.add(new FileButton(file, bx, y));
 
-        int textW = bx - 6 - x;
+        int textW = (link ? bx : px) - 6 - x;
         UI.text(fontRendererObj.trimStringToWidth(file.label, textW), x, y + 1, theme.text);
         String info;
         int color = theme.textDisabled;
-        if (download != null && download.error != null && !busy) {
+        if (busy) {
+            info = (download.preview ? "Downloading to look at: " : "Downloading: ") + formatBytes(download.done)
+                + (download.total > 0 ? " of " + formatBytes(download.total) : "");
+            color = theme.textDim;
+            // the bar: filled as far as it is, or a running stripe when the size is not known
+            UI.rect(x, y + 21, textW, 2, 0x30FFFFFF);
+            if (download.total > 0) {
+                UI.rect(
+                    x,
+                    y + 21,
+                    Math.round(textW * Math.min(1F, download.done / (float) download.total)),
+                    2,
+                    theme.barFill);
+            } else {
+                int stripe = Math.max(8, textW / 5);
+                int at = (int) (System.currentTimeMillis() / 8 % (textW + stripe)) - stripe;
+                int from = Math.max(0, at), to = Math.min(textW, at + stripe);
+                if (to > from) UI.rect(x + from, y + 21, to - from, 2, theme.barFill);
+            }
+        } else if (download != null && download.error != null) {
             info = "Error: " + download.error;
             color = Rows.ERROR;
         } else if (file.outdated) {
@@ -581,6 +668,7 @@ public class PackBrowserScreen extends GuiScreen {
             color = OK;
         } else {
             info = file.version.isEmpty() ? file.fileName : "Version " + file.version;
+            if (file.size > 0) info += "  ·  " + formatBytes(file.size);
         }
         UI.text(fontRendererObj.trimStringToWidth(info, textW), x, y + 11, color);
     }
@@ -736,8 +824,9 @@ public class PackBrowserScreen extends GuiScreen {
                 return;
             if (mouseY >= detailTop && mouseY < detailBottom) {
                 for (FileButton hit : fileButtons) {
-                    if (!UI.inside(mouseX, mouseY, hit.x, hit.y, FILE_BUTTON_W, 20)) continue;
-                    clickFile(state, hit.file);
+                    if (!UI.inside(mouseX, mouseY, hit.x, hit.y, hit.w, 20)) continue;
+                    if (hit.second) clickPreview(state, hit.file);
+                    else clickFile(state, hit.file);
                     return;
                 }
             }
@@ -751,6 +840,13 @@ public class PackBrowserScreen extends GuiScreen {
             UI.playClick();
             close();
         }
+    }
+
+    private void clickPreview(FileState state, PackFile file) {
+        Download download = state == null ? null : state.downloads.get(file);
+        UI.playClick();
+        if (download != null && download.future != null) download.cancelled = true;
+        else preview(selected, file);
     }
 
     private void clickFile(FileState state, PackFile file) {
@@ -836,6 +932,12 @@ public class PackBrowserScreen extends GuiScreen {
 
     /** Back to the resource pack screen, which finds the installed packs in the folder when it comes back. */
     private void close() {
+        // the packs downloaded only to be looked at are not kept
+        for (FileState state : FILES.values()) {
+            for (Download download : state.downloads.values()) if (download.preview) download.cancelled = true;
+        }
+        PREVIEWS.clear();
+        PackCatalog.clearPreviews();
         mc.getResourcePackRepository()
             .updateRepositoryEntriesAll();
         mc.displayGuiScreen(parent);

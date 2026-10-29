@@ -15,6 +15,7 @@ import gtnhtweaks.modules.minecraft.client.MovementClient;
 import gtnhtweaks.modules.minecraft.client.NewItems;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
 import gtnhtweaks.modules.minecraft.client.OutlineScreen;
+import gtnhtweaks.modules.minecraft.client.PackCatalog;
 import gtnhtweaks.modules.minecraft.client.ParticleRain;
 import gtnhtweaks.modules.minecraft.client.PickupNotifier;
 import gtnhtweaks.modules.minecraft.client.ScreenBackground;
@@ -575,5 +576,6 @@ public final class MinecraftModule extends TweakModule {
         ParticleRain.register();
         if (modernMovement) MovementClient.register();
         InstalledPacks.deleteObsolete();
+        PackCatalog.clearPreviews();
     }
 }
