@@ -221,9 +221,10 @@ public final class InstalledPacks {
         load();
         for (Iterator<Record> it = records.iterator(); it.hasNext();) {
             Record record = it.next();
-            if (record.pack.equals(file.packKey) && (record.variant.equals(file.variantKey)
-                || record.file.equals(file.installedAs)
-                || record.file.equals(fileName))) it.remove();
+            if (record.pack.equals(file.packKey)
+                && (record.variant.equals(file.variantKey) || record.file.equals(file.installedAs)
+                    || record.file.equals(fileName)))
+                it.remove();
         }
         Record record = new Record();
         record.pack = file.packKey;

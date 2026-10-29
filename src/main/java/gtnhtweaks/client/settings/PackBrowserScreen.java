@@ -735,9 +735,9 @@ public class PackBrowserScreen extends GuiScreen {
                 .press(detailX + detailW - Scroll.BAR_WIDTH - 2, detailTop, detailBottom - detailTop, mouseX, mouseY))
                 return;
             if (mouseY >= detailTop && mouseY < detailBottom) {
-                for (FileButton button : fileButtons) {
-                    if (!UI.inside(mouseX, mouseY, button.x, button.y, FILE_BUTTON_W, 20)) continue;
-                    clickFile(state, button.file);
+                for (FileButton hit : fileButtons) {
+                    if (!UI.inside(mouseX, mouseY, hit.x, hit.y, FILE_BUTTON_W, 20)) continue;
+                    clickFile(state, hit.file);
                     return;
                 }
             }

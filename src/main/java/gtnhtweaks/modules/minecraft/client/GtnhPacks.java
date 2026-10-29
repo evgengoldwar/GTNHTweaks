@@ -327,8 +327,8 @@ final class GtnhPacks {
 
     private GtnhPacks() {}
 
-    private static void github(String category, String title, String team, String versions, String owner,
-        String repo, String description) {
+    private static void github(String category, String title, String team, String versions, String owner, String repo,
+        String description) {
         add(category, title, team, versions, Kind.GITHUB, owner, repo, null, null, null, "", description);
     }
 
@@ -465,23 +465,17 @@ final class GtnhPacks {
         if (files.isEmpty()) {
             // no file of its own: the sources of the release are the pack
             String safe = tag.replaceAll("[^A-Za-z0-9._-]+", "-");
-            files.add(
-                new PackFile(
-                    pack,
-                    "https://github.com/" + pack.owner
-                        + "/"
-                        + pack.repo
-                        + "/archive/refs/tags/"
-                        // a tag with a slash, as v2.9.X/v5.46, keeps it in the path
-                        + PackCatalog.encode(tag)
-                            .replace("%2F", "/")
-                        + ".zip",
-                    pack.repo + "-" + safe + ".zip",
-                    version.matches(".*\\d.*") ? version
-                        : PackCatalog.string(chosen, "published_at")
-                            .replaceFirst("T.*", ""),
-                    pack.title,
-                    false));
+            files.add(new PackFile(pack, "https://github.com/" + pack.owner + "/" + pack.repo + "/archive/refs/tags/"
+            // a tag with a slash, as v2.9.X/v5.46, keeps it in the path
+                + PackCatalog.encode(tag)
+                    .replace("%2F", "/")
+                + ".zip",
+                pack.repo + "-" + safe + ".zip",
+                version.matches(".*\\d.*") ? version
+                    : PackCatalog.string(chosen, "published_at")
+                        .replaceFirst("T.*", ""),
+                pack.title,
+                false));
         }
         return new Release(files, note);
     }
@@ -500,7 +494,12 @@ final class GtnhPacks {
         String shortSha = sha.length() > 7 ? sha.substring(0, 7) : sha;
         PackFile file = new PackFile(
             pack,
-            "https://github.com/" + pack.owner + "/" + pack.repo + "/archive/" + (sha.isEmpty() ? branch : sha) + ".zip",
+            "https://github.com/" + pack.owner
+                + "/"
+                + pack.repo
+                + "/archive/"
+                + (sha.isEmpty() ? branch : sha)
+                + ".zip",
             pack.repo + "-" + shortSha + ".zip",
             shortSha,
             pack.title,
