@@ -55,6 +55,21 @@ public final class PackPresets {
         save();
     }
 
+    /** A pack replaced by its new version is replaced in the presets too. */
+    public static void rename(String from, String to) {
+        load();
+        boolean changed = false;
+        for (Preset preset : presets) {
+            if (preset == null) continue;
+            int index = preset.packs.indexOf(from);
+            if (index < 0) continue;
+            if (preset.packs.contains(to)) preset.packs.remove(index);
+            else preset.packs.set(index, to);
+            changed = true;
+        }
+        if (changed) save();
+    }
+
     private static File file() {
         return new File(ModuleManager.getConfigDir(), "resourcepack_presets.json");
     }

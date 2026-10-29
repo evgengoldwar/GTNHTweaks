@@ -1,5 +1,6 @@
 package gtnhtweaks.modules.minecraft.client;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -274,6 +275,15 @@ public final class ResourcePackScreen {
         pendingPacks = new ArrayList<>(packs);
     }
 
+    /** A pack replaced by its new version keeps its place among the packs put back when the screen comes back. */
+    static void renamePending(String from, String to) {
+        if (pendingPacks == null) return;
+        int index = pendingPacks.indexOf(from);
+        if (index < 0) return;
+        if (pendingPacks.contains(to)) pendingPacks.remove(index);
+        else pendingPacks.set(index, to);
+    }
+
     // ---- the lists
 
     private static void find(GuiScreen gui) {
@@ -386,16 +396,20 @@ public final class ResourcePackScreen {
     static void arrange(List<String> packs) {
         Map<String, Object> entries = new LinkedHashMap<>();
         List<Object> fixed = new ArrayList<>();
+        // a selected pack replaced by its new version is still among the applied ones, without its file
+        File folder = Minecraft.getMinecraft()
+            .getResourcePackRepository()
+            .getDirResourcepacks();
         for (Object entry : available) {
             String name = name(entry);
-            if (name != null) entries.put(name, entry);
-            else fixed.add(entry);
+            if (name == null) fixed.add(entry);
+            else if (new File(folder, name).exists()) entries.put(name, entry);
         }
         List<Object> defaults = new ArrayList<>();
         for (Object entry : selected) {
             String name = name(entry);
-            if (name != null) entries.put(name, entry);
-            else defaults.add(entry);
+            if (name == null) defaults.add(entry);
+            else if (new File(folder, name).exists()) entries.put(name, entry);
         }
         selected.clear();
         for (String name : packs) {

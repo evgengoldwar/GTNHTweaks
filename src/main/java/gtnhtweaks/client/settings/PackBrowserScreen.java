@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,20 +27,23 @@ import org.lwjgl.input.Mouse;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHTheme;
+import gtnhtweaks.modules.minecraft.client.InstalledPacks;
 import gtnhtweaks.modules.minecraft.client.PackCatalog;
 import gtnhtweaks.modules.minecraft.client.PackCatalog.Pack;
 import gtnhtweaks.modules.minecraft.client.PackCatalog.PackFile;
 import gtnhtweaks.modules.minecraft.client.PackCatalog.Page;
+import gtnhtweaks.modules.minecraft.client.PackCatalog.Release;
 import gtnhtweaks.modules.minecraft.client.PackCatalog.Source;
 
 /**
- * Resource packs for Minecraft 1.7.10 from Modrinth, opened by the Get packs button of the resource pack
- * screen: searched, looked at and installed into the resource pack folder, from where the resource pack screen shows
- * them when it comes back.
+ * Resource packs to get, opened by the Get packs button of the resource pack screen: the ones of the GTNH wiki and
+ * the ones for Minecraft 1.7.10 on Modrinth, searched, looked at and installed into the resource pack folder, from
+ * where the resource pack screen shows them when it comes back. A pack installed in an older version gets an Update
+ * button, which replaces the old file.
  * <p>
  * At the left the found packs, the next page loaded when the list is scrolled to its end; at the right the selected
- * one with its description, its file for 1.7.10 and the Install button. Everything from the network comes on worker
- * threads and is taken on the tick of the screen.
+ * one with its description and its files, each with its button. Everything from the network comes on worker threads
+ * and is taken on the tick of the screen.
  */
 public class PackBrowserScreen extends GuiScreen {
 
@@ -53,10 +57,13 @@ public class PackBrowserScreen extends GuiScreen {
     private static final int TAB_W = 72;
     /** The search starts this long after the last key, so it does not run for every letter. */
     private static final long SEARCH_DELAY_MS = 400;
+    private static final int FILE_ROW = 26;
+    private static final int FILE_BUTTON_W = 86;
     private static final int OK = 0xFF55C060;
+    private static final int UPDATE = 0xFFE0B040;
 
     /** The source and the search are kept while the game runs. */
-    private static Source source = Source.MODRINTH;
+    private static Source source = Source.GTNH;
     private static String lastQuery = "";
 
     /** The icon of a pack: read on a worker, made a texture on the tick. */
@@ -68,16 +75,45 @@ public class PackBrowserScreen extends GuiScreen {
         boolean done;
     }
 
-    /** What is known of the file of a pack for 1.7.10 and its download. */
+    /** What is known of the files of a pack, and their downloads. */
     private static final class FileState {
 
-        Future<PackFile> lookup;
-        PackFile file;
-        boolean none;
+        Future<Release> lookup;
+        Release release;
         String error;
-        Future<File> download;
+        final Map<PackFile, Download> downloads = new IdentityHashMap<>();
+
+        boolean installed() {
+            if (release != null) for (PackFile file : release.files) if (file.installedAs != null) return true;
+            return false;
+        }
+
+        boolean outdated() {
+            if (release != null) for (PackFile file : release.files) if (file.outdated) return true;
+            return false;
+        }
+    }
+
+    /** A file being downloaded, or the error of its last download. */
+    private static final class Download {
+
+        Future<File> future;
+        /** The share done, or the bytes done as a negative number when the size is not known. */
         volatile double progress;
-        boolean installed;
+        String error;
+    }
+
+    /** A file button drawn on the details, to find it on a click. */
+    private static final class FileButton {
+
+        final PackFile file;
+        final int x, y;
+
+        FileButton(PackFile file, int x, int y) {
+            this.file = file;
+            this.x = x;
+            this.y = y;
+        }
     }
 
     private static final Map<String, Icon> ICONS = new HashMap<>();
@@ -92,6 +128,8 @@ public class PackBrowserScreen extends GuiScreen {
     private String error;
     private Pack selected;
     private final List<String> description = new ArrayList<>();
+    private final List<FileButton> fileButtons = new ArrayList<>();
+    private int detailTop, detailBottom;
     private final Scroll listScroll = new Scroll();
     private final Scroll detailScroll = new Scroll();
     private GuiTextField search;
@@ -170,7 +208,7 @@ public class PackBrowserScreen extends GuiScreen {
         String query = lastQuery;
         Source from = source;
         loadingMore = false;
-        loading = PackCatalog.run(() -> PackCatalog.search(from, query, 0));
+        loading = PackCatalog.run(() -> PackCatalog.search(from, query, 0, folder));
         layoutLists();
     }
 
@@ -180,7 +218,7 @@ public class PackBrowserScreen extends GuiScreen {
         Source from = source;
         int offset = packs.size();
         loadingMore = true;
-        loading = PackCatalog.run(() -> PackCatalog.search(from, query, offset));
+        loading = PackCatalog.run(() -> PackCatalog.search(from, query, offset, folder));
         layoutLists();
     }
 
@@ -195,6 +233,8 @@ public class PackBrowserScreen extends GuiScreen {
                 packs.addAll(page.packs);
                 total = page.packs.isEmpty() ? packs.size() : page.total;
                 if (selected == null && !packs.isEmpty()) select(packs.get(0));
+                // the packs seen in the folder are looked up at once, to show the ones with an update
+                for (Pack pack : page.packs) if (pack.likelyInstalled) fileState(pack);
             } catch (ExecutionException e) {
                 error = message(e.getCause());
                 GTNHTweaks.LOG.warn("Could not search the resource packs on " + source.label, e.getCause());
@@ -206,18 +246,18 @@ public class PackBrowserScreen extends GuiScreen {
         }
         // the end of the list is in sight: the next page
         if (listScroll.offset() + listScroll.view >= listScroll.content - ROW * 3) loadMore();
-        if (selected != null) updateFile(fileState(selected));
+        for (FileState state : FILES.values()) updateFile(state);
     }
 
     private static String key(Pack pack) {
-        return pack.source + ":" + pack.id;
+        return pack.key();
     }
 
     private FileState fileState(Pack pack) {
         FileState state = FILES.get(key(pack));
         if (state == null) {
             state = new FileState();
-            state.lookup = PackCatalog.run(() -> PackCatalog.fileFor(pack));
+            state.lookup = PackCatalog.run(() -> PackCatalog.files(pack, folder));
             FILES.put(key(pack), state);
         }
         return state;
@@ -226,32 +266,42 @@ public class PackBrowserScreen extends GuiScreen {
     private void updateFile(FileState state) {
         if (state.lookup != null && state.lookup.isDone()) {
             try {
-                state.file = state.lookup.get();
-                state.none = state.file == null;
+                state.release = state.lookup.get();
+                state.error = null;
             } catch (ExecutionException e) {
                 state.error = message(e.getCause());
+                GTNHTweaks.LOG.warn("Could not look up the files of the resource pack", e.getCause());
             } catch (Exception e) {
                 state.error = "Cancelled";
             }
             state.lookup = null;
         }
-        if (state.download != null && state.download.isDone()) {
+        for (Map.Entry<PackFile, Download> entry : state.downloads.entrySet()) {
+            Download download = entry.getValue();
+            if (download.future == null || !download.future.isDone()) continue;
             try {
-                state.download.get();
-                state.installed = true;
-                state.error = null;
+                installed(
+                    entry.getKey(),
+                    download.future.get()
+                        .getName());
+                download.error = null;
             } catch (ExecutionException e) {
-                state.error = message(e.getCause());
+                download.error = message(e.getCause());
                 GTNHTweaks.LOG.warn("Could not download the resource pack", e.getCause());
             } catch (Exception e) {
-                state.error = "Cancelled";
+                download.error = "Cancelled";
             }
-            state.download = null;
+            download.future = null;
         }
-        if (state.file != null && state.download == null
-            && PackCatalog.target(folder, state.file)
-                .exists())
-            state.installed = true;
+    }
+
+    /** The downloaded file is the installed one of its pack: the older version it updates is replaced by it. */
+    private void installed(PackFile file, String name) {
+        String old = file.installedAs;
+        InstalledPacks.installed(file, name);
+        if (old != null && !old.equals(name)) InstalledPacks.replace(folder, old, name);
+        file.installedAs = name;
+        file.outdated = false;
     }
 
     private static String message(Throwable t) {
@@ -263,13 +313,15 @@ public class PackBrowserScreen extends GuiScreen {
             .getSimpleName() : text;
     }
 
-    private void install(Pack pack) {
+    private void install(Pack pack, PackFile file) {
         FileState state = fileState(pack);
-        if (state.file == null || state.file.url == null || state.download != null) return;
-        PackFile file = state.file;
-        state.error = null;
-        state.progress = 0;
-        state.download = PackCatalog.run(() -> PackCatalog.download(file, folder, done -> state.progress = done));
+        Download download = state.downloads.get(file);
+        if (download == null) state.downloads.put(file, download = new Download());
+        if (download.future != null || file.url == null || file.url.isEmpty()) return;
+        Download job = download;
+        job.error = null;
+        job.progress = 0;
+        job.future = PackCatalog.run(() -> PackCatalog.download(file, folder, done -> job.progress = done));
     }
 
     private void select(Pack pack) {
@@ -291,6 +343,10 @@ public class PackBrowserScreen extends GuiScreen {
         if (listScroll.dragging) {
             if (Mouse.isButtonDown(0)) listScroll.drag(listY + 2, listH - 4, mouseY);
             else listScroll.dragging = false;
+        }
+        if (detailScroll.dragging) {
+            if (Mouse.isButtonDown(0)) detailScroll.drag(detailTop, detailBottom - detailTop, mouseY);
+            else detailScroll.dragging = false;
         }
         listScroll.update(dt);
         detailScroll.update(dt);
@@ -330,7 +386,11 @@ public class PackBrowserScreen extends GuiScreen {
         if (search.isFocused()) UI.rect(searchX, windowY + 22, searchW + 8, 1, theme.barFill);
         if (search.getText()
             .isEmpty() && !search.isFocused()) {
-            UI.text("Search packs for 1.7.10", search.xPosition, search.yPosition, theme.textDisabled);
+            UI.text(
+                source == Source.GTNH ? "Filter the packs of the wiki" : "Search packs for 1.7.10",
+                search.xPosition,
+                search.yPosition,
+                theme.textDisabled);
         }
         search.setTextColor(theme.text & 0xFFFFFF);
         search.drawTextBox();
@@ -358,11 +418,13 @@ public class PackBrowserScreen extends GuiScreen {
             int textW = listX + 2 + w - 4 - textX;
             FileState state = FILES.get(key(pack));
             String name = pack.title;
-            if (state != null && state.installed) {
-                String mark = " ✔";
+            boolean outdated = state != null && state.outdated();
+            if (outdated || state != null && state.installed()) {
+                // installed, or with a newer version to update to
+                String mark = outdated ? " ↑ Update" : " ✔";
                 name = fontRendererObj.trimStringToWidth(name, textW - fontRendererObj.getStringWidth(mark));
                 UI.text(name, textX, y + 5, isSelected ? theme.hoverText : theme.text);
-                UI.text(mark, textX + fontRendererObj.getStringWidth(name), y + 5, OK);
+                UI.text(mark, textX + fontRendererObj.getStringWidth(name), y + 5, outdated ? UPDATE : OK);
             } else {
                 UI.text(
                     fontRendererObj.trimStringToWidth(name, textW),
@@ -370,8 +432,8 @@ public class PackBrowserScreen extends GuiScreen {
                     y + 5,
                     isSelected ? theme.hoverText : theme.text);
             }
-            String byline = (pack.author.isEmpty() ? "" : "by " + pack.author + "  ") + formatCount(pack.downloads)
-                + " downloads";
+            String byline = (pack.author.isEmpty() ? "" : "by " + pack.author + "  ")
+                + (pack.source == Source.GTNH ? "GTNH " + pack.versions : formatCount(pack.downloads) + " downloads");
             UI.text(fontRendererObj.trimStringToWidth(byline, textW), textX, y + 15, theme.textDisabled);
             UI.text(
                 fontRendererObj.trimStringToWidth(pack.description.replace('\n', ' '), textW),
@@ -387,7 +449,8 @@ public class PackBrowserScreen extends GuiScreen {
         else if (error != null) {
             note = "Error: " + error;
             color = Rows.ERROR;
-        } else if (packs.isEmpty()) note = "No resource packs for 1.7.10 found";
+        } else if (packs.isEmpty())
+            note = source == Source.GTNH ? "No pack of the wiki matches" : "No resource packs for 1.7.10 found";
         if (note != null) {
             List<String> lines = wrap(note, w - 12);
             for (int i = 0; i < lines.size(); i++) UI.text(lines.get(i), listX + 8, endY + 8 + i * 10, color);
@@ -398,6 +461,7 @@ public class PackBrowserScreen extends GuiScreen {
 
     private void drawDetails(int mouseX, int mouseY, GTNHTheme theme) {
         UI.inset(detailX, detailY, detailW, detailH);
+        fileButtons.clear();
         if (selected == null) return;
         int x = detailX + 8;
         int y = detailY + 8;
@@ -412,73 +476,113 @@ public class PackBrowserScreen extends GuiScreen {
             UI.text(fontRendererObj.trimStringToWidth("by " + selected.author, textW), textX, ty + 2, theme.textDim);
             ty += 12;
         }
-        UI.text(
-            formatCount(selected.downloads) + " downloads on " + selected.source.label,
-            textX,
-            ty + 2,
-            theme.textDisabled);
+        String about = selected.source == Source.GTNH ? selected.category + "  ·  GTNH " + selected.versions
+            : formatCount(selected.downloads) + " downloads on " + selected.source.label;
+        UI.text(fontRendererObj.trimStringToWidth(about, textW), textX, ty + 2, theme.textDisabled);
 
-        // the install button and what is known of the file
-        FileState state = fileState(selected);
+        // the page of the pack, and the state of the lookup of its files
+        FileState state = selected.pageOnly() ? null : fileState(selected);
         int by = y + 72;
-        int bw = Math.min(150, detailW - 16);
-        String label;
-        boolean enabled = false;
-        String info = null;
-        int infoColor = theme.textDisabled;
-        if (state.lookup != null) label = "Looking for the file...";
-        else if (state.download != null) label = "Downloading " + Math.round(state.progress * 100) + "%";
-        else if (state.installed) {
-            label = "Installed";
-            info = state.file == null ? null : "In the resource pack folder as " + state.file.fileName;
-            infoColor = OK;
-        } else if (state.none) {
-            label = "No file for 1.7.10";
-        } else if (state.file != null && state.file.url == null) {
-            label = "Open the page";
-            enabled = true;
-            info = "The author lets the pack be downloaded only from " + selected.source.label;
-        } else {
-            label = state.error != null ? "Retry" : "Install";
-            enabled = state.file != null || state.error != null;
+        UI.button(x, by, 90, 20, "Open the page", mouseX, mouseY, !selected.pageUrl.isEmpty());
+        if (state != null && state.error != null && state.lookup == null) {
+            UI.button(x + 96, by, 60, 20, "Retry", mouseX, mouseY, true);
+        } else if (state != null && state.lookup != null) {
+            UI.text("Looking for the files...", x + 98, by + 6, theme.textDisabled);
         }
-        if (state.error != null && state.download == null) {
-            info = "Error: " + state.error;
-            infoColor = Rows.ERROR;
-        } else if (info == null && state.file != null && !state.file.version.isEmpty()) {
-            info = "Version " + state.file.version + " for 1.7.10";
+
+        // the notes, the files and the description, scrolled together
+        int top = by + 26;
+        int bottom = detailY + detailH - 4;
+        detailTop = top;
+        detailBottom = bottom;
+        int w = detailW - 16 - (detailScroll.active() ? Scroll.BAR_WIDTH + 3 : 0);
+        UI.scissor(detailX + 1, top, detailW - 2, bottom - top);
+        int dy = top - detailScroll.offset();
+        List<String> notes = new ArrayList<>();
+        if (!selected.note.isEmpty()) notes.add(selected.note);
+        if (state != null && state.error != null && state.lookup == null) notes.add("Error: " + state.error);
+        else if (state != null && state.release != null) {
+            if (!state.release.note.isEmpty()) notes.add(state.release.note);
+            if (state.release.files.isEmpty() && selected.source == Source.GTNH)
+                notes.add("No file to download: get it from its page.");
         }
-        UI.button(x, by, bw, 20, label, mouseX, mouseY, enabled);
-        if (state.download != null) {
-            // the progress under the label
-            UI.rect(x + 3, by + 16, Math.round((bw - 6) * (float) state.progress), 2, theme.barFill);
-        }
-        UI.button(x + bw + 6, by, 90, 20, "Open the page", mouseX, mouseY, !selected.pageUrl.isEmpty());
-        int dy = by + 26;
-        if (info != null) {
-            for (String line : wrap(info, detailW - 16)) {
-                UI.text(line, x, dy, infoColor);
+        for (String note : notes) {
+            int color = note.startsWith("Error: ") ? Rows.ERROR : theme.textDim;
+            for (String line : wrap(note, w)) {
+                UI.text(line, x, dy, color);
                 dy += 10;
             }
+            dy += 4;
         }
-        dy += 6;
-        UI.rect(x, dy, detailW - 16, 1, theme.textDisabled & 0x40FFFFFF);
-        dy += 6;
-
-        // the description, scrolled
-        int top = dy;
-        int bottom = detailY + detailH - 4;
-        detailScroll.content = description.size() * 10 + 4;
-        detailScroll.view = bottom - top;
-        detailScroll.clamp();
-        UI.scissor(detailX + 1, top, detailW - 2, bottom - top);
-        for (int i = 0; i < description.size(); i++) {
-            int ly = top + i * 10 - detailScroll.offset();
-            if (ly < top - 10 || ly > bottom) continue;
-            UI.text(description.get(i), x, ly, theme.text);
+        if (state != null && state.release != null) {
+            for (PackFile file : state.release.files) {
+                drawFile(file, state.downloads.get(file), x, dy, w, mouseX, mouseY, theme);
+                dy += FILE_ROW;
+            }
+        }
+        dy += 4;
+        UI.rect(x, dy, w, 1, theme.textDisabled & 0x40FFFFFF);
+        dy += 7;
+        for (String line : description) {
+            if (dy > top - 10 && dy < bottom) UI.text(line, x, dy, theme.text);
+            dy += 10;
         }
         UI.endScissor();
+        detailScroll.content = dy + detailScroll.offset() - top + 4;
+        detailScroll.view = bottom - top;
+        detailScroll.clamp();
         detailScroll.drawBar(detailX + detailW - Scroll.BAR_WIDTH - 2, top, bottom - top, mouseX, mouseY);
+    }
+
+    /** A file of the pack: its name and version, and the button to install or update it. */
+    private void drawFile(PackFile file, Download download, int x, int y, int w, int mouseX, int mouseY,
+        GTNHTheme theme) {
+        boolean busy = download != null && download.future != null;
+        String label;
+        boolean enabled = true;
+        if (busy) {
+            label = download.progress < 0 ? formatBytes(-download.progress)
+                : "Downloading " + Math.round(download.progress * 100) + "%";
+            enabled = false;
+        } else if (file.url == null || file.url.isEmpty()) {
+            label = "Open the page";
+        } else if (download != null && download.error != null) {
+            label = "Retry";
+        } else if (file.outdated) {
+            label = "Update";
+        } else if (file.installedAs != null) {
+            label = "Installed";
+            enabled = false;
+        } else {
+            label = "Install";
+        }
+        int bx = x + w - FILE_BUTTON_W;
+        boolean visible = y + 20 > detailTop && y < detailBottom;
+        boolean over = visible && mouseY >= detailTop && mouseY < detailBottom;
+        UI.button(bx, y, FILE_BUTTON_W, 20, label, over ? mouseX : -1, over ? mouseY : -1, enabled);
+        if (busy && download.progress > 0) {
+            UI.rect(bx + 3, y + 16, Math.round((FILE_BUTTON_W - 6) * (float) download.progress), 2, theme.barFill);
+        }
+        if (visible) fileButtons.add(new FileButton(file, bx, y));
+
+        int textW = bx - 6 - x;
+        UI.text(fontRendererObj.trimStringToWidth(file.label, textW), x, y + 1, theme.text);
+        String info;
+        int color = theme.textDisabled;
+        if (download != null && download.error != null && !busy) {
+            info = "Error: " + download.error;
+            color = Rows.ERROR;
+        } else if (file.outdated) {
+            info = (file.version.isEmpty() ? "A new version" : "Version " + file.version) + " out, installed: "
+                + file.installedAs;
+            color = UPDATE;
+        } else if (file.installedAs != null) {
+            info = "Installed as " + file.installedAs;
+            color = OK;
+        } else {
+            info = file.version.isEmpty() ? file.fileName : "Version " + file.version;
+        }
+        UI.text(fontRendererObj.trimStringToWidth(info, textW), x, y + 11, color);
     }
 
     private int footerY() {
@@ -489,7 +593,10 @@ public class PackBrowserScreen extends GuiScreen {
         int y = footerY();
         UI.button(listX, y, 150, 20, "Open resource pack folder", mouseX, mouseY, true);
         UI.button(windowX + windowW - GAP - 90, y, 90, 20, "Done", mouseX, mouseY, true);
-        String hint = "Only packs for Minecraft 1.7.10 are shown";
+        String line = PackCatalog.playerLine();
+        String hint = source == Source.GTNH
+            ? "The packs of the GTNH wiki" + (line == null ? "" : ", releases for GTNH " + line + " first")
+            : "Only packs for Minecraft 1.7.10 are shown";
         int hx = listX + 150 + 10;
         if (hx + fontRendererObj.getStringWidth(hint) < windowX + windowW - GAP - 100)
             UI.text(hint, hx, y + 6, UI.theme().textDisabled);
@@ -497,11 +604,13 @@ public class PackBrowserScreen extends GuiScreen {
 
     /** The icon of the pack, or a colored badge with its first letter while it loads or when it has none. */
     private void drawIcon(Pack pack, int x, int y, int size) {
-        Icon icon = ICONS.get(key(pack));
+        // by its address: the packs of one author on GitHub share their icon
+        String iconKey = pack.iconUrl == null || pack.iconUrl.isEmpty() ? key(pack) : pack.iconUrl;
+        Icon icon = ICONS.get(iconKey);
         if (icon == null) {
             icon = new Icon();
             icon.image = PackCatalog.run(() -> PackCatalog.icon(pack));
-            ICONS.put(key(pack), icon);
+            ICONS.put(iconKey, icon);
         }
         if (!icon.done && icon.image.isDone()) {
             icon.done = true;
@@ -556,6 +665,11 @@ public class PackBrowserScreen extends GuiScreen {
         return fontRendererObj.listFormattedStringToWidth(text, width);
     }
 
+    private static String formatBytes(double bytes) {
+        if (bytes >= 1024 * 1024) return String.format(Locale.ROOT, "%.1f MB", bytes / (1024 * 1024));
+        return String.format(Locale.ROOT, "%d KB", Math.round(bytes / 1024));
+    }
+
     private static String formatCount(long count) {
         if (count >= 1_000_000) return String.format(Locale.ROOT, "%.1fM", count / 1_000_000.0);
         if (count >= 1_000) return String.format(Locale.ROOT, "%.1fK", count / 1_000.0);
@@ -602,24 +716,30 @@ public class PackBrowserScreen extends GuiScreen {
 
         if (selected != null) {
             int bx = detailX + 8, by = detailY + 8 + 72;
-            int bw = Math.min(150, detailW - 16);
-            FileState state = fileState(selected);
-            if (UI.inside(mouseX, mouseY, bx, by, bw, 20)) {
-                if (state.lookup != null || state.download != null || state.installed || state.none) return;
-                UI.playClick();
-                if (state.file != null && state.file.url == null) openUrl(selected.pageUrl);
-                else if (state.file != null) install(selected);
-                else if (state.error != null) {
-                    // the lookup failed: asked again
-                    FILES.remove(key(selected));
-                    fileState(selected);
-                }
-                return;
-            }
-            if (UI.inside(mouseX, mouseY, bx + bw + 6, by, 90, 20) && !selected.pageUrl.isEmpty()) {
+            if (UI.inside(mouseX, mouseY, bx, by, 90, 20) && !selected.pageUrl.isEmpty()) {
                 UI.playClick();
                 openUrl(selected.pageUrl);
                 return;
+            }
+            FileState state = selected.pageOnly() ? null : fileState(selected);
+            if (state != null && state.error != null
+                && state.lookup == null
+                && UI.inside(mouseX, mouseY, bx + 96, by, 60, 20)) {
+                // the lookup failed: asked again
+                UI.playClick();
+                FILES.remove(key(selected));
+                fileState(selected);
+                return;
+            }
+            if (detailScroll
+                .press(detailX + detailW - Scroll.BAR_WIDTH - 2, detailTop, detailBottom - detailTop, mouseX, mouseY))
+                return;
+            if (mouseY >= detailTop && mouseY < detailBottom) {
+                for (FileButton button : fileButtons) {
+                    if (!UI.inside(mouseX, mouseY, button.x, button.y, FILE_BUTTON_W, 20)) continue;
+                    clickFile(state, button.file);
+                    return;
+                }
             }
         }
 
@@ -631,6 +751,19 @@ public class PackBrowserScreen extends GuiScreen {
             UI.playClick();
             close();
         }
+    }
+
+    private void clickFile(FileState state, PackFile file) {
+        Download download = state == null ? null : state.downloads.get(file);
+        if (download != null && download.future != null) return;
+        if (file.url == null || file.url.isEmpty()) {
+            UI.playClick();
+            openUrl(selected.pageUrl);
+            return;
+        }
+        if (file.installedAs != null && !file.outdated && (download == null || download.error == null)) return;
+        UI.playClick();
+        install(selected, file);
     }
 
     private static void openUrl(String url) {

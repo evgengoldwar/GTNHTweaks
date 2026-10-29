@@ -10,6 +10,7 @@ import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
 import gtnhtweaks.modules.minecraft.client.BlockChunks;
 import gtnhtweaks.modules.minecraft.client.FallingLeaves;
+import gtnhtweaks.modules.minecraft.client.InstalledPacks;
 import gtnhtweaks.modules.minecraft.client.MovementClient;
 import gtnhtweaks.modules.minecraft.client.NewItems;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
@@ -499,8 +500,8 @@ public final class MinecraftModule extends TweakModule {
             "packBrowser",
             CATEGORY_RESOURCE_PACKS,
             packBrowser,
-            "A Get packs button on the resource pack screen: searches the resource packs for 1.7.10 on Modrinth and "
-                + "installs them into the resource pack folder");
+            "A Get packs button on the resource pack screen: the resource packs of the GTNH wiki and the ones for "
+                + "1.7.10 on Modrinth, installed into the resource pack folder and updated when a new version is out");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
@@ -573,5 +574,6 @@ public final class MinecraftModule extends TweakModule {
         BlockChunks.register();
         ParticleRain.register();
         if (modernMovement) MovementClient.register();
+        InstalledPacks.deleteObsolete();
     }
 }
