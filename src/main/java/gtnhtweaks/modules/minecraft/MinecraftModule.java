@@ -161,7 +161,7 @@ public final class MinecraftModule extends TweakModule {
     public static boolean hideDefaultPack = true;
     /** Done without a change of the packs closes the screen at once, without reloading the resources. */
     public static boolean skipReloadWithoutChanges = true;
-    /** A button of the resource pack screen opens a search of the packs for 1.7.10 on Modrinth and CurseForge. */
+    /** A button of the resource pack screen opens a search of the packs for 1.7.10 on Modrinth. */
     public static boolean packBrowser = true;
 
     private MinecraftModule() {
