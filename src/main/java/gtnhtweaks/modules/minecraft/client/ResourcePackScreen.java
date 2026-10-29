@@ -24,6 +24,7 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.client.settings.PackBrowserScreen;
 import gtnhtweaks.modules.minecraft.MinecraftModule;
 
 /**
@@ -37,6 +38,7 @@ import gtnhtweaks.modules.minecraft.MinecraftModule;
 public final class ResourcePackScreen {
 
     public static final int PRESETS_BUTTON = 0x47544E;
+    public static final int BROWSE_BUTTON = 0x47544F;
     /** How far the mouse moves with the button down before the press becomes a drag. */
     private static final int DRAG_START = 4;
     /** Near this many pixels of the top or bottom of a list, a dragged pack scrolls it. */
@@ -89,6 +91,8 @@ public final class ResourcePackScreen {
             && !PresetPanel.init(gui, buttons, availableSlot.left, availableSlot.top, availableSlot.bottom)) {
             buttons.add(new GuiButton(PRESETS_BUTTON, 4, 6, 70, 20, "Presets"));
         }
+        if (MinecraftModule.packBrowser)
+            buttons.add(new GuiButton(BROWSE_BUTTON, gui.width - 94, 6, 90, 20, "Get packs..."));
     }
 
     /** True if the press is taken by a pack about to be dragged, so vanilla does not handle it. */
@@ -119,12 +123,14 @@ public final class ResourcePackScreen {
         // the vanilla Done button
         if (button.id == 1) return closeUnchanged(gui);
         if (PresetPanel.actionPerformed(gui, button)) return true;
-        if (button.id != PRESETS_BUTTON || gui != screen || available == null) return false;
-        // the screen builds its lists anew when it comes back: they are put back as they are now
+        boolean browse = button.id == BROWSE_BUTTON;
+        if (button.id != PRESETS_BUTTON && !browse || gui != screen || available == null) return false;
+        // the screen builds its lists anew when it comes back: they are put back as they are now, and the packs
+        // installed meanwhile come in with the others not selected
         pendingScreen = gui;
         pendingPacks = selectedPacks();
         Minecraft.getMinecraft()
-            .displayGuiScreen(new PackPresetsScreen(gui));
+            .displayGuiScreen(browse ? new PackBrowserScreen(gui) : new PackPresetsScreen(gui));
         return true;
     }
 

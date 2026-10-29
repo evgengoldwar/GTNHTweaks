@@ -161,6 +161,10 @@ public final class MinecraftModule extends TweakModule {
     public static boolean hideDefaultPack = true;
     /** Done without a change of the packs closes the screen at once, without reloading the resources. */
     public static boolean skipReloadWithoutChanges = true;
+    /** A button of the resource pack screen opens a search of the packs for 1.7.10 on Modrinth and CurseForge. */
+    public static boolean packBrowser = true;
+    /** A CurseForge API key of the player; without one the open mirror of the API is asked. */
+    public static String curseForgeApiKey = "";
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", ModuleSide.CLIENT);
@@ -493,6 +497,20 @@ public final class MinecraftModule extends TweakModule {
             skipReloadWithoutChanges,
             "Done closes the resource pack screen at once, like Esc, when the selected packs and their order did not "
                 + "change: vanilla reloads all the resources anyway, which takes long in a big pack");
+        packBrowser = config.getBoolean(
+            "packBrowser",
+            CATEGORY_RESOURCE_PACKS,
+            packBrowser,
+            "A Get packs button on the resource pack screen: searches the resource packs for 1.7.10 on Modrinth and "
+                + "CurseForge and installs them into the resource pack folder");
+        curseForgeApiKey = config
+            .getString(
+                "curseForgeApiKey",
+                CATEGORY_RESOURCE_PACKS,
+                curseForgeApiKey,
+                "Your own CurseForge API key (console.curseforge.com), to ask the API of CurseForge itself. Empty: the "
+                    + "open mirror api.curse.tools is asked, which needs no key")
+            .trim();
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
