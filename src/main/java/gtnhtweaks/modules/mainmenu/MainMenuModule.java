@@ -2,7 +2,6 @@ package gtnhtweaks.modules.mainmenu;
 
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
-import net.minecraftforge.common.config.Property;
 
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
@@ -26,7 +25,6 @@ public final class MainMenuModule extends TweakModule {
     public static boolean showSplashText = true;
     public static boolean showLoadTime = true;
     public static boolean showModCount = true;
-    public static boolean showSettingsButton = true;
     public static boolean respectResourcePacks = false;
     public static boolean replaceCustomMainMenu = true;
 
@@ -40,7 +38,6 @@ public final class MainMenuModule extends TweakModule {
 
     public static String subtitle = "GT: New Horizons";
     public static String textMods = "Mods";
-    public static String textSettings = "GTNHTweaks";
 
     private MainMenuModule() {
         super("mainmenu", "Main menu in the style of the GTNH loading screen", ModuleSide.CLIENT);
@@ -59,11 +56,8 @@ public final class MainMenuModule extends TweakModule {
             "Show how long the game took to load. Needs the loadingscreen module");
         showModCount = config
             .getBoolean("showModCount", CATEGORY_GENERAL, showModCount, "Show the number of loaded mods");
-        showSettingsButton = config.getBoolean(
-            "showSettingsButton",
-            CATEGORY_GENERAL,
-            showSettingsButton,
-            "Show a GTNHTweaks button beside Mods, half of its row each, that opens the settings of GTNHTweaks");
+        // the GTNHTweaks button beside Mods is always there now, with no setting
+        removeKey(config, CATEGORY_GENERAL, "showSettingsButton");
         // replaces respectResourcePacks, which was on by default and hid the menu behind every GUI resource pack
         removeKey(config, CATEGORY_GENERAL, "respectResourcePacks");
         respectResourcePacks = config.getBoolean(
@@ -124,11 +118,7 @@ public final class MainMenuModule extends TweakModule {
         config.addCustomCategoryComment(CATEGORY_TEXT, "Texts of the main menu. Latin and Cyrillic are supported");
         subtitle = config.getString("subtitle", CATEGORY_TEXT, subtitle, "Line under the GTNH logo, empty to hide");
         textMods = config.getString("mods", CATEGORY_TEXT, textMods, "Caption of the number of loaded mods");
-        Property settingsLabel = config
-            .get(CATEGORY_TEXT, "settings", textSettings, "Label of the GTNHTweaks settings button, beside Mods");
-        // the old label does not fit in half a row
-        if ("GTNHTweaks settings".equals(settingsLabel.getString())) settingsLabel.set(textSettings);
-        textSettings = settingsLabel.getString();
+        removeKey(config, CATEGORY_TEXT, "settings");
     }
 
     @Override

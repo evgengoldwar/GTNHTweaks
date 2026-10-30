@@ -235,10 +235,6 @@ final class SettingsText {
         set("showLoadTime", "Load time", "Show how long the game took to load. Needs the Loading Screen module.");
         set("showModCount", "Mod count", "Show how many mods are loaded.");
         set(
-            "showSettingsButton",
-            "GTNHTweaks button",
-            "A button beside Mods, half of the row each, that opens these settings.");
-        set(
             "yieldToResourcePacks",
             "Let resource packs win",
             "When a resource pack changes the logo, the panorama or the buttons, show the vanilla menu with the pack "
@@ -263,7 +259,6 @@ final class SettingsText {
         tab("text", "Texts", "The words of the main menu. Latin and Cyrillic letters work.");
         set("subtitle", "Subtitle", "The line under the GTNH logo. Leave it empty to hide it.");
         set("mods", "Mod count label", "The caption of the number of loaded mods.");
-        set("settings", "Settings button label", "The label of the GTNHTweaks button beside Mods.");
 
         module("menus", "Menu Style", "Gives the vanilla, Forge and mod menus the look of GTNH.");
         tab("general", "General", "The look of the menus.");

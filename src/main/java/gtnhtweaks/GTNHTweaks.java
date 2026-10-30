@@ -7,6 +7,7 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import gtnhtweaks.client.SettingsButton;
 import gtnhtweaks.client.SettingsKey;
 import gtnhtweaks.common.Network;
 import gtnhtweaks.core.ModuleManager;
@@ -27,7 +28,10 @@ public class GTNHTweaks {
         Network.register();
         ModuleManager.preInit(event);
         if (event.getSide()
-            .isClient()) SettingsKey.register();
+            .isClient()) {
+            SettingsKey.register();
+            SettingsButton.register();
+        }
     }
 
     @Mod.EventHandler

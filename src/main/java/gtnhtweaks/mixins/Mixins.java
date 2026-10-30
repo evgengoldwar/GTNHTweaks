@@ -191,9 +191,9 @@ public enum Mixins implements IMixins {
                 && !LogsModule.betterCrashesInstalled())
         .addClientMixins("logs.MixinMinecraft_CrashHandler")),
 
-    // Shared by the modules that draw GTNH style buttons
+    // Shared by the modules that draw GTNH style buttons and by the GTNHTweaks button of the main menu, always there
     GUI_BUTTON_ACCESSOR(new MixinBuilder("GuiButton size accessor").setPhase(Phase.EARLY)
-        .setApplyIf(() -> MainMenuModule.INSTANCE.isEnabled() || MenusModule.INSTANCE.isEnabled())
+        .setApplyIf(() -> true)
         .addClientMixins("common.AccessorGuiButton"));
 
     private final MixinBuilder builder;
