@@ -18,8 +18,8 @@ public final class GregTechModule extends TweakModule {
     private static final String CATEGORY_CABLES = "cables";
     private static final String CATEGORY_OVERLAY = "toolOverlay";
 
-    public static boolean hideCableInsulation = true;
-    public static boolean modernToolOverlay = true;
+    public static boolean hideCableInsulation = false;
+    public static boolean modernToolOverlay = false;
 
     private GregTechModule() {
         super("gregtech", "Client side tweaks of GregTech", ModuleSide.CLIENT);

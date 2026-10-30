@@ -54,7 +54,7 @@ public class SettingsScreen extends GuiScreen {
      */
     private static final Map<String, List<String>> CLIENT_GROUPS = new LinkedHashMap<>();
     private static final Map<String, List<String>> SERVER_GROUPS = new LinkedHashMap<>();
-    private static final String CLIENT_SECTION = "Your game";
+    private static final String CLIENT_SECTION = "Client";
     private static final String SERVER_SECTION = "Server";
 
     static {
@@ -206,8 +206,8 @@ public class SettingsScreen extends GuiScreen {
     }
 
     private static String sideText(TweakModule.ModuleSide moduleSide) {
-        return moduleSide == TweakModule.ModuleSide.CLIENT ? "your game"
-            : moduleSide == TweakModule.ModuleSide.SERVER ? "server" : "game and server";
+        return moduleSide == TweakModule.ModuleSide.CLIENT ? "client"
+            : moduleSide == TweakModule.ModuleSide.SERVER ? "server" : "client and server";
     }
 
     // ---- layout

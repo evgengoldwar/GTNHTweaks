@@ -33,11 +33,11 @@ public final class ExtraUtilitiesModule extends TweakModule {
     }
 
     public static Companion companion = Companion.PLANT;
-    public static boolean inHand = true;
-    public static boolean holdingArm = true;
-    public static boolean moods = true;
-    public static boolean inInventory = true;
-    public static boolean onGround = true;
+    public static boolean inHand = false;
+    public static boolean holdingArm = false;
+    public static boolean moods = false;
+    public static boolean inInventory = false;
+    public static boolean onGround = false;
 
     private ExtraUtilitiesModule() {
         super("extrautilities", "Client side tweaks of Extra Utilities", ModuleSide.CLIENT);

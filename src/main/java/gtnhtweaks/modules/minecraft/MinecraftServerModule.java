@@ -18,9 +18,9 @@ public final class MinecraftServerModule extends TweakModule {
     public static final String CATEGORY_MOVEMENT = "movement";
 
     /** Crouching in a box one and a half blocks high, and staying crouched under a low ceiling. */
-    public static boolean crouch = true;
+    public static boolean crouch = false;
     /** Swimming while sprinting in water, and crawling through gaps one block high. */
-    public static boolean swim = true;
+    public static boolean swim = false;
 
     private MinecraftServerModule() {
         super(

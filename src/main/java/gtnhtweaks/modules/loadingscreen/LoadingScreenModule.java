@@ -25,23 +25,23 @@ public final class LoadingScreenModule extends TweakModule {
     private static final String CATEGORY_TEXT = "text";
 
     public static GTNHTheme style = GTNHTheme.SHADOW;
-    public static boolean showTimer = true;
-    public static boolean showPreviousLaunch = true;
-    public static boolean showMemory = true;
-    public static boolean showLoadTimeInMainMenu = true;
+    public static boolean showTimer = false;
+    public static boolean showPreviousLaunch = false;
+    public static boolean showMemory = false;
+    public static boolean showLoadTimeInMainMenu = false;
 
-    public static boolean wall = true;
-    public static boolean wallModBlocks = true;
+    public static boolean wall = false;
+    public static boolean wallModBlocks = false;
     public static float wallModBlockShare = 0.6F;
     public static int wallRows = 9;
     public static float wallVeil = 0.7F;
-    public static boolean wallCollapse = true;
+    public static boolean wallCollapse = false;
     public static float wallCollapseSpeed = 1F;
-    public static boolean wallCollapseSound = true;
+    public static boolean wallCollapseSound = false;
 
-    public static boolean replaceVanillaScreen = true;
-    public static boolean replaceForgeSplash = true;
-    public static boolean drawOverBetterLoadingScreen = true;
+    public static boolean replaceVanillaScreen = false;
+    public static boolean replaceForgeSplash = false;
+    public static boolean drawOverBetterLoadingScreen = false;
 
     public static String subtitle = "GT: New Horizons";
     public static String textLoadingTime = "Loading time";

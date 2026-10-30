@@ -247,7 +247,11 @@ final class SettingsText {
         tab("circuit", "Circuit Board", "The animated circuit board behind the menu, with pulses of current.");
         set("showCircuit", "Show the board", "Draw the circuit board behind the menu.");
         set("currentColors", "Pulse colors", "The colors of the pulses running along the traces.");
-        values("TIERS", "The colors of the GregTech voltage tiers, LV to UEV", "THEME", "The accent color of the theme");
+        values(
+            "TIERS",
+            "The colors of the GregTech voltage tiers, LV to UEV",
+            "THEME",
+            "The accent color of the theme");
         set("rows", "Board size", "How many cells fit the screen height. More rows, finer traces.");
         set("pulseSpeed", "Pulse speed", "How fast the pulses run, in cells per second.");
         set("brightness", "Brightness", "Brightness of the traces and the pulses, in percent.");
@@ -532,10 +536,7 @@ final class SettingsText {
             "SUNFLOWER",
             "A sunflower in a clay pot, making a sun now and then");
         set("inHand", "In hand", "In your hands, in first and third person, the off hand of Backhand too.");
-        set(
-            "holdingArm",
-            "Held by the arm",
-            "In first person your arm holds it, instead of it floating in the air.");
+        set("holdingArm", "Held by the arm", "In first person your arm holds it, instead of it floating in the air.");
         set("moods", "Moods", "It sleeps at night and feels the rain, the heat and the Nether.");
         set("inInventory", "In inventories", "In the inventory slots.");
         set("onGround", "On the ground", "When the axe lies on the ground.");
@@ -590,7 +591,10 @@ final class SettingsText {
                 + "report and open the logs.",
             Restart.ALWAYS);
         tab("details", "Details", "What goes into the Errors, Warnings and Crash files.");
-        set("maxStackFrames", "Stack lines per error", "Lines of the stack trace kept per error in Errors and Warnings.");
+        set(
+            "maxStackFrames",
+            "Stack lines per error",
+            "Lines of the stack trace kept per error in Errors and Warnings.");
         set("maxCrashStackFrames", "Stack lines of a crash", "Lines of the stack trace kept per error in Crash.");
         set(
             "stderrAsErrors",

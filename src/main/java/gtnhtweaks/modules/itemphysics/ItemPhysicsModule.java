@@ -39,20 +39,20 @@ public final class ItemPhysicsModule extends TweakModule {
         tumbleInAir = config.getBoolean(
             "tumbleInAir",
             CATEGORY_ITEMS,
-            true,
+            false,
             "Items tumble while they fly and fall over on a side when they land. Off: they fall lying flat");
         tumbleSpeed = config
             .getFloat("tumbleSpeed", CATEGORY_ITEMS, 1F, 0.1F, 3F, "Speed of the tumbling in the air, 1 is normal");
         piles = config.getBoolean(
             "piles",
             CATEGORY_ITEMS,
-            true,
+            false,
             "A stack lies as a pile: up to five flat items on top of each other, or up to three smaller blocks, two "
                 + "side by side and one on top. Each is moved and turned a bit");
         keepOutOfBlocks = config.getBoolean(
             "keepOutOfBlocks",
             CATEGORY_ITEMS,
-            true,
+            false,
             "Move items lying next to a wall away from it, so they do not go into the blocks around them");
     }
 }

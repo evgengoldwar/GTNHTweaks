@@ -14,7 +14,7 @@ public final class TinkersModule extends TweakModule {
 
     private static final String CATEGORY_CRAFTING_STATION = "craftingStation";
 
-    public static boolean clearGridToSideInventory = true;
+    public static boolean clearGridToSideInventory = false;
 
     private TinkersModule() {
         super("tinkers", "Client side tweaks of Tinkers' Construct", ModuleSide.CLIENT);

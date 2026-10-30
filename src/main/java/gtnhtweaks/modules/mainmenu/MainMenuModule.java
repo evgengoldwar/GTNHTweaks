@@ -22,20 +22,20 @@ public final class MainMenuModule extends TweakModule {
     private static final String CATEGORY_TEXT = "text";
 
     public static GTNHTheme style = GTNHTheme.SHADOW;
-    public static boolean showSplashText = true;
-    public static boolean showLoadTime = true;
-    public static boolean showModCount = true;
-    public static boolean showSettingsButton = true;
+    public static boolean showSplashText = false;
+    public static boolean showLoadTime = false;
+    public static boolean showModCount = false;
+    public static boolean showSettingsButton = false;
     public static boolean respectResourcePacks = false;
-    public static boolean replaceCustomMainMenu = true;
+    public static boolean replaceCustomMainMenu = false;
 
-    public static boolean circuit = true;
+    public static boolean circuit = false;
     public static boolean circuitTierColors = true;
     public static int circuitRows = 18;
     public static float circuitPulseSpeed = 10;
     public static float circuitBrightness = 0.65F;
-    public static boolean circuitChips = true;
-    public static boolean circuitParallax = true;
+    public static boolean circuitChips = false;
+    public static boolean circuitParallax = false;
 
     public static String subtitle = "GT: New Horizons";
     public static String textMods = "Mods";

@@ -87,18 +87,18 @@ public final class MinecraftModule extends TweakModule {
     public static float rainbowSpeed = 0.5F;
 
     /** Heads of the players before their messages in the chat. */
-    public static boolean chatHeads = true;
+    public static boolean chatHeads = false;
     /** A bar before the messages not written by a player, as in the chat of newer versions. */
-    public static boolean systemMessageBar = true;
+    public static boolean systemMessageBar = false;
     /** Only the head before the messages of players, without their name. */
     public static boolean hideNames = false;
 
     /** The hand swings when the player throws an item, as in newer versions. */
-    public static boolean dropSwing = true;
+    public static boolean dropSwing = false;
 
     /** The item of a slot squeezes and springs back when the mouse comes onto it. */
-    public static boolean hoverBounce = true;
-    public static boolean newItemStars = true;
+    public static boolean hoverBounce = false;
+    public static boolean newItemStars = false;
 
     /** Darkness of the vanilla gradient, in percent of opacity at the top. */
     public static final int VANILLA_DARKNESS = 75;
@@ -111,17 +111,17 @@ public final class MinecraftModule extends TweakModule {
     public static int blurDarkness = 20;
 
     /** Splashes and rings of waves when something falls into water. */
-    public static boolean waterSplashes = true;
-    public static boolean splashItems = true;
-    public static boolean splashMobs = true;
-    public static boolean splashPlayers = true;
+    public static boolean waterSplashes = false;
+    public static boolean splashItems = false;
+    public static boolean splashMobs = false;
+    public static boolean splashPlayers = false;
     /** Most splashes at the same time. */
     public static int maxSplashes = 48;
     /** Ripples of the rain on water, in percent of the usual amount, 0 for none. */
-    public static int rainRipples = 100;
+    public static int rainRipples = 0;
 
     /** A broken block falls apart into little cubes instead of the particles of vanilla. */
-    public static boolean blockChunksEnabled = true;
+    public static boolean blockChunksEnabled = false;
     /** Little cubes a broken block falls apart into, 0 for no particles at all. */
     public static int blockChunks = 14;
     /** Size of the cubes in percent. */
@@ -130,18 +130,18 @@ public final class MinecraftModule extends TweakModule {
     public static float blockChunkSeconds = 2.5F;
 
     /** Leaves falling from the trees, in percent of the usual amount, 0 for none. */
-    public static int fallingLeaves = 100;
+    public static int fallingLeaves = 0;
 
     /** Rain, snow and sand dust of particles, in percent of the usual amount, 0 for none. */
-    public static int particleRain = 100;
+    public static int particleRain = 0;
     /** The streaks of rain and snow of vanilla are hidden while the particles fall. */
-    public static boolean hideVanillaRain = true;
+    public static boolean hideVanillaRain = false;
 
     /** The crouching and swimming of newer versions, on the servers that allow them. */
-    public static boolean modernMovement = true;
+    public static boolean modernMovement = false;
 
     /** A list at the side of the screen of the items picked up. */
-    public static boolean pickupNotifier = true;
+    public static boolean pickupNotifier = false;
     public static PickupPosition pickupPosition = PickupPosition.BOTTOM_RIGHT;
     /** Seconds a line stays. */
     public static int pickupSeconds = 5;
@@ -149,22 +149,22 @@ public final class MinecraftModule extends TweakModule {
     public static int pickupMaxLines = 10;
 
     /** The camera shakes when something explodes near the player. */
-    public static boolean screenShake = true;
+    public static boolean screenShake = false;
     /** Strength of the shake in percent. */
     public static int screenShakeStrength = 100;
 
     /** The resource packs are dragged with the mouse between and inside the lists of the resource pack screen. */
-    public static boolean dragResourcePacks = true;
+    public static boolean dragResourcePacks = false;
     /** Up to 10 saved sets of selected resource packs, chosen on the resource pack screen. */
-    public static boolean resourcePackPresets = true;
+    public static boolean resourcePackPresets = false;
     /** Choosing a preset applies it at once, as the Done button does, instead of only filling the lists. */
     public static boolean applyPresetAtOnce = false;
     /** The Default entry of the selected list is hidden while other packs are selected. */
-    public static boolean hideDefaultPack = true;
+    public static boolean hideDefaultPack = false;
     /** Done without a change of the packs closes the screen at once, without reloading the resources. */
-    public static boolean skipReloadWithoutChanges = true;
+    public static boolean skipReloadWithoutChanges = false;
     /** A button of the resource pack screen opens a search of the packs for 1.7.10 on Modrinth. */
-    public static boolean packBrowser = true;
+    public static boolean packBrowser = false;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", ModuleSide.CLIENT);
@@ -179,11 +179,11 @@ public final class MinecraftModule extends TweakModule {
         Property enabled = config.get(
             CATEGORY_OUTLINE,
             "enabled",
-            true,
+            false,
             "Draw the block outline in your own color, width and mode. Its look is set in game, with a live "
                 + "preview, on the screen of the key \"Block outline\" (O by default, Controls, GTNHTweaks). "
                 + "Turning it on needs a restart for the key");
-        outlineEnabled = enabled.getBoolean(true);
+        outlineEnabled = enabled.getBoolean(false);
         outlineColor = parseColor(
             config.getString(
                 "color",
