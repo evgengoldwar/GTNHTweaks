@@ -372,7 +372,11 @@ public final class ServerPerf {
             out.append("\nServer ticks: ")
                 .append(totals.ticks);
             if (periodMillis > 0) out.append(
-                String.format(Locale.ROOT, " in %.0f s, %.1f TPS", periodMillis / 1000.0, totals.ticks * 1000.0 / periodMillis));
+                String.format(
+                    Locale.ROOT,
+                    " in %.0f s, %.1f TPS",
+                    periodMillis / 1000.0,
+                    totals.ticks * 1000.0 / periodMillis));
             out.append(
                 String.format(
                     Locale.ROOT,
@@ -429,7 +433,8 @@ public final class ServerPerf {
                 .append('\n');
 
             if (!totals.dimensions.isEmpty()) {
-                out.append("\nDimensions (world tick: blocks, chunks, weather; entities: entities and tile entities):\n");
+                out.append(
+                    "\nDimensions (world tick: blocks, chunks, weather; entities: entities and tile entities):\n");
                 for (Map.Entry<Integer, long[]> entry : totals.dimensions.entrySet()) {
                     String name = DIMENSION_NAMES.getOrDefault(entry.getKey(), "dimension " + entry.getKey());
                     out.append(
@@ -447,7 +452,8 @@ public final class ServerPerf {
                 }
             }
 
-            out.append("\nServer tick by section of the profiler (share of all tick time, per tick, calls per tick):\n");
+            out.append(
+                "\nServer tick by section of the profiler (share of all tick time, per tick, calls per tick):\n");
             tree(out, ROOT, which, totals, 0);
             if (which == 0) resetPeriod();
         }
