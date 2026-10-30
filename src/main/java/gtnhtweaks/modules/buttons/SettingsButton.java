@@ -1,4 +1,4 @@
-package gtnhtweaks.client;
+package gtnhtweaks.modules.buttons;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,9 +16,9 @@ import gtnhtweaks.client.settings.SettingsScreen;
 import gtnhtweaks.mixins.early.common.AccessorGuiButton;
 
 /**
- * The GTNHTweaks button beside Mods in the main menu, which opens the settings of GTNHTweaks. It is always there,
- * whatever modules are on: it has no setting. It takes a share of the row of Mods, as Language does of the row of
- * Options; the GTNH main menu places it there itself.
+ * The GTNHTweaks button beside Mods in the main menu, which opens the settings of GTNHTweaks. It takes a share of the
+ * row of Mods, as Language does of the row of Options; the GTNH main menu places it there itself. Shown while
+ * {@link ButtonsModule#settingsButton} is on.
  */
 public class SettingsButton {
 
@@ -43,7 +43,7 @@ public class SettingsButton {
     /** Before the GTNH main menu arranges its buttons, which runs last. */
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onInitGui(GuiScreenEvent.InitGuiEvent.Post event) {
-        if (!isMainMenu(event.gui)) return;
+        if (!ButtonsModule.settingsButton || !isMainMenu(event.gui)) return;
         @SuppressWarnings("unchecked")
         List<GuiButton> buttons = event.buttonList;
         for (GuiButton button : buttons) if (button.id == ID) return;

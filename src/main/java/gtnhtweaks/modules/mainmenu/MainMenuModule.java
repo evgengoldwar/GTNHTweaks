@@ -56,7 +56,7 @@ public final class MainMenuModule extends TweakModule {
             "Show how long the game took to load. Needs the loadingscreen module");
         showModCount = config
             .getBoolean("showModCount", CATEGORY_GENERAL, showModCount, "Show the number of loaded mods");
-        // the GTNHTweaks button beside Mods is always there now, with no setting
+        // the GTNHTweaks button beside Mods is switched in the buttons module now
         removeKey(config, CATEGORY_GENERAL, "showSettingsButton");
         // replaces respectResourcePacks, which was on by default and hid the menu behind every GUI resource pack
         removeKey(config, CATEGORY_GENERAL, "respectResourcePacks");

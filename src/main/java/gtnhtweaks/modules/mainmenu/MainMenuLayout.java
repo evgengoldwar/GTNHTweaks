@@ -9,8 +9,8 @@ import net.minecraftforge.client.event.GuiScreenEvent;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import gtnhtweaks.client.SettingsButton;
 import gtnhtweaks.mixins.early.common.AccessorGuiButton;
+import gtnhtweaks.modules.buttons.SettingsButton;
 
 /**
  * Arranges the vanilla main menu buttons into a compact column under the logo. Runs last, after other mods added

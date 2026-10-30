@@ -21,6 +21,7 @@ import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.modules.backups.BackupsModule;
 import gtnhtweaks.modules.backups.BackupsServerModule;
 import gtnhtweaks.modules.bees.BeesModule;
+import gtnhtweaks.modules.buttons.ButtonsModule;
 import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
@@ -45,6 +46,7 @@ public final class ModuleManager {
             LoadingScreenModule.INSTANCE,
             MainMenuModule.INSTANCE,
             MenusModule.INSTANCE,
+            ButtonsModule.INSTANCE,
             MinecraftModule.INSTANCE,
             MinecraftServerModule.INSTANCE,
             ItemPhysicsModule.INSTANCE,

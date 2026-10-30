@@ -646,6 +646,14 @@ final class SettingsText {
         set("loggers", "Backup loggers", "Loggers whose lines with a percentage are the progress of a backup.");
         backupPatterns("log line");
 
+        module("buttons", "Buttons", "Buttons GTNHTweaks adds to the screens of Minecraft.");
+        tab("mainMenu", "Main Menu", "Buttons of the main menu.");
+        set(
+            "settingsButton",
+            "GTNHTweaks button",
+            "The button beside Mods that opens these settings. Mods gets narrower to make room for it.",
+            Restart.NONE);
+
         module("debug", "Developer Tools", "Tools for the makers of mods and modpacks.");
         tab("guiInfo", "Screen Info", "What the open screen is.");
         set(
