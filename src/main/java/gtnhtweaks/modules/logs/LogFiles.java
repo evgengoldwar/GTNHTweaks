@@ -55,12 +55,11 @@ final class LogFiles {
     static final String KIND_ALL_CRASH = "All crash";
     static final String KIND_LOADING = "Loading";
     static final String KIND_MODS = "Mods";
-    static final String KIND_CHUNKS = "Chunk generation";
     private static final String[] KINDS = { KIND_ALL, KIND_ERRORS, KIND_WARNINGS, KIND_CRASH, KIND_ALL_CRASH,
-        KIND_LOADING, KIND_MODS, KIND_CHUNKS };
+        KIND_LOADING, KIND_MODS };
 
     private static final Pattern SESSION_FILE = Pattern
-        .compile("^(All crash|All|Errors|Warnings|Crash|Loading|Mods|Chunk generation) (.+)\\.log$");
+        .compile("^(All crash|All|Errors|Warnings|Crash|Loading|Mods) (.+)\\.log$");
     private static final Pattern BACKUP_FILE = Pattern.compile("^Backup .+\\.zip$");
     /** A line of the FML log: {@code [12:00:00] [Client thread/INFO] [logger/mod]: message}. */
     private static final Pattern LOG_LINE = Pattern.compile(
@@ -593,11 +592,6 @@ final class LogFiles {
     static void writeReport(String kind, String text) {
         if (!started || dir == null || session == null) return;
         writeWhole(file(kind), text);
-    }
-
-    /** The file of a kind of this session, written by its owner as it likes; null before the logs start. */
-    static File sessionFile(String kind) {
-        return !started || dir == null || session == null ? null : file(kind);
     }
 
     static String sessionText() {

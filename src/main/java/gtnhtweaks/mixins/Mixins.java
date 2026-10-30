@@ -6,7 +6,6 @@ import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 
 import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
-import gtnhtweaks.modules.chunkengine.ChunkEngineModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
 import gtnhtweaks.modules.itemphysics.ItemPhysicsModule;
@@ -180,51 +179,9 @@ public enum Mixins implements IMixins {
             .addClientMixins("debug.MixinCrashTestTarget", "debug.MixinMinecraft_CrashTest")),
 
     // Logs module
-    CHUNK_ENGINE(new MixinBuilder("Faster chunk generation in Minecraft itself").setPhase(Phase.EARLY)
-        .setApplyIf(ChunkEngineModule.INSTANCE::isEnabled)
-        .addCommonMixins(
-            "chunkengine.MixinChunk_SendWhenDone",
-            "chunkengine.MixinNetHandlerPlayServer_SendWhenDone",
-            "chunkengine.AccessorS21PacketChunkData",
-            "chunkengine.AccessorS35PacketUpdateTileEntity",
-            "chunkengine.MixinPlayerInstance_SkipUnsent",
-            "chunkengine.MixinChunkProviderServer_ChunkEngine",
-            "chunkengine.MixinWorld_ChunkEngine",
-            "chunkengine.MixinWorldServer_ChunkEngine",
-            "chunkengine.MixinMapGenBase_ChunkEngine")),
-
     LOGS_CRASH_REPORT(new MixinBuilder("Copy crash reports to the GTNHTweaks logs").setPhase(Phase.EARLY)
         .setApplyIf(LogsModule.INSTANCE::isEnabled)
         .addCommonMixins("logs.MixinCrashReport_Logs")),
-    LOGS_CHUNK_GENERATION(new MixinBuilder("Time chunk generation for the Chunk generation log").setPhase(Phase.EARLY)
-        .setApplyIf(() -> LogsModule.INSTANCE.isEnabled() && LogsModule.writeChunkGeneration)
-        .addCommonMixins("logs.MixinChunkProviderServer_ChunkGen", "logs.MixinGameRegistry_ChunkGen")),
-    LOGS_CHUNK_ENGINE(new MixinBuilder("Time the work of Minecraft inside chunk generation").setPhase(Phase.EARLY)
-        .setApplyIf(
-            () -> LogsModule.INSTANCE.isEnabled() && LogsModule.writeChunkGeneration && LogsModule.chunkEngineDetails)
-        .addCommonMixins(
-            "logs.MixinWorld_ChunkGenEngine",
-            "logs.MixinWorldServer_ChunkGenEngine",
-            "logs.MixinChunk_ChunkGenEngine",
-            "logs.MixinMapGenBase_ChunkGenEngine",
-            "logs.MixinMapGenStructure_ChunkGenEngine",
-            "logs.MixinWorldGenerators_ChunkGenEngine",
-            "logs.MixinWorldChunkManager_ChunkGenEngine",
-            "logs.MixinNoiseGeneratorOctaves_ChunkGenEngine",
-            "logs.MixinSpawnerAnimals_ChunkGenEngine",
-            "logs.MixinAnvilChunkLoader_ChunkGenEngine")),
-    LOGS_SERVER_TICK(new MixinBuilder("Time the server tick for the Chunk generation log").setPhase(Phase.EARLY)
-        .setApplyIf(
-            () -> LogsModule.INSTANCE.isEnabled() && LogsModule.writeChunkGeneration && LogsModule.serverTickDetails)
-        .addCommonMixins(
-            "logs.MixinProfiler_ServerPerf",
-            "logs.MixinWorldServer_ServerPerf",
-            "logs.MixinS26PacketMapChunkBulk_ServerPerf",
-            "logs.MixinS21PacketChunkData_ServerPerf",
-            "logs.MixinChunkIOExecutor_ServerPerf",
-            "logs.AccessorPlayerManager_ServerPerf",
-            "logs.AccessorWorld_ServerPerf",
-            "logs.AccessorChunkProviderServer_ServerPerf")),
     LOGS_CRASH_SCREEN(new MixinBuilder("Crash screen in place of other crash screens").setPhase(Phase.EARLY)
         .setApplyIf(() -> LogsModule.INSTANCE.isEnabled() && LogsModule.replaceCrashScreen)
         .addClientMixins("logs.MixinMinecraft_CrashScreen")),

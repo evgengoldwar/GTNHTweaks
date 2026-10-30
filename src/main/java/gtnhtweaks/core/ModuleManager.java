@@ -22,7 +22,6 @@ import gtnhtweaks.modules.backups.BackupsModule;
 import gtnhtweaks.modules.backups.BackupsServerModule;
 import gtnhtweaks.modules.bees.BeesModule;
 import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
-import gtnhtweaks.modules.chunkengine.ChunkEngineModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
@@ -48,7 +47,6 @@ public final class ModuleManager {
             MenusModule.INSTANCE,
             MinecraftModule.INSTANCE,
             MinecraftServerModule.INSTANCE,
-            ChunkEngineModule.INSTANCE,
             ItemPhysicsModule.INSTANCE,
             GregTechModule.INSTANCE,
             NEIModule.INSTANCE,

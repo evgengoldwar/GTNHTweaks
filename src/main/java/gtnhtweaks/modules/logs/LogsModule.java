@@ -11,7 +11,6 @@ import net.minecraftforge.common.config.Configuration;
 
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
-import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import gtnhtweaks.GTNHTweaks;
 import gtnhtweaks.core.TweakModule;
 
@@ -38,13 +37,6 @@ public final class LogsModule extends TweakModule {
     static boolean writeFullCrash = true;
     static boolean writeLoading = true;
     static boolean writeMods = true;
-    public static boolean writeChunkGeneration = true;
-    static int chunkSlowMs = 50;
-    static int chunkSlowTickMs = 50;
-    static int chunkSummaryMinutes = 5;
-    public static boolean chunkEngineDetails = true;
-    public static boolean serverTickDetails = true;
-    static int chunkLagTickMs = 100;
 
     public static boolean replaceCrashScreen = true;
     static int maxStackFrames = 12;
@@ -107,14 +99,6 @@ public final class LogsModule extends TweakModule {
             "Mods: versions of Java, Minecraft and Forge, memory, graphics card and the mod list with the changes "
                 + "since the previous launch");
 
-        writeChunkGeneration = config.getBoolean(
-            "writeChunkGeneration",
-            CATEGORY_FILES,
-            writeChunkGeneration,
-            "Chunk generation: where the server time goes when new chunks are made: the terrain, the decoration and "
-                + "every world generator of the mods, with slow chunks, slow ticks and cascading generation. "
-                + "Changes require a game restart");
-
         config.addCustomCategoryComment(CATEGORY_CRASH_SCREEN, "The screen shown after a crash");
         replaceCrashScreen = config.getBoolean(
             "replaceCrashScreen",
@@ -148,52 +132,6 @@ public final class LogsModule extends TweakModule {
             CATEGORY_DETAILS,
             stderrAsErrors,
             "Treat text printed to System.err (mostly printStackTrace) as errors");
-        chunkSlowMs = config.getInt(
-            "chunkSlowMs",
-            CATEGORY_DETAILS,
-            chunkSlowMs,
-            1,
-            60_000,
-            "Chunk generation: a chunk whose terrain or population takes longer, in milliseconds, gets a line of "
-                + "its own with its steps");
-        chunkSlowTickMs = config.getInt(
-            "chunkSlowTickMs",
-            CATEGORY_DETAILS,
-            chunkSlowTickMs,
-            1,
-            60_000,
-            "Chunk generation: a server tick in which making chunks takes longer, in milliseconds, gets a line of its "
-                + "own. 50 ms is a whole tick at 20 TPS");
-        chunkSummaryMinutes = config.getInt(
-            "chunkSummaryMinutes",
-            CATEGORY_DETAILS,
-            chunkSummaryMinutes,
-            1,
-            120,
-            "Chunk generation: minutes between the summaries, written only while chunks are made");
-        chunkEngineDetails = config.getBoolean(
-            "chunkEngineDetails",
-            CATEGORY_DETAILS,
-            chunkEngineDetails,
-            "Chunk generation: also measure the work of Minecraft itself inside it (setting blocks, light, neighbor "
-                + "updates, caves and structures, vanilla features, biomes, noise, mob spawning, chunks read from "
-                + "disk), to tell what to make faster in Minecraft. Costs a few percent of the generation time. "
-                + "Changes require a game restart");
-        serverTickDetails = config.getBoolean(
-            "serverTickDetails",
-            CATEGORY_DETAILS,
-            serverTickDetails,
-            "Chunk generation: also measure the whole server tick: its sections by the profiler of Minecraft, the "
-                + "length of the ticks, the garbage collector, every dimension, the chunks waiting for the players "
-                + "and the compression of the chunk packets. Changes require a game restart");
-        chunkLagTickMs = config.getInt(
-            "chunkLagTickMs",
-            CATEGORY_DETAILS,
-            chunkLagTickMs,
-            1,
-            60_000,
-            "Chunk generation: a server tick longer than this, in milliseconds, for any reason, gets a line of its own "
-                + "with the sections of the profiler that took most of it");
         String[] ignore = config.getStringList(
             "ignore",
             CATEGORY_DETAILS,
@@ -234,11 +172,6 @@ public final class LogsModule extends TweakModule {
                 GTNHTweaks.LOG.warn("Could not install the early crash window", t);
             }
         }
-    }
-
-    @Override
-    public void preInit(FMLPreInitializationEvent event) {
-        if (writeChunkGeneration) ChunkGenLog.start();
     }
 
     @Override

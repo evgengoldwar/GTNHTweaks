@@ -447,69 +447,6 @@ final class SettingsText {
             "Sprinting under water swims through gaps one block high; where there is no room to stand, players "
                 + "crawl.");
 
-        module(
-            "chunkEngine",
-            "Chunk Engine",
-            "Faster chunk generation in Minecraft itself, under the mods. The Chunk generation log of the Logs module "
-                + "counts what each part saved.");
-        tab("sending", "Sending", "When chunks go to the players.");
-        set(
-            "sendFinishedChunks",
-            "Send chunks once, when done",
-            "A chunk goes to the players when it and the neighbors that write into it are populated: once, instead "
-                + "of again after each population. Copies for players without the chunk are not sent.",
-            Restart.NONE);
-        set(
-            "sendWaitSeconds",
-            "Longest wait, seconds",
-            "How long a chunk waits for its neighbors before it is sent as it is.",
-            Restart.NONE);
-        set(
-            "skipUnsentUpdates",
-            "No updates for unsent chunks",
-            "No block update packets are made for a chunk none of its players has yet.",
-            Restart.NONE);
-        tab("population", "Population", "How the population of a new chunk sets its blocks.");
-        set(
-            "quietPopulation",
-            "Quiet population",
-            "Blocks set while a chunk is populated do not notify their neighbors, as in newer versions. Water "
-                + "placed next to a hole may stay still until touched.",
-            Restart.NONE);
-        tab("light", "Light", "Light updates when blocks are set.");
-        set(
-            "skipUnchangedLight",
-            "Skip light updates that change nothing",
-            "A block giving and letting through the same light as the one before starts no light update: ores in "
-                + "place of stone, a block set to itself.",
-            Restart.NONE);
-        tab(
-            "terrain",
-            "Terrain threads",
-            "The terrain of new chunks made ahead on other threads near the players: Realistic World Gen, the "
-                + "Nether, the End.");
-        set(
-            "parallelTerrain",
-            "Make terrain on threads",
-            "The terrain of new chunks is made ahead on other threads; the server only populates them.",
-            Restart.NONE);
-        set(
-            "terrainThreads",
-            "Threads",
-            "Threads making terrain; 0 picks one per four processor threads, from 1 to 4.",
-            Restart.ALWAYS);
-        set(
-            "verifyChunks",
-            "Check the first chunks",
-            "The first chunks of each dimension made on a thread are compared with the usual ones; a difference "
-                + "turns the threads off there and goes to the log.",
-            Restart.NONE);
-        set(
-            "extraGenerators",
-            "More generators",
-            "Full class names of more chunk generators to try on threads. The check of the first chunks tests them.",
-            Restart.ALWAYS);
-
         module("itemphysics", "Dropped Items", "Dropped items lie on the ground for real. Only the look changes.");
         tab("items", "Items", "How dropped items fly and lie.");
         set("tumbleInAir", "Tumble in the air", "Items spin while they fly and land on a side. Off: they fall flat.");
@@ -644,12 +581,6 @@ final class SettingsText {
             "writeMods",
             "System and mods",
             "Java, Minecraft, Forge, memory, graphics card and the mod list, with what changed since the last launch.");
-        set(
-            "writeChunkGeneration",
-            "Chunk generation",
-            "Where the server time goes when new chunks are made: terrain, decoration and every world generator of "
-                + "the mods, with slow chunks, slow ticks and cascades.",
-            Restart.ALWAYS);
         tab("crashScreen", "Crash Screen", "What you see after a crash.");
         set(
             "replaceCrashScreen",
@@ -671,36 +602,6 @@ final class SettingsText {
             "ignore",
             "Ignored messages",
             "Regular expressions of messages left out of Errors and Warnings, like \"Angelica: Frame pacing.*\".");
-        set(
-            "chunkSlowMs",
-            "Slow chunk, ms",
-            "Chunk generation: a chunk that takes longer to make or populate gets a line of its own, with its steps.");
-        set(
-            "chunkSlowTickMs",
-            "Slow tick, ms",
-            "Chunk generation: a server tick in which making chunks takes longer gets a line of its own. 50 ms is a "
-                + "whole tick at 20 TPS.");
-        set(
-            "chunkEngineDetails",
-            "Minecraft's work in chunk generation",
-            "Chunk generation: also measure the work of Minecraft itself in it: setting blocks, light, neighbor "
-                + "updates, caves, structures, vanilla features, biomes, mob spawning.",
-            Restart.ALWAYS);
-        set(
-            "serverTickDetails",
-            "Whole server tick",
-            "Chunk generation: also measure the whole server tick: its sections, tick lengths, garbage collector, "
-                + "dimensions, chunks waiting for players and chunk packets.",
-            Restart.ALWAYS);
-        set(
-            "chunkLagTickMs",
-            "Lagging tick, ms",
-            "Chunk generation: a server tick longer than this, for any reason, gets a line of its own with what "
-                + "took most of it.");
-        set(
-            "chunkSummaryMinutes",
-            "Summary every, minutes",
-            "Chunk generation: how often the summary is written while chunks are made.");
 
         module("backups", "Backup Toast", "A toast with the progress of the backups the server makes.");
         tab("general", "General", "The look and behavior of the toast.");
