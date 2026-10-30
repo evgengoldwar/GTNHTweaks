@@ -309,8 +309,7 @@ public class OwnModsScreen extends GuiScreen {
         else {
             int color = state.status() == ModState.Status.OUTDATED ? YELLOW
                 : state.status() == ModState.Status.UP_TO_DATE ? GREEN : theme.text;
-            String files = state.jars.isEmpty() ? ""
-                : " §8· §7" + String.join(", ", fileNames(state.jars));
+            String files = state.jars.isEmpty() ? "" : " §8· §7" + String.join(", ", fileNames(state.jars));
             wrap(state.installed + files, textW, color);
         }
         if (state.restart) {
@@ -382,7 +381,8 @@ public class OwnModsScreen extends GuiScreen {
         UI.text(status(state), nameX, y + 20, theme.text);
         String link = state.mod.repoUrl()
             .replace("https://", "");
-        boolean linkHovered = over && UI.inside(mouseX, mouseY, nameX, y + 30, fontRendererObj.getStringWidth(link), 10);
+        boolean linkHovered = over
+            && UI.inside(mouseX, mouseY, nameX, y + 30, fontRendererObj.getStringWidth(link), 10);
         UI.text(link, nameX, y + 31, linkHovered ? theme.hoverText : theme.barFill);
         if (linkHovered) UI.rect(nameX, y + 40, fontRendererObj.getStringWidth(link), 1, theme.hoverText);
         UI.rect(

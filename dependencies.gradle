@@ -50,4 +50,7 @@ dependencies {
     // loaded in the dev client (runClient), where GregTech adds its bees to it, to test the bees of an addon too
     compileOnly("com.github.GTNewHorizons:ForestryMC:4.11.39:dev") { transitive = false }
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:ForestryMC:4.11.39:dev")
+    // CropsNH is optional: compiled against for the cropsnh module, which does nothing without it, and loaded in the
+    // dev client (runClient) with Backhand to test planting with crop sticks in the off hand
+    devOnlyNonPublishable("com.github.GTNewHorizons:CropsNH:2.0.140:dev")
 }

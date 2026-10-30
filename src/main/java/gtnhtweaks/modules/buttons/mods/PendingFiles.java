@@ -118,8 +118,8 @@ public final class PendingFiles {
         if (!file.exists()) return true;
         if (DELETE.equals(change.action)) return file.delete();
         if (DISABLE.equals(change.action)) return file.renameTo(disabledName(file));
-        if (MOVE.equals(change.action)) return change.target != null && !change.target.exists()
-            && file.renameTo(change.target);
+        if (MOVE.equals(change.action))
+            return change.target != null && !change.target.exists() && file.renameTo(change.target);
         // an unknown action from a newer version is left alone
         return true;
     }

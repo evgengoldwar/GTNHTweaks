@@ -664,6 +664,15 @@ final class SettingsText {
             "The small square with an arrow right of Options: install, update or delete the mods of EvgenWarGold.",
             Restart.NONE);
 
+        module("cropsnh", "CropsNH", "Tweaks of the crops of CropsNH. Needs GTNHTweaks on the server too.");
+        tab("planting", "Planting", "Planting seeds.");
+        set(
+            "plantWithSticks",
+            "Plant with sticks in the off hand",
+            "Crop sticks in the off hand, a seed in the main hand: a right click on a fitting soil places the sticks "
+                + "with the seed in them.",
+            Restart.NONE);
+
         module("debug", "Developer Tools", "Tools for the makers of mods and modpacks.");
         tab("guiInfo", "Screen Info", "What the open screen is.");
         set(

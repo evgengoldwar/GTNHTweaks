@@ -131,8 +131,9 @@ public final class OwnMods {
         File folder = modsFolder();
         File[] listed = folder.listFiles();
         List<File> files = listed == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(listed));
-        files.sort((a, b) -> b.getName()
-            .compareToIgnoreCase(a.getName()));
+        files.sort(
+            (a, b) -> b.getName()
+                .compareToIgnoreCase(a.getName()));
         List<PendingFiles.Change> pending = PendingFiles.read(queue());
         Map<String, ModContainer> loaded = Loader.instance()
             .getIndexedModList();
@@ -167,7 +168,8 @@ public final class OwnMods {
             }
             boolean sourceInMods = source != null && folder.equals(source.getParentFile());
             // a mod loaded from elsewhere, as in a development setup, is installed too
-            if (jars.isEmpty() && container != null && !sourceInMods) installed = ModVersion.parse(container.getVersion());
+            if (jars.isEmpty() && container != null && !sourceInMods)
+                installed = ModVersion.parse(container.getVersion());
             boolean restart = pendingForMod || sourceInMods && !jars.contains(source)
                 || jars.stream()
                     .anyMatch(jar -> !jar.equals(source));
@@ -375,7 +377,9 @@ public final class OwnMods {
                 File parked = new File(folder, release.fileName + ".pending");
                 Files.move(download.toPath(), parked.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 later(new PendingFiles.Change(PendingFiles.MOVE, parked, target));
-                return mod.displayName + " " + release.version + " is downloaded; it replaces the old jar when the game "
+                return mod.displayName + " "
+                    + release.version
+                    + " is downloaded; it replaces the old jar when the game "
                     + "closes. Restart the game";
             }
             Files.move(download.toPath(), target.toPath());

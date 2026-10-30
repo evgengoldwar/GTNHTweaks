@@ -22,6 +22,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.common.Backhand;
 import gtnhtweaks.common.model.EyeSpace;
 import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
 
