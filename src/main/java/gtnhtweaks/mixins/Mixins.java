@@ -182,6 +182,9 @@ public enum Mixins implements IMixins {
     LOGS_CRASH_REPORT(new MixinBuilder("Copy crash reports to the GTNHTweaks logs").setPhase(Phase.EARLY)
         .setApplyIf(LogsModule.INSTANCE::isEnabled)
         .addCommonMixins("logs.MixinCrashReport_Logs")),
+    LOGS_CHUNK_GENERATION(new MixinBuilder("Time chunk generation for the Chunk generation log").setPhase(Phase.EARLY)
+        .setApplyIf(() -> LogsModule.INSTANCE.isEnabled() && LogsModule.writeChunkGeneration)
+        .addCommonMixins("logs.MixinChunkProviderServer_ChunkGen", "logs.MixinGameRegistry_ChunkGen")),
     LOGS_CRASH_SCREEN(new MixinBuilder("Crash screen in place of other crash screens").setPhase(Phase.EARLY)
         .setApplyIf(() -> LogsModule.INSTANCE.isEnabled() && LogsModule.replaceCrashScreen)
         .addClientMixins("logs.MixinMinecraft_CrashScreen")),

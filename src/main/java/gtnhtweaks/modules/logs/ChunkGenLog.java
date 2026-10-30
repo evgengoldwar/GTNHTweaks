@@ -1,0 +1,699 @@
+package gtnhtweaks.modules.logs;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import net.minecraft.world.World;
+import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.WorldEvent;
+
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.ModContainer;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
+import gtnhtweaks.GTNHTweaks;
+
+/**
+ * The Chunk generation file of the logs: where the server time goes when new chunks are made, to find what lowers the
+ * TPS while the world grows.
+ * <p>
+ * Every step is timed on the thread that runs it: the terrain of a new chunk (its chunk generator), the decoration of
+ * the generator when the chunk is populated (vanilla features and the mods that hook into it through Forge events),
+ * and every world generator of the mods (GameRegistry.registerWorldGenerator), each with its mod. The time of a step
+ * is its own time, without the steps that ran inside it, so a generator that makes neighbor chunks is not charged
+ * for their terrain twice. A chunk made while another one is populated is a cascade, a known cause of lag: it is
+ * written with the generator that caused it.
+ * <p>
+ * Written as it happens: slow chunks, slow ticks and cascades on lines of their own. Every few minutes, and when the
+ * world closes, a summary: the steps that took the most time, the cascades and the slowest chunks.
+ */
+public final class ChunkGenLog {
+
+    public static final String TERRAIN = "terrain";
+    public static final String DECORATION = "decoration";
+    public static final String MOD_GENERATOR = "mod generator";
+    private static final String POPULATION = "population";
+
+    /** Lines of slow chunks and cascades written per summary period at most; the rest are only counted. */
+    private static final int MAX_LINES_PER_PERIOD = 200;
+    private static final int TOP_ROWS = 25;
+    private static final int SLOWEST_CHUNKS = 10;
+
+    private static final Object LOCK = new Object();
+    private static final ThreadLocal<Deque<Frame>> STACK = ThreadLocal.withInitial(ArrayDeque::new);
+    private static final Map<Class<?>, String> LABELS = new HashMap<>();
+    private static final StringBuilder PENDING = new StringBuilder();
+
+    private static volatile boolean active;
+    private static File file;
+    private static Stats period = new Stats();
+    private static Stats session = new Stats();
+    private static long periodStart = System.currentTimeMillis();
+    private static int linesThisPeriod, linesSkipped;
+    private static boolean headerWritten;
+
+    /** The chunk generation of the tick that runs, on the server thread. */
+    private static long tickStart;
+    private static long tickChunkNanos;
+    private static int tickNewChunks, tickPopulated;
+    private static final Map<String, Long> TICK_PARTS = new HashMap<>();
+
+    private ChunkGenLog() {}
+
+    /** A step on the stack of the thread. */
+    private static final class Frame {
+
+        final String stage, label, where;
+        final World world;
+        final int x, z;
+        final long start = System.nanoTime();
+        long childNanos;
+        /** For a chunk, its terrain or its population: the own time of every step inside, by step. */
+        Map<String, Long> parts;
+        int cascades;
+        boolean worked;
+
+        Frame(String stage, String label, World world, int x, int z) {
+            this.stage = stage;
+            this.label = label;
+            this.world = world;
+            this.where = where(world);
+            this.x = x;
+            this.z = z;
+            if (TERRAIN.equals(stage) || POPULATION.equals(stage)) parts = new LinkedHashMap<>();
+        }
+    }
+
+    /** The time of one step, in one dimension, over a period. */
+    private static final class Stat {
+
+        final String stage, label, where;
+        long nanos, max;
+        int count;
+
+        Stat(String stage, String label, String where) {
+            this.stage = stage;
+            this.label = label;
+            this.where = where;
+        }
+    }
+
+    private static final class Cascade {
+
+        final String label;
+        int count;
+        final List<String> examples = new ArrayList<>();
+
+        Cascade(String label) {
+            this.label = label;
+        }
+    }
+
+    private static final class Slow {
+
+        final long nanos;
+        final String text;
+
+        Slow(long nanos, String text) {
+            this.nanos = nanos;
+            this.text = text;
+        }
+    }
+
+    /** What was measured over a period or the whole session. */
+    private static final class Stats {
+
+        final Map<String, Stat> steps = new HashMap<>();
+        final Map<String, Integer> newChunks = new LinkedHashMap<>();
+        final Map<String, Cascade> cascades = new LinkedHashMap<>();
+        final List<Slow> slowest = new ArrayList<>();
+        int populated;
+        long nanos;
+        int ticks, slowTicks;
+        long worstTick;
+        String worstTickAt = "";
+
+        boolean isEmpty() {
+            return nanos == 0 && newChunks.isEmpty();
+        }
+    }
+
+    // ---- start
+
+    /** Starts the log: the tick and world events, and the writer. */
+    static void start() {
+        if (active) return;
+        active = true;
+        ChunkGenLog listener = new ChunkGenLog();
+        FMLCommonHandler.instance()
+            .bus()
+            .register(listener);
+        MinecraftForge.EVENT_BUS.register(listener);
+        ScheduledExecutorService writer = Executors.newSingleThreadScheduledExecutor(task -> {
+            Thread thread = new Thread(task, "GTNHTweaks chunk generation log");
+            thread.setDaemon(true);
+            return thread;
+        });
+        writer.scheduleWithFixedDelay(ChunkGenLog::tick, 2, 2, TimeUnit.SECONDS);
+        Runtime.getRuntime()
+            .addShutdownHook(new Thread(() -> {
+                summarize(true);
+                flush();
+            }, "GTNHTweaks chunk generation log shutdown"));
+    }
+
+    // ---- hooks of the mixins
+
+    /** Begins a step; gives what {@link #end} takes. */
+    public static Object begin(String stage, Object source, World world, int x, int z) {
+        if (!active) return null;
+        Deque<Frame> stack = STACK.get();
+        // noted before the step starts, so writing it down is not part of its time
+        if (TERRAIN.equals(stage) && !stack.isEmpty()) cascade(stack, where(world), x, z);
+        Frame chunk = chunkOf(stack);
+        if (chunk != null) chunk.worked = true;
+        Frame frame = new Frame(stage, label(source), world, x, z);
+        stack.push(frame);
+        return frame;
+    }
+
+    /** Ends the step and every one left open inside it, as after an exception. */
+    public static void end(Object token) {
+        if (!(token instanceof Frame)) return;
+        Frame frame = (Frame) token;
+        Deque<Frame> stack = STACK.get();
+        if (!stack.contains(frame)) return;
+        while (!stack.isEmpty()) {
+            Frame top = stack.pop();
+            finish(top, stack);
+            if (top == frame) break;
+        }
+    }
+
+    /** Begins the population of a chunk; most calls find it populated already and are not counted. */
+    public static void beginPopulation(Object generator, World world, int x, int z) {
+        if (!active) return;
+        STACK.get()
+            .push(new Frame(POPULATION, label(generator), world, x, z));
+    }
+
+    /** Ends the innermost population of the chunk, and the steps left open inside it. */
+    public static void endPopulation(int x, int z) {
+        if (!active) return;
+        for (Frame frame : STACK.get()) {
+            if (POPULATION.equals(frame.stage) && frame.x == x && frame.z == z) {
+                end(frame);
+                return;
+            }
+        }
+    }
+
+    // ---- measuring
+
+    private static Frame chunkOf(Deque<Frame> stack) {
+        for (Frame frame : stack) {
+            if (frame.parts != null) return frame;
+        }
+        return null;
+    }
+
+    private static void cascade(Deque<Frame> stack, String where, int x, int z) {
+        Frame cause = null;
+        for (Frame frame : stack) {
+            // the innermost step that runs code of its own: a mod generator or a decoration
+            if (MOD_GENERATOR.equals(frame.stage) || DECORATION.equals(frame.stage) || TERRAIN.equals(frame.stage)) {
+                cause = frame;
+                break;
+            }
+        }
+        Frame populated = null;
+        for (Frame frame : stack) {
+            if (POPULATION.equals(frame.stage) || TERRAIN.equals(frame.stage)) {
+                populated = frame;
+                break;
+            }
+        }
+        if (populated != null) populated.cascades++;
+        String culprit = cause == null ? "unknown" : cause.stage + " " + cause.label;
+        String example = where + " " + chunkText(x, z)
+            + (populated == null ? ""
+                : " while " + (TERRAIN.equals(populated.stage) ? "making the terrain of " : "populating ")
+                    + chunkText(populated.x, populated.z));
+        synchronized (LOCK) {
+            for (Stats stats : new Stats[] { period, session }) {
+                Cascade c = stats.cascades.computeIfAbsent(culprit, Cascade::new);
+                c.count++;
+                if (c.examples.size() < 3) c.examples.add(example);
+            }
+            line("CASCADE  " + example + ", caused by " + culprit);
+        }
+    }
+
+    private static void finish(Frame frame, Deque<Frame> stack) {
+        long total = System.nanoTime() - frame.start;
+        long own = Math.max(0, total - frame.childNanos);
+        Frame parent = stack.peek();
+        if (parent != null) parent.childNanos += total;
+        // a population that found the chunk populated did nothing
+        if (POPULATION.equals(frame.stage) && !frame.worked) return;
+
+        Frame chunk = chunkOf(stack);
+        if (chunk != null) {
+            // a step inside a chunk is one of its parts; a chunk made or populated inside it, with all it took
+            if (frame.parts == null) chunk.parts.merge(frame.stage + " " + frame.label, own, Long::sum);
+            else chunk.parts.merge("cascaded " + frame.stage + " " + frame.label, total, Long::sum);
+        }
+        if (frame.parts != null && own > 0) {
+            frame.parts.merge(POPULATION.equals(frame.stage) ? "other" : frame.stage + " " + frame.label, own, Long::sum);
+        }
+        boolean slow = frame.parts != null && total >= LogsModule.chunkSlowMs * 1_000_000L;
+        String biome = slow ? biome(frame.world, frame.x, frame.z) : "";
+
+        synchronized (LOCK) {
+            for (Stats stats : new Stats[] { period, session }) {
+                if (!POPULATION.equals(frame.stage)) {
+                    Stat stat = stats.steps.computeIfAbsent(
+                        frame.stage + "|" + frame.label + "|" + frame.where,
+                        key -> new Stat(frame.stage, frame.label, frame.where));
+                    stat.count++;
+                    stat.nanos += own;
+                    stat.max = Math.max(stat.max, own);
+                }
+                if (TERRAIN.equals(frame.stage)) stats.newChunks.merge(frame.where, 1, Integer::sum);
+                if (POPULATION.equals(frame.stage)) stats.populated++;
+                if (parent == null) stats.nanos += total;
+            }
+            if (parent == null) {
+                tickChunkNanos += total;
+            }
+            if (TERRAIN.equals(frame.stage)) tickNewChunks++;
+            if (POPULATION.equals(frame.stage)) tickPopulated++;
+            if (frame.parts == null) TICK_PARTS.merge(frame.stage + " " + frame.label, own, Long::sum);
+            else if (TERRAIN.equals(frame.stage)) TICK_PARTS.merge(TERRAIN + " " + frame.label, own, Long::sum);
+
+            if (slow) slowChunk(frame, total, biome);
+        }
+    }
+
+    private static void slowChunk(Frame frame, long total, String biome) {
+        String text = ms(total) + "  " + frame.where
+            + " "
+            + chunkText(frame.x, frame.z)
+            + biome
+            + "  "
+            + (TERRAIN.equals(frame.stage) ? "terrain by " + frame.label : "population")
+            + (frame.cascades > 0
+                ? ", made " + frame.cascades + (frame.cascades == 1 ? " more chunk" : " more chunks") + " (cascade)"
+                : "")
+            + ": "
+            + parts(frame.parts, 6);
+        for (Stats stats : new Stats[] { period, session }) {
+            stats.slowest.add(new Slow(total, text));
+            stats.slowest.sort((a, b) -> Long.compare(b.nanos, a.nanos));
+            while (stats.slowest.size() > SLOWEST_CHUNKS) stats.slowest.remove(stats.slowest.size() - 1);
+        }
+        line("SLOW CHUNK  " + text);
+    }
+
+    private static String parts(Map<String, Long> parts, int max) {
+        List<Map.Entry<String, Long>> sorted = new ArrayList<>(parts.entrySet());
+        sorted.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
+        StringBuilder text = new StringBuilder();
+        int shown = 0;
+        long rest = 0;
+        for (Map.Entry<String, Long> part : sorted) {
+            if (shown < max) {
+                if (shown > 0) text.append(", ");
+                text.append(part.getKey())
+                    .append(' ')
+                    .append(ms(part.getValue()));
+                shown++;
+            } else rest += part.getValue();
+        }
+        if (rest > 0) text.append(", the rest ")
+            .append(ms(rest));
+        return text.length() == 0 ? "nothing measured inside" : text.toString();
+    }
+
+    // ---- ticks
+
+    @SubscribeEvent
+    public void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase == TickEvent.Phase.START) {
+            synchronized (LOCK) {
+                tickStart = System.nanoTime();
+                tickChunkNanos = 0;
+                tickNewChunks = tickPopulated = 0;
+                TICK_PARTS.clear();
+            }
+            return;
+        }
+        synchronized (LOCK) {
+            if (tickStart == 0) return;
+            long tick = System.nanoTime() - tickStart;
+            for (Stats stats : new Stats[] { period, session }) {
+                stats.ticks++;
+                if (tickChunkNanos > 0 && tick > stats.worstTick) {
+                    stats.worstTick = tick;
+                    stats.worstTickAt = LogFiles.time(System.currentTimeMillis());
+                }
+            }
+            if (tickChunkNanos >= LogsModule.chunkSlowTickMs * 1_000_000L) {
+                period.slowTicks++;
+                session.slowTicks++;
+                line(
+                    "SLOW TICK  " + ms(tick)
+                        + ", of it chunk generation "
+                        + ms(tickChunkNanos)
+                        + " ("
+                        + tickNewChunks
+                        + " new, "
+                        + tickPopulated
+                        + " populated): "
+                        + parts(TICK_PARTS, 5));
+            }
+            tickStart = 0;
+        }
+    }
+
+    /** The summary of the session of a world when it closes, in singleplayer when going back to the menu. */
+    @SubscribeEvent
+    public void onWorldUnload(WorldEvent.Unload event) {
+        if (event.world.isRemote || event.world.provider.dimensionId != 0) return;
+        summarize(true);
+    }
+
+    // ---- writing
+
+    private static void line(String text) {
+        if (linesThisPeriod >= MAX_LINES_PER_PERIOD) {
+            linesSkipped++;
+            return;
+        }
+        linesThisPeriod++;
+        PENDING.append(LogFiles.time(System.currentTimeMillis()))
+            .append("  ")
+            .append(text)
+            .append('\n');
+    }
+
+    /** Every 2 seconds on the writer thread: the summary when its period is over, then the pending lines. */
+    private static void tick() {
+        try {
+            if (System.currentTimeMillis() - periodStart >= LogsModule.chunkSummaryMinutes * 60_000L) summarize(false);
+            flush();
+        } catch (Throwable t) {
+            GTNHTweaks.LOG.warn("Could not write the chunk generation log", t);
+        }
+    }
+
+    /** Writes the summary of the period, or of the whole session, which then starts again. */
+    private static void summarize(boolean whole) {
+        synchronized (LOCK) {
+            long now = System.currentTimeMillis();
+            if (!period.isEmpty()) {
+                if (linesSkipped > 0) PENDING.append("... and ")
+                    .append(linesSkipped)
+                    .append(" more slow chunks and cascades in this period, only counted\n");
+                PENDING.append(summary(period, "the last " + minutes(now - periodStart), now - periodStart));
+            }
+            period = new Stats();
+            periodStart = now;
+            linesThisPeriod = linesSkipped = 0;
+            if (whole && !session.isEmpty()) {
+                PENDING.append(summary(session, "the whole world session", 0));
+                session = new Stats();
+            }
+        }
+    }
+
+    private static void flush() {
+        String text;
+        synchronized (LOCK) {
+            if (PENDING.length() == 0) return;
+            text = PENDING.toString();
+            PENDING.setLength(0);
+            if (!headerWritten) {
+                text = header() + text;
+                headerWritten = true;
+            }
+        }
+        if (file == null) file = LogFiles.sessionFile(LogFiles.KIND_CHUNKS);
+        if (file == null) return;
+        try (Writer out = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8)) {
+            out.write(text);
+        } catch (IOException e) {
+            GTNHTweaks.LOG.warn("Could not write {}", file, e);
+        }
+    }
+
+    private static String header() {
+        return "Chunk generation of " + LogFiles.sessionText()
+            + "\n\n"
+            + "Where the server time goes when new chunks are made. Times are own times: a step does not count the\n"
+            + "steps that ran inside it. Steps:\n"
+            + "  terrain        the chunk generator of the dimension makes the blocks of a new chunk\n"
+            + "  decoration     the chunk generator populates a chunk: vanilla ores, trees, lakes, structures,\n"
+            + "                 and the mods that generate through Forge events (DecorateBiome, OreGen, PopulateChunk)\n"
+            + "  mod generator  a world generator a mod registered (GameRegistry.registerWorldGenerator)\n"
+            + "Lines while it runs:\n"
+            + "  SLOW CHUNK   a chunk whose terrain or population took longer than "
+            + LogsModule.chunkSlowMs
+            + " ms, with its steps\n"
+            + "  SLOW TICK    a server tick in which chunk generation took longer than "
+            + LogsModule.chunkSlowTickMs
+            + " ms (50 ms is a whole tick at 20 TPS)\n"
+            + "  CASCADE      a chunk made while another was populated: a generator reached outside its chunk.\n"
+            + "               A cascade makes more chunks, which are populated in turn, and lags the server.\n"
+            + "A summary every "
+            + LogsModule.chunkSummaryMinutes
+            + " minutes while chunks are made, and one of the whole session when the world closes.\n\n";
+    }
+
+    private static String summary(Stats stats, String what, long periodMillis) {
+        StringBuilder out = new StringBuilder();
+        out.append("\n======== Summary of ")
+            .append(what)
+            .append(", ")
+            .append(LogFiles.time(System.currentTimeMillis()))
+            .append(" ========\n");
+        int newChunks = 0;
+        for (int count : stats.newChunks.values()) newChunks += count;
+        out.append("New chunks: ")
+            .append(newChunks);
+        if (!stats.newChunks.isEmpty()) {
+            out.append(" (");
+            boolean first = true;
+            for (Map.Entry<String, Integer> entry : stats.newChunks.entrySet()) {
+                if (!first) out.append(", ");
+                first = false;
+                out.append(entry.getKey())
+                    .append(' ')
+                    .append(entry.getValue());
+            }
+            out.append(')');
+        }
+        out.append(", chunks populated: ")
+            .append(stats.populated)
+            .append('\n');
+        out.append("Server time spent making chunks: ")
+            .append(ms(stats.nanos));
+        if (periodMillis > 0) out.append(
+            String.format(
+                Locale.ROOT,
+                " (%.1f%% of the %s)",
+                stats.nanos / 1e6 * 100 / periodMillis,
+                minutes(periodMillis)));
+        if (newChunks > 0) out.append(", ")
+            .append(ms(stats.nanos / newChunks))
+            .append(" per new chunk");
+        out.append('\n');
+        out.append("Ticks: ")
+            .append(stats.ticks)
+            .append(", slowed by chunk generation (over ")
+            .append(LogsModule.chunkSlowTickMs)
+            .append(" ms): ")
+            .append(stats.slowTicks);
+        if (stats.worstTick > 0) out.append(", worst tick with chunk generation ")
+            .append(ms(stats.worstTick))
+            .append(" at ")
+            .append(stats.worstTickAt);
+        out.append("\n\n");
+
+        // by stage
+        Map<String, long[]> byStage = new LinkedHashMap<>();
+        for (String stage : new String[] { TERRAIN, DECORATION, MOD_GENERATOR }) byStage.put(stage, new long[2]);
+        for (Stat stat : stats.steps.values()) {
+            long[] sum = byStage.get(stat.stage);
+            if (sum == null) continue;
+            sum[0] += stat.nanos;
+            sum[1] += stat.count;
+        }
+        out.append("By step:\n");
+        for (Map.Entry<String, long[]> entry : byStage.entrySet()) {
+            out.append(String.format(Locale.ROOT, "  %-14s %10s  %s\n", entry.getKey(), ms(entry.getValue()[0]), share(entry.getValue()[0], stats.nanos)));
+        }
+
+        // the steps that cost the most
+        List<Stat> steps = new ArrayList<>(stats.steps.values());
+        steps.sort((a, b) -> Long.compare(b.nanos, a.nanos));
+        out.append("\nWhat took the most time (own time):\n");
+        out.append(String.format(Locale.ROOT, "  %10s %6s %8s %10s %10s  %s\n", "time", "share", "calls", "average", "max", "step"));
+        for (int i = 0; i < Math.min(TOP_ROWS, steps.size()); i++) {
+            Stat stat = steps.get(i);
+            out.append(
+                String.format(
+                    Locale.ROOT,
+                    "  %10s %6s %8d %10s %10s  %s %s  ·  %s\n",
+                    ms(stat.nanos),
+                    share(stat.nanos, stats.nanos),
+                    stat.count,
+                    ms(stat.nanos / Math.max(1, stat.count)),
+                    ms(stat.max),
+                    stat.stage,
+                    stat.label,
+                    stat.where));
+        }
+        if (steps.size() > TOP_ROWS) out.append("  ... and ")
+            .append(steps.size() - TOP_ROWS)
+            .append(" more\n");
+
+        // cascades
+        out.append("\nCascades (chunks made while another was populated):");
+        if (stats.cascades.isEmpty()) out.append(" none\n");
+        else {
+            out.append('\n');
+            List<Cascade> cascades = new ArrayList<>(stats.cascades.values());
+            cascades.sort((a, b) -> b.count - a.count);
+            for (Cascade cascade : cascades) {
+                out.append("  ")
+                    .append(cascade.count)
+                    .append(cascade.count == 1 ? " chunk by " : " chunks by ")
+                    .append(cascade.label)
+                    .append(", for example ")
+                    .append(String.join("; ", cascade.examples))
+                    .append('\n');
+            }
+        }
+
+        // slowest chunks
+        out.append("\nSlowest chunks (over ")
+            .append(LogsModule.chunkSlowMs)
+            .append(" ms):");
+        if (stats.slowest.isEmpty()) out.append(" none\n");
+        else {
+            out.append('\n');
+            for (Slow slow : stats.slowest) out.append("  ")
+                .append(slow.text)
+                .append('\n');
+        }
+        out.append('\n');
+        return out.toString();
+    }
+
+    // ---- names
+
+    /** The class of a generator with its mod, as "GT_Worldgenerator (GregTech)". */
+    private static String label(Object source) {
+        if (source == null) return "unknown";
+        Class<?> type = source.getClass();
+        synchronized (LABELS) {
+            String label = LABELS.get(type);
+            if (label != null) return label;
+        }
+        String name = type.getName();
+        String simple = name.substring(name.lastIndexOf('.') + 1);
+        String label = simple + " (" + owner(name) + ")";
+        synchronized (LABELS) {
+            LABELS.put(type, label);
+        }
+        return label;
+    }
+
+    private static String owner(String className) {
+        if (className.startsWith("net.minecraft.") || className.startsWith("net.minecraftforge.")) return "Minecraft";
+        String jar = StackTraces.jarOf(className);
+        if (jar == null) return "unknown mod";
+        try {
+            for (ModContainer mod : Loader.instance()
+                .getModList()) {
+                if (mod.getSource() != null && jar.equals(
+                    mod.getSource()
+                        .getName()))
+                    return mod.getName();
+            }
+        } catch (RuntimeException ignored) {
+            // the mod list is not there yet
+        }
+        return jar;
+    }
+
+    private static final Map<Integer, String> DIMENSIONS = new HashMap<>();
+
+    /** The name of the dimension with its id, as "Overworld (0)". */
+    private static String where(World world) {
+        if (world == null || world.provider == null) return "unknown dimension";
+        int id = world.provider.dimensionId;
+        synchronized (DIMENSIONS) {
+            String name = DIMENSIONS.get(id);
+            if (name != null) return name;
+        }
+        String name;
+        try {
+            name = world.provider.getDimensionName() + " (" + id + ")";
+        } catch (RuntimeException e) {
+            name = "dimension " + id;
+        }
+        synchronized (DIMENSIONS) {
+            DIMENSIONS.put(id, name);
+        }
+        return name;
+    }
+
+    /** The biome in the middle of a chunk, for the lines of slow chunks. */
+    static String biome(World world, int x, int z) {
+        try {
+            BiomeGenBase biome = world.getBiomeGenForCoords(x * 16 + 8, z * 16 + 8);
+            return biome == null ? "" : ", " + biome.biomeName;
+        } catch (RuntimeException e) {
+            return "";
+        }
+    }
+
+    private static String chunkText(int x, int z) {
+        return "chunk (" + x + ", " + z + ") at x " + x * 16 + " z " + z * 16;
+    }
+
+    private static String ms(long nanos) {
+        double ms = nanos / 1e6;
+        if (ms >= 10_000) return String.format(Locale.ROOT, "%.1f s", ms / 1000);
+        if (ms >= 100) return String.format(Locale.ROOT, "%.0f ms", ms);
+        return String.format(Locale.ROOT, "%.1f ms", ms);
+    }
+
+    private static String share(long part, long whole) {
+        return whole <= 0 ? "" : String.format(Locale.ROOT, "%.0f%%", part * 100.0 / whole);
+    }
+
+    private static String minutes(long millis) {
+        long minutes = Math.round(millis / 60_000.0);
+        return minutes <= 1 ? "minute" : minutes + " minutes";
+    }
+}

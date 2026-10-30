@@ -223,7 +223,8 @@ final class StackTraces {
         return new ArrayList<>(jars);
     }
 
-    private static String jarOf(String className) {
+    /** The jar of the mods folder the class comes from, or null for Minecraft, Forge, Java and libraries. */
+    static String jarOf(String className) {
         synchronized (JAR_CACHE) {
             if (JAR_CACHE.containsKey(className)) return JAR_CACHE.get(className);
         }

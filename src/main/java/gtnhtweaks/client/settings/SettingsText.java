@@ -581,6 +581,12 @@ final class SettingsText {
             "writeMods",
             "System and mods",
             "Java, Minecraft, Forge, memory, graphics card and the mod list, with what changed since the last launch.");
+        set(
+            "writeChunkGeneration",
+            "Chunk generation",
+            "Where the server time goes when new chunks are made: terrain, decoration and every world generator of "
+                + "the mods, with slow chunks, slow ticks and cascades.",
+            Restart.ALWAYS);
         tab("crashScreen", "Crash Screen", "What you see after a crash.");
         set(
             "replaceCrashScreen",
@@ -602,6 +608,19 @@ final class SettingsText {
             "ignore",
             "Ignored messages",
             "Regular expressions of messages left out of Errors and Warnings, like \"Angelica: Frame pacing.*\".");
+        set(
+            "chunkSlowMs",
+            "Slow chunk, ms",
+            "Chunk generation: a chunk that takes longer to make or populate gets a line of its own, with its steps.");
+        set(
+            "chunkSlowTickMs",
+            "Slow tick, ms",
+            "Chunk generation: a server tick in which making chunks takes longer gets a line of its own. 50 ms is a "
+                + "whole tick at 20 TPS.");
+        set(
+            "chunkSummaryMinutes",
+            "Summary every, minutes",
+            "Chunk generation: how often the summary is written while chunks are made.");
 
         module("backups", "Backup Toast", "A toast with the progress of the backups the server makes.");
         tab("general", "General", "The look and behavior of the toast.");
