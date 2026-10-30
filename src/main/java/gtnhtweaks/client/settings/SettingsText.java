@@ -658,6 +658,11 @@ final class SettingsText {
             "Language button",
             "The small square with a globe beside Options. The language can still be changed in Options.",
             Restart.NONE);
+        set(
+            "modsButton",
+            "Mods of the author",
+            "The small square with an arrow right of Options: install, update or delete the mods of EvgenWarGold.",
+            Restart.NONE);
 
         module("debug", "Developer Tools", "Tools for the makers of mods and modpacks.");
         tab("guiInfo", "Screen Info", "What the open screen is.");

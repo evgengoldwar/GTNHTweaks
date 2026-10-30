@@ -3,7 +3,9 @@ package gtnhtweaks.modules.buttons;
 import net.minecraftforge.common.config.Configuration;
 
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
+import gtnhtweaks.modules.buttons.mods.PendingFiles;
 
 /** Buttons GTNHTweaks adds to the screens of Minecraft. Every button has its own switch. */
 public final class ButtonsModule extends TweakModule {
@@ -14,6 +16,7 @@ public final class ButtonsModule extends TweakModule {
 
     public static boolean settingsButton = true;
     public static boolean languageButton = true;
+    public static boolean modsButton = true;
 
     private ButtonsModule() {
         super("buttons", "Buttons GTNHTweaks adds to the screens of Minecraft", ModuleSide.CLIENT);
@@ -40,11 +43,24 @@ public final class ButtonsModule extends TweakModule {
             languageButton,
             "Show the Language button, the small square with a globe beside Options. The language can still be "
                 + "changed in Options");
+        modsButton = config.getBoolean(
+            "modsButton",
+            CATEGORY_MAIN_MENU,
+            modsButton,
+            "Show the small square with an arrow right of Options, which opens the mods of EvgenWarGold: install, "
+                + "update or delete them from their releases on GitHub");
+    }
+
+    /** Changes to the mods folder left by the last game, before the mods in it are read. */
+    @Override
+    public void coremodInit() {
+        PendingFiles.applyAll(PendingFiles.queue(ModuleManager.getConfigDir()));
     }
 
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         SettingsButton.register();
         LanguageButton.register();
+        ModsButton.register();
     }
 }

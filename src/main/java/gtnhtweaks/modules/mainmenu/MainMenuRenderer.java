@@ -16,6 +16,7 @@ import gtnhtweaks.common.ResourcePackOverrides;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHLogo;
 import gtnhtweaks.common.render.GTNHTheme;
+import gtnhtweaks.common.render.PixelIcon;
 import gtnhtweaks.common.render.ThemeShapes;
 import gtnhtweaks.common.render.ThemedButton;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
@@ -124,7 +125,9 @@ public final class MainMenuRenderer {
         for (Object element : buttons) {
             GuiButton button = (GuiButton) element;
             if (!button.visible) continue;
-            if (button.id == MainMenuLayout.LANGUAGE) drawLanguage(button, mouseX, mouseY, theme);
+            if (button.id == MainMenuLayout.LANGUAGE) drawIconButton(button, PixelIcon.GLOBE, mouseX, mouseY, theme);
+            else if (button.id == MainMenuLayout.OWN_MODS)
+                drawIconButton(button, PixelIcon.DOWNLOAD, mouseX, mouseY, theme);
             else if (isThemed(button)) ThemedButton.draw(button, button.displayString, font, mouseX, mouseY, theme);
             else button.drawButton(mc, mouseX, mouseY);
         }
@@ -187,36 +190,18 @@ public final class MainMenuRenderer {
         return MainMenuLayout.isKnown(button.id) || button.getClass() == GuiButton.class;
     }
 
-    /** Globe of the Language button, one character per pixel, as the vanilla icon. */
-    private static final String[] GLOBE = { //
-        "....####....", //
-        "..##.##.##..", //
-        ".#..#..#..#.", //
-        ".#..#..#..#.", //
-        "############", //
-        "#...#..#...#", //
-        "#...#..#...#", //
-        "############", //
-        ".#..#..#..#.", //
-        ".#..#..#..#.", //
-        "..##.##.##..", //
-        "....####....", //
-    };
-
-    /** The Language button: a themed square with a globe in the color of the button labels. */
-    private static void drawLanguage(GuiButton button, int mouseX, int mouseY, GTNHTheme theme) {
+    /** The small squares beside the column: Language with a globe, the mods of the author with an arrow. */
+    private static void drawIconButton(GuiButton button, String[] icon, int mouseX, int mouseY, GTNHTheme theme) {
         ThemedButton.drawFrame(button, mouseX, mouseY, theme);
         int color = !button.enabled ? theme.textDisabled
             : ThemedButton.isHovered(button, mouseX, mouseY) ? theme.hoverText : theme.text;
-        int x = button.xPosition + (ThemedButton.width(button) - GLOBE[0].length()) / 2;
-        int y = button.yPosition + (ThemedButton.height(button) - GLOBE.length) / 2;
-        beginShapes();
-        for (int row = 0; row < GLOBE.length; row++) {
-            for (int column = 0; column < GLOBE[row].length(); column++) {
-                if (GLOBE[row].charAt(column) == '#') GLDraw.rect(x + column, y + row, 1, 1, color);
-            }
-        }
-        endShapes();
+        PixelIcon.drawCentered(
+            icon,
+            button.xPosition,
+            button.yPosition,
+            ThemedButton.width(button),
+            ThemedButton.height(button),
+            color);
     }
 
     private static void drawCentered(FontRenderer font, String text, int centerX, int y, int color, boolean shadow) {

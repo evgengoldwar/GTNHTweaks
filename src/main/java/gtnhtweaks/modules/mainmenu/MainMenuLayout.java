@@ -10,6 +10,7 @@ import net.minecraftforge.client.event.GuiScreenEvent;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import gtnhtweaks.mixins.early.common.AccessorGuiButton;
+import gtnhtweaks.modules.buttons.ModsButton;
 import gtnhtweaks.modules.buttons.SettingsButton;
 
 /**
@@ -29,6 +30,8 @@ public class MainMenuLayout {
 
     /** The GTNHTweaks button beside Mods, added by {@link SettingsButton}. */
     static final int SETTINGS = SettingsButton.ID;
+    /** The square with the mods of the author right of Options, added by {@link ModsButton}. */
+    static final int OWN_MODS = ModsButton.ID;
 
     /** Padding of the beveled panel the renderer draws behind the column of buttons. */
     static final int PANEL_PADDING = 6;
@@ -69,16 +72,26 @@ public class MainMenuLayout {
             }
         }
 
-        // Language is a small square with a globe left of the row of Options, as in vanilla; out of the beveled panel
-        GuiButton language = find(buttons, LANGUAGE);
+        // Language and the mods of the author are small squares left and right of the row of Options, as Language
+        // is in vanilla; out of the beveled panel
         GuiButton options = find(buttons, OPTIONS);
-        if (language != null && language.visible) {
-            int gap = MainMenuModule.style.isBeveled() ? PANEL_PADDING + GAP : GAP;
-            language.xPosition = width / 2 - BUTTON_WIDTH / 2 - gap - BUTTON_HEIGHT;
-            language.yPosition = options != null && options.visible ? options.yPosition : top;
-            ((AccessorGuiButton) language).gtnhtweaks$setWidth(BUTTON_HEIGHT);
-            ((AccessorGuiButton) language).gtnhtweaks$setHeight(BUTTON_HEIGHT);
-        }
+        int squaresY = options != null && options.visible ? options.yPosition : top;
+        int gap = MainMenuModule.style.isBeveled() ? PANEL_PADDING + GAP : GAP;
+        square(find(buttons, LANGUAGE), width / 2 - BUTTON_WIDTH / 2 - gap - BUTTON_HEIGHT, squaresY);
+        square(find(buttons, OWN_MODS), width / 2 + BUTTON_WIDTH / 2 + gap, squaresY);
+    }
+
+    private static void square(GuiButton button, int x, int y) {
+        if (button == null || !button.visible) return;
+        button.xPosition = x;
+        button.yPosition = y;
+        ((AccessorGuiButton) button).gtnhtweaks$setWidth(BUTTON_HEIGHT);
+        ((AccessorGuiButton) button).gtnhtweaks$setHeight(BUTTON_HEIGHT);
+    }
+
+    /** The small square buttons beside the column. */
+    static boolean isSquare(int id) {
+        return id == LANGUAGE || id == OWN_MODS;
     }
 
     private static void addRow(List<List<GuiButton>> rows, GuiButton... buttons) {
@@ -108,6 +121,7 @@ public class MainMenuLayout {
             case DEMO_RESET:
             case REALMS:
             case SETTINGS:
+            case OWN_MODS:
                 return true;
             default:
                 return false;
