@@ -17,8 +17,7 @@ import gtnhtweaks.modules.logs.ChunkGenEngine;
 public abstract class MixinMapGenBase_ChunkGenEngine {
 
     @Inject(method = "func_151539_a", at = @At("HEAD"), require = 0)
-    private void gtnhtweaks$enter(IChunkProvider provider, World world, int x, int z, Block[] blocks,
-        CallbackInfo ci) {
+    private void gtnhtweaks$enter(IChunkProvider provider, World world, int x, int z, Block[] blocks, CallbackInfo ci) {
         ChunkGenEngine.enterCarver(this);
     }
 
