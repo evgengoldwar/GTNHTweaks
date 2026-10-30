@@ -447,6 +447,69 @@ final class SettingsText {
             "Sprinting under water swims through gaps one block high; where there is no room to stand, players "
                 + "crawl.");
 
+        module(
+            "chunkEngine",
+            "Chunk Engine",
+            "Faster chunk generation in Minecraft itself, under the mods. The Chunk generation log of the Logs module "
+                + "counts what each part saved.");
+        tab("sending", "Sending", "When chunks go to the players.");
+        set(
+            "sendFinishedChunks",
+            "Send chunks once, when done",
+            "A chunk goes to the players when it and the neighbors that write into it are populated: once, instead "
+                + "of again after each population. Copies for players without the chunk are not sent.",
+            Restart.NONE);
+        set(
+            "sendWaitSeconds",
+            "Longest wait, seconds",
+            "How long a chunk waits for its neighbors before it is sent as it is.",
+            Restart.NONE);
+        set(
+            "skipUnsentUpdates",
+            "No updates for unsent chunks",
+            "No block update packets are made for a chunk none of its players has yet.",
+            Restart.NONE);
+        tab("population", "Population", "How the population of a new chunk sets its blocks.");
+        set(
+            "quietPopulation",
+            "Quiet population",
+            "Blocks set while a chunk is populated do not notify their neighbors, as in newer versions. Water "
+                + "placed next to a hole may stay still until touched.",
+            Restart.NONE);
+        tab("light", "Light", "Light updates when blocks are set.");
+        set(
+            "skipUnchangedLight",
+            "Skip light updates that change nothing",
+            "A block giving and letting through the same light as the one before starts no light update: ores in "
+                + "place of stone, a block set to itself.",
+            Restart.NONE);
+        tab(
+            "terrain",
+            "Terrain threads",
+            "The terrain of new chunks made ahead on other threads near the players: Realistic World Gen, the "
+                + "Nether, the End.");
+        set(
+            "parallelTerrain",
+            "Make terrain on threads",
+            "The terrain of new chunks is made ahead on other threads; the server only populates them.",
+            Restart.NONE);
+        set(
+            "terrainThreads",
+            "Threads",
+            "Threads making terrain; 0 picks one per four processor threads, from 1 to 4.",
+            Restart.ALWAYS);
+        set(
+            "verifyChunks",
+            "Check the first chunks",
+            "The first chunks of each dimension made on a thread are compared with the usual ones; a difference "
+                + "turns the threads off there and goes to the log.",
+            Restart.NONE);
+        set(
+            "extraGenerators",
+            "More generators",
+            "Full class names of more chunk generators to try on threads. The check of the first chunks tests them.",
+            Restart.ALWAYS);
+
         module("itemphysics", "Dropped Items", "Dropped items lie on the ground for real. Only the look changes.");
         tab("items", "Items", "How dropped items fly and lie.");
         set("tumbleInAir", "Tumble in the air", "Items spin while they fly and land on a side. Off: they fall flat.");

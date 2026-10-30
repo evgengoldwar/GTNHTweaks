@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 
@@ -32,6 +33,8 @@ import cpw.mods.fml.common.ModContainer;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gtnhtweaks.GTNHTweaks;
+import gtnhtweaks.modules.chunkengine.ChunkEngine;
+import gtnhtweaks.modules.chunkengine.PreparedProvider;
 
 /**
  * The Chunk generation file of the logs: where the server time goes when new chunks are made, to find what lowers the
@@ -504,7 +507,8 @@ public final class ChunkGenLog {
     // ---- writing
 
     /** A line from another thread, as of the garbage collector. */
-    static void externalLine(String text) {
+    /** A line of another part of the mod, as "KIND text"; at most 100 of a kind per period, as the others. */
+    public static void externalLine(String text) {
         if (!active) return;
         synchronized (LOCK) {
             line(text);
@@ -544,6 +548,8 @@ public final class ChunkGenLog {
             StringBuilder ticks = new StringBuilder();
             boolean lagged = ServerPerf.periodLagged();
             ServerPerf.summary(ticks, 0);
+            ChunkEngine.summary(ticks, 0);
+            ChunkEngine.resetPeriod();
             if (!period.isEmpty() || lagged) {
                 for (Map.Entry<String, int[]> entry : LINES.entrySet()) {
                     if (entry.getValue()[1] > 0) PENDING.append("... and ")
@@ -563,12 +569,14 @@ public final class ChunkGenLog {
                 PENDING.append(summary(session, "the whole world session", 0));
                 StringBuilder sessionTicks = new StringBuilder();
                 ServerPerf.summary(sessionTicks, 1);
+                ChunkEngine.summary(sessionTicks, 1);
                 PENDING.append(sessionTicks)
                     .append('\n');
                 session = new Stats();
             }
             if (whole) {
                 ServerPerf.resetSession();
+                ChunkEngine.resetSession();
                 MemoryLog.resetSession();
             }
         }
@@ -619,6 +627,7 @@ public final class ChunkGenLog {
             + " ms for any reason, with the sections of the profiler that took most of it\n"
             + "  CASCADE      a chunk made while another was populated: a generator reached outside its chunk.\n"
             + "               A cascade makes more chunks, which are populated in turn, and lags the server.\n"
+            + "  ENGINE       the Chunk Engine module turned a part off, and why\n"
             + "A summary every "
             + LogsModule.chunkSummaryMinutes
             + " minutes while chunks are made, and one of the whole session when the world closes.\n\n";
@@ -875,6 +884,8 @@ public final class ChunkGenLog {
     /** The class of a generator with its mod, as "GT_Worldgenerator (GregTech)". */
     private static String label(Object source) {
         if (source == null) return "unknown";
+        // the generator itself while a chunk made by a terrain thread stands in for it
+        if (source instanceof IChunkProvider) source = PreparedProvider.unwrap((IChunkProvider) source);
         Class<?> type = source.getClass();
         synchronized (LABELS) {
             String label = LABELS.get(type);

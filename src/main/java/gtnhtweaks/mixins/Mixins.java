@@ -6,6 +6,7 @@ import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 
 import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
+import gtnhtweaks.modules.chunkengine.ChunkEngineModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
 import gtnhtweaks.modules.itemphysics.ItemPhysicsModule;
@@ -179,6 +180,19 @@ public enum Mixins implements IMixins {
             .addClientMixins("debug.MixinCrashTestTarget", "debug.MixinMinecraft_CrashTest")),
 
     // Logs module
+    CHUNK_ENGINE(new MixinBuilder("Faster chunk generation in Minecraft itself").setPhase(Phase.EARLY)
+        .setApplyIf(ChunkEngineModule.INSTANCE::isEnabled)
+        .addCommonMixins(
+            "chunkengine.MixinChunk_SendWhenDone",
+            "chunkengine.MixinNetHandlerPlayServer_SendWhenDone",
+            "chunkengine.AccessorS21PacketChunkData",
+            "chunkengine.AccessorS35PacketUpdateTileEntity",
+            "chunkengine.MixinPlayerInstance_SkipUnsent",
+            "chunkengine.MixinChunkProviderServer_ChunkEngine",
+            "chunkengine.MixinWorld_ChunkEngine",
+            "chunkengine.MixinWorldServer_ChunkEngine",
+            "chunkengine.MixinMapGenBase_ChunkEngine")),
+
     LOGS_CRASH_REPORT(new MixinBuilder("Copy crash reports to the GTNHTweaks logs").setPhase(Phase.EARLY)
         .setApplyIf(LogsModule.INSTANCE::isEnabled)
         .addCommonMixins("logs.MixinCrashReport_Logs")),

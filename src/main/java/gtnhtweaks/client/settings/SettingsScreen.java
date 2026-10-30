@@ -64,6 +64,7 @@ public class SettingsScreen extends GuiScreen {
             .put("Mods", Arrays.asList("gregtech", "nei", "chromatictooltips", "tinkers", "extrautilities", "bees"));
         CLIENT_GROUPS.put("Tools", Arrays.asList("logs", "backups", "debug"));
         SERVER_GROUPS.put("Gameplay", Arrays.asList("minecraftServer"));
+        SERVER_GROUPS.put("Performance", Arrays.asList("chunkEngine"));
         SERVER_GROUPS.put("Tools", Arrays.asList("logs", "backupsServer"));
     }
 
