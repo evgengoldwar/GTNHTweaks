@@ -120,8 +120,10 @@ public final class PackPreview implements Closeable {
         List<Map.Entry<String, Integer>> sorted = new ArrayList<>(domains.entrySet());
         sorted.sort(
             (a, b) -> a.getValue()
-                .equals(b.getValue()) ? a.getKey()
-                    .compareTo(b.getKey()) : b.getValue() - a.getValue());
+                .equals(b.getValue())
+                    ? a.getKey()
+                        .compareTo(b.getKey())
+                    : b.getValue() - a.getValue());
         Map<String, Integer> ordered = new LinkedHashMap<>();
         for (Map.Entry<String, Integer> entry : sorted) ordered.put(entry.getKey(), entry.getValue());
         this.domains = Collections.unmodifiableMap(ordered);
@@ -248,8 +250,7 @@ public final class PackPreview implements Closeable {
     private static int frameTime(InputStream in) {
         try {
             JsonElement root = new JsonParser().parse(new InputStreamReader(in, StandardCharsets.UTF_8));
-            JsonObject animation = root.isJsonObject() ? PackCatalog.object(root.getAsJsonObject(), "animation")
-                : null;
+            JsonObject animation = root.isJsonObject() ? PackCatalog.object(root.getAsJsonObject(), "animation") : null;
             long time = animation == null ? 1 : PackCatalog.number(animation, "frametime");
             return (int) Math.max(1, Math.min(200, time));
         } catch (Exception e) {

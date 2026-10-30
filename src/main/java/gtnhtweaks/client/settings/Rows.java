@@ -11,14 +11,17 @@ import net.minecraftforge.common.config.Property;
 import org.lwjgl.input.Keyboard;
 
 import gtnhtweaks.common.render.GTNHTheme;
-import gtnhtweaks.core.TweakModule;
 
-/** The rows of the settings list: page titles, notices, section headers and settings with their controls. */
+/** The rows of the settings list: notices, buttons, the headers of search results and settings with their controls. */
 final class Rows {
 
     static final int WARNING = 0xFFFFC040;
     static final int ERROR = 0xFFE0453A;
+    /** The color of the restart tag and of the restart line of the tooltips. */
+    static final int RESTART = 0xFFE09A30;
     private static final int HOVER = 0x14FFFFFF;
+    /** Width the tooltip text is wrapped to. */
+    private static final int TOOLTIP_WIDTH = 220;
 
     private Rows() {}
 
@@ -49,105 +52,6 @@ final class Rows {
 
         /** Writes a pending text value to its property. */
         void commit() {}
-    }
-
-    /** Name and description of a module, how many of its settings are changed and a button to reset them all. */
-    static final class TitleRow extends Row {
-
-        private static final int RESET_WIDTH = 64;
-
-        private final SettingsScreen screen;
-        private final TweakModule module;
-        private final String title;
-        private final List<String> lines;
-        private final List<SettingRow> settings;
-        /** Time of the first click on the reset button; a second click soon after resets. */
-        private long confirmUntil;
-
-        @SuppressWarnings("unchecked")
-        TitleRow(SettingsScreen screen, TweakModule module, String title, int width, List<SettingRow> settings) {
-            this.screen = screen;
-            this.module = module;
-            this.title = title;
-            this.settings = settings;
-            String description = module.getDescription();
-            if (description == null || description.isEmpty()) this.lines = new ArrayList<>();
-            else this.lines = UI.font()
-                .listFormattedStringToWidth(description, width - 20);
-        }
-
-        @Override
-        int height() {
-            return 22 + lines.size() * 10 + 4;
-        }
-
-        private int changed() {
-            int count = 0;
-            for (SettingRow row : settings) if (!row.property.isDefault()) count++;
-            return count;
-        }
-
-        private boolean confirming() {
-            return System.currentTimeMillis() < confirmUntil;
-        }
-
-        @Override
-        void draw(int x, int y, int w, int mouseX, int mouseY, float dtMs) {
-            GTNHTheme theme = UI.theme();
-            UI.text(title, x + 8, y + 7, theme.logo);
-            TweakModule.ModuleSide moduleSide = module.getSide();
-            String side = moduleSide == TweakModule.ModuleSide.CLIENT ? "client"
-                : moduleSide == TweakModule.ModuleSide.SERVER ? "server" : "client and server";
-            int titleEnd = x + 8
-                + UI.font()
-                    .getStringWidth(title);
-            UI.text(side, titleEnd + 6, y + 7, theme.textDisabled);
-            for (int i = 0; i < lines.size(); i++) UI.text(lines.get(i), x + 8, y + 20 + i * 10, theme.textDim);
-
-            int changed = changed();
-            if (changed > 0 || confirming()) {
-                int bx = x + w - RESET_WIDTH - 6;
-                String label = confirming() ? "Sure?" : "Reset all";
-                UI.button(bx, y + 4, RESET_WIDTH, 14, label, mouseX, mouseY, true);
-                String count = changed + " changed";
-                UI.text(
-                    count,
-                    bx - 6
-                        - UI.font()
-                            .getStringWidth(count),
-                    y + 7,
-                    theme.barFill);
-            }
-        }
-
-        @Override
-        boolean click(int x, int y, int w, int mouseX, int mouseY, int button) {
-            if (changed() == 0 || !UI.inside(mouseX, mouseY, x + w - RESET_WIDTH - 6, y + 4, RESET_WIDTH, 14)) {
-                return false;
-            }
-            UI.playClick();
-            if (!confirming()) {
-                confirmUntil = System.currentTimeMillis() + 3000;
-                return true;
-            }
-            confirmUntil = 0;
-            for (SettingRow row : settings) row.reset(false);
-            screen.afterChange(null);
-            return true;
-        }
-
-        @Override
-        List<String> tooltip(int x, int y, int w, int mouseX, int mouseY) {
-            if (!UI.inside(mouseX, mouseY, x + w - RESET_WIDTH - 6, y + 4, RESET_WIDTH, 14) || changed() == 0) {
-                return null;
-            }
-            List<String> lines = new ArrayList<>();
-            lines.add("§eReset all");
-            lines.add("§7Puts every setting of " + title + " back to its default");
-            for (SettingRow row : settings) if (!row.property.isDefault()) lines.add("§8- " + row.label);
-            lines.add(confirming() ? "§6Click again to reset" : "§8Click twice");
-            return lines;
-        }
     }
 
     /** A line of warning, with a button that fixes it. */
@@ -203,80 +107,17 @@ final class Rows {
         }
     }
 
-    /** A category of settings, folded and unfolded by a click, with its comment as the tooltip. */
-    static final class HeaderRow extends Row {
-
-        final String key;
-        private final String title;
-        private final String comment;
-        private final SettingsScreen screen;
-        final List<SettingRow> settings = new ArrayList<>();
-
-        HeaderRow(SettingsScreen screen, String key, String title, String comment) {
-            this.screen = screen;
-            this.key = key;
-            this.title = title;
-            this.comment = comment;
-        }
-
-        @Override
-        int height() {
-            return 20;
-        }
-
-        @Override
-        void draw(int x, int y, int w, int mouseX, int mouseY, float dtMs) {
-            GTNHTheme theme = UI.theme();
-            boolean hovered = UI.inside(mouseX, mouseY, x + 2, y + 2, w - 4, 16);
-            boolean folded = screen.isFolded(key);
-            if (hovered) UI.rect(x + 2, y + 2, w - 4, 16, HOVER);
-            String arrow = folded ? "▸" : "▾";
-            UI.text(arrow, x + 6, y + 6, hovered ? theme.hoverText : theme.textDim);
-            String name = title.toUpperCase(Locale.ROOT);
-            UI.text(name, x + 16, y + 6, hovered ? theme.hoverText : theme.textDim);
-            int lineX = x + 22
-                + UI.font()
-                    .getStringWidth(name);
-
-            int changed = 0;
-            for (SettingRow row : settings) if (!row.property.isDefault()) changed++;
-            String count = changed > 0 ? changed + "/" + settings.size() : Integer.toString(settings.size());
-            int countW = UI.font()
-                .getStringWidth(count);
-            int countX = x + w - 8 - countW;
-            UI.text(count, countX, y + 6, changed > 0 ? theme.barFill : theme.textDisabled);
-            UI.rect(lineX, y + 10, countX - 6 - lineX, 1, theme.isBeveled() ? theme.inset.topLeft : theme.barBorder);
-        }
-
-        @Override
-        boolean click(int x, int y, int w, int mouseX, int mouseY, int button) {
-            if (button != 0 || !UI.inside(mouseX, mouseY, x + 2, y + 2, w - 4, 16)) return false;
-            UI.playClick();
-            screen.toggleFolded(key);
-            return true;
-        }
-
-        @Override
-        List<String> tooltip(int x, int y, int w, int mouseX, int mouseY) {
-            if (!UI.inside(mouseX, mouseY, x, y, w, height())) return null;
-            List<String> lines = new ArrayList<>();
-            lines.add("§e" + title);
-            if (comment != null && !comment.isEmpty()) lines.addAll(wrap(comment));
-            lines.add("§8Click to " + (screen.isFolded(key) ? "unfold" : "fold"));
-            return lines;
-        }
-    }
-
-    /** Name of a module over its settings found by the search; a click opens the module. */
+    /** The module and the tab over the settings found by the search; a click opens the tab. */
     static final class ResultsHeaderRow extends Row {
 
         private final SettingsScreen screen;
-        private final int page;
+        private final int page, tab;
         private final String title;
 
-        ResultsHeaderRow(SettingsScreen screen, int page, String title) {
+        ResultsHeaderRow(SettingsScreen screen, int page, int tab, String title) {
             this.screen = screen;
             this.page = page;
+            this.tab = tab;
             this.title = title;
         }
 
@@ -306,7 +147,7 @@ final class Rows {
         boolean click(int x, int y, int w, int mouseX, int mouseY, int button) {
             if (button != 0 || !UI.inside(mouseX, mouseY, x + 2, y + 2, w - 4, 16)) return false;
             UI.playClick();
-            screen.openPage(page);
+            screen.openPage(page, tab);
             return true;
         }
     }
@@ -346,24 +187,41 @@ final class Rows {
         }
     }
 
-    /** One property: label on the left, control on the right, reset button when it differs from the default. */
+    /**
+     * One setting: its name with a line of what it does under it, the control at the right and a reset button when it
+     * differs from the default. A setting that needs a restart has a tag after its name. A setting of a tab whose main
+     * switch is off is drawn dimmed: it does nothing until the switch is on.
+     */
     static final class SettingRow extends Row {
 
-        static final int HEIGHT = 22;
+        static final int HEIGHT = 30;
         static final int RESET_SIZE = 14;
+        private static final String RESTART_TAG = "restart";
 
         final Property property;
         final String label;
-        final String module;
+        /** Where the setting is, as "Module › Tab", for the search results and the restart list. */
+        final String where;
+        final String info;
+        final SettingsText.Restart restart;
+        private final String file;
         private final Control control;
         private final SettingsScreen screen;
+        /** The main switch of the tab, or null when the tab has none or this is it. */
+        Property master;
+        String masterName;
 
-        SettingRow(SettingsScreen screen, String module, Property property, int controlWidth) {
+        SettingRow(SettingsScreen screen, String where, String file, Property property, SettingsText.Setting text,
+            int controlWidth) {
             this.screen = screen;
-            this.module = module;
+            this.where = where;
+            this.file = file;
             this.property = property;
-            this.label = UI.humanize(property.getName());
-            this.control = Control.of(screen, property, controlWidth);
+            this.label = text != null ? text.name : UI.humanize(property.getName());
+            String comment = property.comment == null ? "" : property.comment.trim();
+            this.info = text != null ? text.info : comment;
+            this.restart = text != null ? text.restart : SettingsText.Restart.DEFAULT;
+            this.control = Control.of(screen, property, controlWidth, text);
         }
 
         @Override
@@ -375,31 +233,48 @@ final class Rows {
             return x + w - control.width - RESET_SIZE - 10;
         }
 
+        /** True while the main switch of the tab is off. */
+        boolean inactive() {
+            return master != null && !master.getBoolean(true);
+        }
+
+        boolean needsRestart() {
+            return restartLine(restart, property) != null;
+        }
+
         @Override
         void draw(int x, int y, int w, int mouseX, int mouseY, float dtMs) {
             GTNHTheme theme = UI.theme();
             boolean hovered = UI.inside(mouseX, mouseY, x, y, w, HEIGHT);
             if (hovered) UI.rect(x + 2, y, w - 4, HEIGHT, HOVER);
             boolean changed = !property.isDefault();
-            if (changed) UI.rect(x + 2, y + 3, 2, HEIGHT - 6, theme.barFill);
+            if (changed) UI.rect(x + 2, y + 4, 2, HEIGHT - 8, theme.barFill);
+            boolean off = inactive();
 
-            int labelW = controlX(x, w) - x - 16;
-            String marker = property.requiresMcRestart() ? " *" : "";
+            int labelX = x + 10;
+            int labelW = controlX(x, w) - labelX - 8;
+            int tagW = needsRestart() ? UI.font()
+                .getStringWidth(RESTART_TAG) + 6 : 0;
             String shown = UI.font()
-                .trimStringToWidth(
-                    label,
-                    labelW - UI.font()
-                        .getStringWidth(marker));
-            int ty = y + (HEIGHT - 8) / 2;
-            drawHighlighted(shown, x + 10, ty, theme.text, screen.query());
-            if (!marker.isEmpty()) {
-                UI.text(
-                    marker,
-                    x + 10
-                        + UI.font()
-                            .getStringWidth(shown),
-                    ty,
-                    0xFFC08020);
+                .trimStringToWidth(label, labelW - (tagW > 0 ? tagW + 4 : 0));
+            boolean twoLines = !info.isEmpty();
+            int nameY = twoLines ? y + 6 : y + (HEIGHT - 8) / 2;
+            drawHighlighted(shown, labelX, nameY, off ? theme.textDisabled : theme.text, screen.query());
+            if (tagW > 0) {
+                // a little tag: the change applies after a restart
+                int tx = labelX + UI.font()
+                    .getStringWidth(shown) + 5;
+                UI.rect(tx, nameY - 1, tagW, 10, 0x30E09A30);
+                UI.text(RESTART_TAG, tx + 3, nameY, RESTART);
+            }
+            if (twoLines) {
+                String hint = UI.font()
+                    .trimStringToWidth(info.replace('\n', ' '), labelW);
+                if (hint.length() < info.length()) {
+                    hint = UI.font()
+                        .trimStringToWidth(info.replace('\n', ' '), labelW - 8) + "...";
+                }
+                UI.text(hint, labelX, y + 17, off ? theme.textDisabled : theme.textDim);
             }
 
             control.draw(controlX(x, w), y, HEIGHT, mouseX, mouseY, dtMs);
@@ -446,17 +321,26 @@ final class Rows {
             if (!property.isDefault() && UI.inside(mouseX, mouseY, rx, ry, RESET_SIZE, RESET_SIZE)) {
                 List<String> lines = new ArrayList<>();
                 lines.add("§eReset to default");
-                lines.add("§7" + defaultText(property));
+                lines.add("§7Default: §f" + defaultText(property));
                 return lines;
             }
             int cx = controlX(x, w);
             if (UI.inside(mouseX, mouseY, cx, y, control.width, HEIGHT)) return control.tooltip();
             if (!UI.inside(mouseX, mouseY, x, y, cx - x, HEIGHT)) return null;
+            return description();
+        }
+
+        /** The name, what the setting does, its default, whether it needs a restart and where it is kept. */
+        List<String> description() {
             List<String> lines = new ArrayList<>();
             lines.add("§e" + label);
-            if (property.comment != null && !property.comment.isEmpty()) lines.addAll(wrap(property.comment));
-            lines.add("§8" + module + " > " + property.getName() + ", default: " + defaultText(property));
-            if (property.requiresMcRestart()) lines.add("§6* Needs a game restart");
+            if (!info.isEmpty()) lines.addAll(wrap(info));
+            if (inactive()) lines.add("§8Works only while " + masterName + " is on");
+            lines.add("");
+            lines.add("§7Default: §f" + defaultText(property));
+            String restartLine = restartLine(restart, property);
+            if (restartLine != null) lines.add(restartLine);
+            lines.add("§8" + file + " › " + property.getName());
             return lines;
         }
 
@@ -465,6 +349,8 @@ final class Rows {
             String q = query.toLowerCase(Locale.ROOT);
             return label.toLowerCase(Locale.ROOT)
                 .contains(q)
+                || info.toLowerCase(Locale.ROOT)
+                    .contains(q)
                 || property.getName()
                     .toLowerCase(Locale.ROOT)
                     .contains(q)
@@ -495,20 +381,52 @@ final class Rows {
     }
 
     static String defaultText(Property property) {
-        if (property.isList()) return Arrays.toString(property.getDefaults());
+        if (property.isList()) {
+            String[] values = property.getDefaults();
+            return values.length == 0 ? "empty list" : String.join(", ", values);
+        }
         String value = property.getDefault();
+        if (property.getType() == Property.Type.BOOLEAN) return Boolean.parseBoolean(value) ? "on" : "off";
+        if (property.getValidValues() != null && property.getValidValues().length > 0) return valueName(value);
         return value == null || value.isEmpty() ? "empty" : value;
     }
 
-    @SuppressWarnings("unchecked")
+    /** A value of a fixed set as words: BOTTOM_RIGHT is "Bottom right". */
+    static String valueName(String value) {
+        if (value == null || value.isEmpty() || !value.equals(value.toUpperCase(Locale.ROOT))) return value;
+        String words = value.replace('_', ' ')
+            .toLowerCase(Locale.ROOT);
+        return Character.toUpperCase(words.charAt(0)) + words.substring(1);
+    }
+
+    /** The text in gray, wrapped to the width of the tooltips. */
     static List<String> wrap(String text) {
+        return wrap(text, "§7");
+    }
+
+    @SuppressWarnings("unchecked")
+    static List<String> wrap(String text, String format) {
         List<String> lines = new ArrayList<>();
         for (String line : text.split("\n")) {
             lines.addAll(
                 UI.font()
-                    .listFormattedStringToWidth("§7" + line, 240));
+                    .listFormattedStringToWidth(format + line, TOOLTIP_WIDTH));
         }
         return lines;
+    }
+
+    /** The line of a tooltip telling that a change needs a restart, or null when it applies at once. */
+    static String restartLine(SettingsText.Restart restart, Property property) {
+        switch (restart) {
+            case ALWAYS:
+                return "§6⚠ Requires a game restart";
+            case TURN_ON:
+                return "§6⚠ Turning it on requires a game restart";
+            case DEFAULT:
+                return property.requiresMcRestart() ? "§6⚠ Requires a game restart" : null;
+            default:
+                return null;
+        }
     }
 
     // ---- numbers
@@ -555,11 +473,13 @@ final class Rows {
             this.width = width;
         }
 
-        static Control of(SettingsScreen screen, Property property, int width) {
+        static Control of(SettingsScreen screen, Property property, int width, SettingsText.Setting text) {
             if (property.isList()) return new ListControl(screen, property, width);
             if (property.getType() == Property.Type.BOOLEAN) return new ToggleControl(screen, property, width);
             String[] valid = property.getValidValues();
-            if (valid != null && valid.length > 0) return new CycleControl(screen, property, width, valid);
+            if (valid != null && valid.length > 0) {
+                return new CycleControl(screen, property, width, valid, text == null ? null : text.values);
+            }
             double[] range = range(property);
             if (range != null && SliderControl.fits(property, range)) {
                 return new SliderControl(screen, property, width, range);
@@ -642,10 +562,14 @@ final class Rows {
     static final class CycleControl extends Control {
 
         private final String[] values;
+        /** What each value does, or null. */
+        private final java.util.Map<String, String> descriptions;
 
-        CycleControl(SettingsScreen screen, Property property, int width, String[] values) {
+        CycleControl(SettingsScreen screen, Property property, int width, String[] values,
+            java.util.Map<String, String> descriptions) {
             super(screen, property, width);
             this.values = values;
+            this.descriptions = descriptions;
         }
 
         @Override
@@ -659,7 +583,7 @@ final class Rows {
             UI.text("<", x + 5, by + 4, left ? theme.hoverText : theme.textDim);
             UI.text(">", x + width - 10, by + 4, right ? theme.hoverText : theme.textDim);
             String value = UI.font()
-                .trimStringToWidth(property.getString(), width - 28);
+                .trimStringToWidth(valueName(property.getString()), width - 28);
             UI.text(
                 value,
                 x + (width - UI.font()
@@ -693,8 +617,15 @@ final class Rows {
         @Override
         List<String> tooltip() {
             List<String> lines = new ArrayList<>();
-            for (String value : values) lines.add((value.equals(property.getString()) ? "§e» " : "§7  ") + value);
-            lines.add("§8Click: next, right click: previous");
+            for (String value : values) {
+                boolean current = value.equals(property.getString());
+                String description = descriptions == null ? null : descriptions.get(value);
+                lines.add(
+                    (current ? "§e» " : "§7   ") + valueName(value)
+                        + (description == null ? "" : (current ? " §7- " : " §8- ") + description));
+            }
+            lines.add("");
+            lines.add("§8Click: next  ·  Right click: previous");
             return lines;
         }
     }
@@ -832,7 +763,8 @@ final class Rows {
         List<String> tooltip() {
             List<String> lines = new ArrayList<>();
             lines.add("§7From " + format(min) + " to " + format(max));
-            lines.add("§8Drag to change, right click to type");
+            lines.add("");
+            lines.add("§8Drag to change  ·  Right click to type a value");
             return lines;
         }
 
@@ -926,7 +858,7 @@ final class Rows {
         List<String> tooltip() {
             if (valid) return null;
             List<String> lines = new ArrayList<>();
-            lines.add("§cNot a valid value, it is not saved");
+            lines.add("§cNot a valid value: it is not saved");
             double[] range = range(property);
             if (range != null) lines.add("§7From " + Rows.trim(range[0]) + " to " + Rows.trim(range[1]));
             return lines;

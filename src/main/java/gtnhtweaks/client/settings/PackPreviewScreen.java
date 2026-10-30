@@ -155,7 +155,10 @@ public class PackPreviewScreen extends GuiScreen {
                 preview = reading.get();
                 filter();
             } catch (ExecutionException e) {
-                error = e.getCause() == null ? "Unknown error" : String.valueOf(e.getCause().getMessage());
+                error = e.getCause() == null ? "Unknown error"
+                    : String.valueOf(
+                        e.getCause()
+                            .getMessage());
                 GTNHTweaks.LOG.warn("Could not read the resource pack " + zip, e.getCause());
             } catch (Exception e) {
                 error = "Cancelled";
@@ -232,7 +235,8 @@ public class PackPreviewScreen extends GuiScreen {
         String title = "Preview: " + pack.title + (file.label.equals(pack.title) ? "" : " - " + file.label);
         UI.text(fontRendererObj.trimStringToWidth(title, windowW / 2), windowX + GAP + 2, windowY + 10, theme.logo);
         if (preview != null) {
-            String summary = String.format(Locale.ROOT, "%,d textures from %d mods", preview.textures.size(), preview.domains.size());
+            String summary = String
+                .format(Locale.ROOT, "%,d textures from %d mods", preview.textures.size(), preview.domains.size());
             UI.text(
                 summary,
                 windowX + windowW - GAP - 2 - fontRendererObj.getStringWidth(summary),
@@ -270,8 +274,7 @@ public class PackPreviewScreen extends GuiScreen {
         modScroll.drawBar(modsX + MODS_W - Scroll.BAR_WIDTH - 2, modsY + 2, modsH - 4, mouseX, mouseY);
     }
 
-    private void drawMod(String key, String name, int count, int y, int w, int mouseX, int mouseY,
-        GTNHTheme theme) {
+    private void drawMod(String key, String name, int count, int y, int w, int mouseX, int mouseY, GTNHTheme theme) {
         boolean on = key == null ? domain == null : key.equals(domain);
         boolean hovered = UI.inside(mouseX, mouseY, modsX + 2, y, w, MOD_ROW)
             && UI.inside(mouseX, mouseY, modsX, modsY, MODS_W, modsH);
@@ -397,11 +400,7 @@ public class PackPreviewScreen extends GuiScreen {
         UI.rect(x, y, size, size, 0x30000000);
         if (slot.texture == null) {
             String mark = slot.done ? "none" : "...";
-            UI.text(
-                mark,
-                x + (size - fontRendererObj.getStringWidth(mark)) / 2,
-                y + size / 2 - 4,
-                theme.textDisabled);
+            UI.text(mark, x + (size - fontRendererObj.getStringWidth(mark)) / 2, y + size / 2 - 4, theme.textDisabled);
             return;
         }
         Image image = slot.loaded;
