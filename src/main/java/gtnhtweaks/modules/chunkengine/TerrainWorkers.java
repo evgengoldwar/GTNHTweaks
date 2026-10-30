@@ -130,15 +130,30 @@ public final class TerrainWorkers {
         if (state == null) return;
         state.verified++;
         ChunkEngine.VERIFIED_TERRAIN.add();
-        String difference = difference(made, usual);
+        String difference;
+        try {
+            difference = difference(world, made, usual);
+        } catch (RuntimeException e) {
+            // a mod forbids a way of reading the chunks: the threads cannot be checked, so they stay off here
+            difference = "the chunks could not be compared: " + e;
+        }
         if (difference != null) state.disable("a chunk made on a thread differs from the usual one: " + difference);
     }
 
-    private static String difference(Chunk made, Chunk usual) {
+    private static String difference(WorldServer world, Chunk made, Chunk usual) {
         if (usual == null) return null;
-        if (!Arrays.equals(made.getBiomeArray(), usual.getBiomeArray())) return "the biomes of chunk " + where(usual);
+        WorldChunkManager biomes = world.getWorldChunkManager();
         for (int x = 0; x < 16; x++) {
             for (int z = 0; z < 16; z++) {
+                // not the biome array: EndlessIDs keeps the biomes elsewhere and stops the game when it is read
+                if (made.getBiomeGenForWorldCoords(x, z, biomes).biomeID
+                    != usual.getBiomeGenForWorldCoords(x, z, biomes).biomeID) {
+                    return "the biome at " + (usual.xPosition * 16 + x)
+                        + " "
+                        + (usual.zPosition * 16 + z)
+                        + " of chunk "
+                        + where(usual);
+                }
                 for (int y = 0; y < 256; y++) {
                     if (made.getBlock(x, y, z) != usual.getBlock(x, y, z)
                         || made.getBlockMetadata(x, y, z) != usual.getBlockMetadata(x, y, z)) {
