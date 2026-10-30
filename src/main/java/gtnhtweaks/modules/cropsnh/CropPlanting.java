@@ -42,7 +42,8 @@ public final class CropPlanting {
         if (offhandSlot < 0 || player.inventory.currentItem == offhandSlot) return null;
         ItemStack seed = player.inventory.getCurrentItem();
         ItemStack sticks = Backhand.offhandItem(player);
-        if (seed == null || sticks == null || sticks.stackSize <= 0
+        if (seed == null || sticks == null
+            || sticks.stackSize <= 0
             || sticks.getItem() != Item.getItemFromBlock(CropsNHBlocks.blockCropSticks)) return null;
         ISeedData data = CropsNHUtils.getSeedData(CropsNHUtils.copyStackWithSize(seed, 1), true, false);
         if (data == null) return null;
@@ -67,7 +68,9 @@ public final class CropPlanting {
         return new int[] { x, y, z };
     }
 
-    /** On the server: places the sticks from the off hand, as the player would, and plants the seed of the main hand. */
+    /**
+     * On the server: places the sticks from the off hand, as the player would, and plants the seed of the main hand.
+     */
     static void plant(EntityPlayerMP player, int x, int y, int z, int side, float hitX, float hitY, float hitZ) {
         World world = player.worldObj;
         if (player.getDistanceSq(x + 0.5, y + 0.5, z + 0.5) > REACH_SQ) return;

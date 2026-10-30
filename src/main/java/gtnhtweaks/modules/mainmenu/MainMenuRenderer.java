@@ -148,8 +148,8 @@ public final class MainMenuRenderer {
         int left = Integer.MAX_VALUE, top = Integer.MAX_VALUE, right = Integer.MIN_VALUE, bottom = Integer.MIN_VALUE;
         for (Object element : buttons) {
             GuiButton button = (GuiButton) element;
-            // the Language square stands out of the panel, as in vanilla
-            if (!button.visible || !MainMenuLayout.isKnown(button.id) || button.id == MainMenuLayout.LANGUAGE) continue;
+            // the small squares stand out of the panel, as Language in vanilla
+            if (!button.visible || !MainMenuLayout.isKnown(button.id) || MainMenuLayout.isSquare(button.id)) continue;
             left = Math.min(left, button.xPosition);
             top = Math.min(top, button.yPosition);
             right = Math.max(right, button.xPosition + ThemedButton.width(button));

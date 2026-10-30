@@ -12,8 +12,8 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.network.FMLNetworkEvent;
 import gtnhtweaks.common.Network;
 import gtnhtweaks.modules.cropsnh.CropPlanting;
-import gtnhtweaks.modules.cropsnh.CropsPackets;
 import gtnhtweaks.modules.cropsnh.CropsNHModule;
+import gtnhtweaks.modules.cropsnh.CropsPackets;
 
 /**
  * The client side: a right click with a seed in the main hand and crop sticks in the off hand on a soil the seed grows
