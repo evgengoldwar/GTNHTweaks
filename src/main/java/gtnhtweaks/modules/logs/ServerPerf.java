@@ -1,8 +1,5 @@
 package gtnhtweaks.modules.logs;
 
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,7 +38,7 @@ public final class ServerPerf {
         final String name;
         final Node parent;
         final Map<String, Node> children = new HashMap<>(4);
-        final long[] nanos = new long[2], calls = new long[2];
+        final long[] nanos = new long[2], calls = new long[2], alloc = new long[2];
         long tickNanos;
         long tickStamp = -1;
 
@@ -64,7 +61,7 @@ public final class ServerPerf {
         int resends;
         long resendNanos;
         long asyncLoadNanos;
-        long gcCount, gcMillis;
+        long allocated;
         final Map<Integer, long[]> dimensions = new TreeMap<>();
         final Map<Integer, String> snapshots = new LinkedHashMap<>();
 
@@ -88,13 +85,14 @@ public final class ServerPerf {
     private static volatile Thread serverThread;
     private static final Node[] STACK = new Node[MAX_DEPTH];
     private static final long[] STARTS = new long[MAX_DEPTH];
+    private static final long[] ALLOC_STARTS = new long[MAX_DEPTH];
+    private static long tickAllocStart, tickPauseStart;
     private static int depth;
     private static long tickId;
     private static long tickStart;
     private static final List<Node> TOUCHED = new ArrayList<>();
     private static long worldTickStart, entitiesStart, asyncStart, packetStart, resendStart;
     private static int worldTickDim, entitiesDim;
-    private static final long[] GC_AT_PERIOD_START = gc();
     private static long periodStart = System.currentTimeMillis(), sessionStart = periodStart;
 
     private ServerPerf() {}
@@ -109,6 +107,8 @@ public final class ServerPerf {
         depth = 0;
         tickId++;
         TOUCHED.clear();
+        tickAllocStart = MemoryLog.allocated();
+        tickPauseStart = MemoryLog.pauseNanos();
         tickStart = System.nanoTime();
     }
 
@@ -117,6 +117,8 @@ public final class ServerPerf {
         if (tickStart == 0) return null;
         long nanos = System.nanoTime() - tickStart;
         tickStart = 0;
+        long allocated = tickAllocStart < 0 ? 0 : Math.max(0, MemoryLog.allocated() - tickAllocStart);
+        long paused = MemoryLog.pauseNanos() - tickPauseStart;
         long queue = 0;
         MinecraftServer server = MinecraftServer.getServer();
         if (server != null && server.getConfigurationManager() != null) {
@@ -129,13 +131,19 @@ public final class ServerPerf {
         synchronized (LOCK) {
             for (Totals totals : TOTALS) {
                 totals.tick(nanos);
+                totals.allocated += allocated;
                 totals.playerQueue += queue;
                 totals.playerQueueMax = Math.max(totals.playerQueueMax, queue);
                 totals.queueSamples++;
                 if (snapshots != null) totals.snapshots.putAll(snapshots);
             }
         }
-        return nanos >= lagNanos ? "LAG TICK  " + ChunkGenLog.ms(nanos) + ": " + costliest(nanos) : null;
+        if (nanos < lagNanos) return null;
+        return "LAG TICK  " + ChunkGenLog.ms(nanos)
+            + (paused > 0 ? ", of it garbage collector pauses " + ChunkGenLog.ms(paused) : "")
+            + (allocated > 0 ? ", server thread allocated " + MemoryLog.megabytes(allocated) : "")
+            + ": "
+            + costliest(nanos);
     }
 
     /** The sections of this tick that took the most of it by their own time. */
@@ -182,6 +190,7 @@ public final class ServerPerf {
         }
         if (depth < MAX_DEPTH) {
             STACK[depth] = node;
+            if (MemoryLog.FAST_ALLOCATION) ALLOC_STARTS[depth] = MemoryLog.allocated();
             STARTS[depth] = System.nanoTime();
         }
         depth++;
@@ -197,6 +206,11 @@ public final class ServerPerf {
         node.nanos[1] += nanos;
         node.calls[0]++;
         node.calls[1]++;
+        if (MemoryLog.FAST_ALLOCATION) {
+            long bytes = Math.max(0, MemoryLog.allocated() - ALLOC_STARTS[depth]);
+            node.alloc[0] += bytes;
+            node.alloc[1] += bytes;
+        }
         if (node.tickStamp != tickId) {
             node.tickStamp = tickId;
             node.tickNanos = 0;
@@ -333,15 +347,6 @@ public final class ServerPerf {
 
     // ---- summary
 
-    private static long[] gc() {
-        long count = 0, millis = 0;
-        for (GarbageCollectorMXBean bean : ManagementFactory.getGarbageCollectorMXBeans()) {
-            count += Math.max(0, bean.getCollectionCount());
-            millis += Math.max(0, bean.getCollectionTime());
-        }
-        return new long[] { count, millis };
-    }
-
     /** True if a tick of the period lagged, to write a summary even without new chunks. */
     static boolean periodLagged() {
         synchronized (LOCK) {
@@ -354,15 +359,6 @@ public final class ServerPerf {
         synchronized (LOCK) {
             Totals totals = TOTALS[which];
             long periodMillis = System.currentTimeMillis() - (which == 0 ? periodStart : sessionStart);
-            if (which == 0) {
-                long[] now = gc();
-                totals.gcCount = now[0] - GC_AT_PERIOD_START[0];
-                totals.gcMillis = now[1] - GC_AT_PERIOD_START[1];
-                GC_AT_PERIOD_START[0] = now[0];
-                GC_AT_PERIOD_START[1] = now[1];
-                TOTALS[1].gcCount += totals.gcCount;
-                TOTALS[1].gcMillis += totals.gcMillis;
-            }
             if (totals.ticks == 0) {
                 if (which == 0) resetPeriod();
                 return;
@@ -393,13 +389,13 @@ public final class ServerPerf {
                     totals.over50,
                     totals.over100,
                     totals.over250));
-            out.append(
+            if (totals.allocated > 0) out.append(
                 String.format(
                     Locale.ROOT,
-                    "  garbage collection: %d collections, %s of pauses; heap %s\n",
-                    totals.gcCount,
-                    ChunkGenLog.ms(totals.gcMillis * 1_000_000L),
-                    heap()));
+                    "  the server thread allocated %s, %s per tick\n",
+                    MemoryLog.megabytes(totals.allocated),
+                    MemoryLog.megabytes(totals.allocated / totals.ticks)));
+            MemoryLog.summary(out, which, periodMillis);
 
             out.append("\nChunks to the players:\n");
             MinecraftServer server = MinecraftServer.getServer();
@@ -453,7 +449,9 @@ public final class ServerPerf {
             }
 
             out.append(
-                "\nServer tick by section of the profiler (share of all tick time, per tick, calls per tick):\n");
+                "\nServer tick by section of the profiler (share of all tick time, time, per tick, calls per tick"
+                    + (MemoryLog.FAST_ALLOCATION ? ", memory allocated per tick" : "")
+                    + "):\n");
             tree(out, ROOT, which, totals, 0);
             if (which == 0) resetPeriod();
         }
@@ -483,11 +481,12 @@ public final class ServerPerf {
             out.append(
                 String.format(
                     Locale.ROOT,
-                    "  %6s %10s %9s %8.1f  %s%s\n",
+                    "  %6s %10s %9s %8.1f %9s  %s%s\n",
                     share(nanos, totals.tickNanos),
                     ChunkGenLog.ms(nanos),
                     ChunkGenLog.micros(nanos / totals.ticks),
                     child.calls[which] / (double) totals.ticks,
+                    MemoryLog.FAST_ALLOCATION ? (child.alloc[which] / totals.ticks >> 10) + " KB" : "",
                     repeat(level),
                     child.name));
             tree(out, child, which, totals, level + 1);
@@ -497,6 +496,7 @@ public final class ServerPerf {
     private static void reset(Node node, int which) {
         node.nanos[which] = 0;
         node.calls[which] = 0;
+        node.alloc[which] = 0;
         for (Node child : node.children.values()) reset(child, which);
     }
 
@@ -504,16 +504,6 @@ public final class ServerPerf {
         char[] spaces = new char[level * 2];
         Arrays.fill(spaces, ' ');
         return new String(spaces);
-    }
-
-    private static String heap() {
-        MemoryUsage heap = ManagementFactory.getMemoryMXBean()
-            .getHeapMemoryUsage();
-        return String.format(
-            Locale.ROOT,
-            "%d of %d MB used",
-            heap.getUsed() >> 20,
-            (heap.getMax() > 0 ? heap.getMax() : heap.getCommitted()) >> 20);
     }
 
     private static String micros(int micros) {

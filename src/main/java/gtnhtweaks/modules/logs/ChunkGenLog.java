@@ -88,7 +88,8 @@ public final class ChunkGenLog {
         final World world;
         final int x, z;
         final long start = System.nanoTime();
-        long childNanos;
+        final long allocStart = MemoryLog.allocated();
+        long childNanos, childAlloc;
         /** For a chunk, its terrain or its population: the own time of every step inside, by step. */
         Map<String, Long> parts;
         int cascades;
@@ -123,7 +124,7 @@ public final class ChunkGenLog {
     private static final class Stat {
 
         final String stage, label, where;
-        long nanos, max;
+        long nanos, max, alloc;
         int count;
         long[] engineNanos = new long[0], engineCalls = new long[0];
 
@@ -164,7 +165,7 @@ public final class ChunkGenLog {
         final Map<String, Cascade> cascades = new LinkedHashMap<>();
         final List<Slow> slowest = new ArrayList<>();
         int populated;
-        long nanos;
+        long nanos, alloc;
         long[] engineNanos = new long[0], engineCalls = new long[0];
         int saves;
         long saveNanos;
@@ -183,6 +184,7 @@ public final class ChunkGenLog {
     static void start() {
         if (active) return;
         active = true;
+        MemoryLog.start();
         ChunkGenLog listener = new ChunkGenLog();
         FMLCommonHandler.instance()
             .bus()
@@ -342,6 +344,9 @@ public final class ChunkGenLog {
     }
 
     private static void record(Frame frame, Deque<Frame> stack, long total) {
+        long allocTotal = frame.allocStart < 0 ? 0 : Math.max(0, MemoryLog.allocated() - frame.allocStart);
+        long allocOwn = Math.max(0, allocTotal - frame.childAlloc);
+        if (stack.peek() != null) stack.peek().childAlloc += allocTotal;
         long own = Math.max(0, total - frame.childNanos);
         Frame parent = stack.peek();
         if (parent != null) parent.childNanos += total;
@@ -377,6 +382,7 @@ public final class ChunkGenLog {
                     stat.count++;
                     stat.nanos += own;
                     stat.max = Math.max(stat.max, own);
+                    stat.alloc += allocOwn;
                     stat.engineNanos = add(stat.engineNanos, frame.engineNanos);
                     stat.engineCalls = add(stat.engineCalls, frame.engineCalls);
                 }
@@ -384,7 +390,10 @@ public final class ChunkGenLog {
                 stats.engineCalls = add(stats.engineCalls, frame.engineCalls);
                 if (TERRAIN.equals(frame.stage)) stats.newChunks.merge(frame.where, 1, Integer::sum);
                 if (POPULATION.equals(frame.stage)) stats.populated++;
-                if (parent == null) stats.nanos += total;
+                if (parent == null) {
+                    stats.nanos += total;
+                    stats.alloc += allocTotal;
+                }
             }
             if (parent == null) {
                 tickChunkNanos += total;
@@ -494,6 +503,14 @@ public final class ChunkGenLog {
 
     // ---- writing
 
+    /** A line from another thread, as of the garbage collector. */
+    static void externalLine(String text) {
+        if (!active) return;
+        synchronized (LOCK) {
+            line(text);
+        }
+    }
+
     private static void line(String text) {
         String kind = text.substring(0, text.indexOf("  "));
         int[] count = LINES.computeIfAbsent(kind, k -> new int[2]);
@@ -511,6 +528,7 @@ public final class ChunkGenLog {
     /** Every 2 seconds on the writer thread: the summary when its period is over, then the pending lines. */
     private static void tick() {
         try {
+            MemoryLog.sampleThreads();
             if (System.currentTimeMillis() - periodStart >= LogsModule.chunkSummaryMinutes * 60_000L) summarize(false);
             flush();
         } catch (Throwable t) {
@@ -549,7 +567,10 @@ public final class ChunkGenLog {
                     .append('\n');
                 session = new Stats();
             }
-            if (whole) ServerPerf.resetSession();
+            if (whole) {
+                ServerPerf.resetSession();
+                MemoryLog.resetSession();
+            }
         }
     }
 
@@ -576,6 +597,8 @@ public final class ChunkGenLog {
     private static String header() {
         return "Chunk generation of " + LogFiles.sessionText()
             + "\n\n"
+            + MemoryLog.jvm()
+            + "\n"
             + "Where the server time goes when new chunks are made. Times are own times: a step does not count the\n"
             + "steps that ran inside it. Steps:\n"
             + "  terrain        a new chunk is made: the chunk generator of the dimension makes its blocks (and the\n"
@@ -590,6 +613,7 @@ public final class ChunkGenLog {
             + "  SLOW TICK    a server tick in which chunk generation took longer than "
             + LogsModule.chunkSlowTickMs
             + " ms (50 ms is a whole tick at 20 TPS)\n"
+            + "  GC PAUSE     a pause of the garbage collector of 50 ms or more: the server and the game stood still\n"
             + "  LAG TICK     a server tick longer than "
             + LogsModule.chunkLagTickMs
             + " ms for any reason, with the sections of the profiler that took most of it\n"
@@ -637,6 +661,9 @@ public final class ChunkGenLog {
         if (newChunks > 0) out.append(", ")
             .append(ms(stats.nanos / newChunks))
             .append(" per new chunk");
+        if (stats.alloc > 0) out.append("; memory allocated ")
+            .append(MemoryLog.megabytes(stats.alloc))
+            .append(newChunks > 0 ? ", " + (stats.alloc / newChunks >> 10) + " KB per new chunk" : "");
         out.append('\n');
         out.append("Ticks: ")
             .append(stats.ticks)
@@ -677,24 +704,26 @@ public final class ChunkGenLog {
         out.append(
             String.format(
                 Locale.ROOT,
-                "  %10s %6s %8s %10s %10s  %s\n",
+                "  %10s %6s %8s %10s %10s %10s  %s\n",
                 "time",
                 "share",
                 "calls",
                 "average",
                 "max",
+                "allocated",
                 "step"));
         for (int i = 0; i < Math.min(TOP_ROWS, steps.size()); i++) {
             Stat stat = steps.get(i);
             out.append(
                 String.format(
                     Locale.ROOT,
-                    "  %10s %6s %8d %10s %10s  %s %s  ·  %s\n",
+                    "  %10s %6s %8d %10s %10s %10s  %s %s  ·  %s\n",
                     ms(stat.nanos),
                     share(stat.nanos, stats.nanos),
                     stat.count,
                     ms(stat.nanos / Math.max(1, stat.count)),
                     ms(stat.max),
+                    MemoryLog.megabytes(stat.alloc),
                     stat.stage,
                     stat.label,
                     stat.where));
