@@ -674,7 +674,10 @@ public final class ChunkGenLog {
             try {
                 for (ModContainer mod : Loader.instance()
                     .getModList()) {
-                    if (mod.getSource() != null && sameFile(mod.getSource(), source)) return mod.getName();
+                    // the same file, or one of the same name where paths differ, as through a link
+                    if (mod.getSource() != null && (sameFile(mod.getSource(), source) || mod.getSource()
+                        .getName()
+                        .equals(source.getName()))) return mod.getName();
                 }
             } catch (RuntimeException ignored) {
                 // the mod list is not there yet
