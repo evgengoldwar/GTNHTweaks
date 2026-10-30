@@ -26,7 +26,7 @@ public final class MainMenuModule extends TweakModule {
     public static boolean showSplashText = false;
     public static boolean showLoadTime = false;
     public static boolean showModCount = false;
-    public static boolean showSettingsButton = false;
+    public static boolean showSettingsButton = true;
     public static boolean respectResourcePacks = false;
     public static boolean replaceCustomMainMenu = false;
 
