@@ -23,7 +23,6 @@ import gtnhtweaks.modules.backups.BackupsServerModule;
 import gtnhtweaks.modules.bees.BeesModule;
 import gtnhtweaks.modules.buttons.ButtonsModule;
 import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
-import gtnhtweaks.modules.cropsnh.CropsNHModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.extrautilities.ExtraUtilitiesModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
@@ -55,7 +54,6 @@ public final class ModuleManager {
             NEIModule.INSTANCE,
             ChromaticTooltipsModule.INSTANCE,
             TinkersModule.INSTANCE,
-            CropsNHModule.INSTANCE,
             ExtraUtilitiesModule.INSTANCE,
             BeesModule.INSTANCE,
             LogsModule.INSTANCE,

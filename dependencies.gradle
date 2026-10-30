@@ -50,11 +50,4 @@ dependencies {
     // loaded in the dev client (runClient), where GregTech adds its bees to it, to test the bees of an addon too
     compileOnly("com.github.GTNewHorizons:ForestryMC:4.11.39:dev") { transitive = false }
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:ForestryMC:4.11.39:dev")
-    // CropsNH is optional: compiled against for the cropsnh module, which does nothing without it, and loaded in the
-    // dev client (runClient) with Backhand to test planting with crop sticks in the off hand
-    devOnlyNonPublishable("com.github.GTNewHorizons:CropsNH:2.0.140:dev")
-    // CropsNH does not publish the mods of its compat code, yet the JVM needs their interfaces to load its postInit:
-    // without them the dev client crashes with NoClassDefFoundError: portablejim/bbw/core/conversion/ICustomMapping
-    runtimeOnlyNonPublishable("com.github.GTNewHorizons:BetterBuildersWands:0.13.12-GTNH:dev") { transitive = false }
-    runtimeOnlyNonPublishable("com.github.GTNewHorizons:FindIt:1.4.7:dev") { transitive = false }
 }

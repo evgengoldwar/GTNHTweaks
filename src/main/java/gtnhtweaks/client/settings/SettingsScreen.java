@@ -60,12 +60,10 @@ public class SettingsScreen extends GuiScreen {
     static {
         CLIENT_GROUPS.put("Look", Arrays.asList("loadingscreen", "mainmenu", "menus", "buttons"));
         CLIENT_GROUPS.put("Gameplay", Arrays.asList("minecraft", "itemphysics"));
-        CLIENT_GROUPS.put(
-            "Mods",
-            Arrays.asList("gregtech", "nei", "chromatictooltips", "tinkers", "extrautilities", "bees", "cropsnh"));
+        CLIENT_GROUPS
+            .put("Mods", Arrays.asList("gregtech", "nei", "chromatictooltips", "tinkers", "extrautilities", "bees"));
         CLIENT_GROUPS.put("Tools", Arrays.asList("logs", "backups", "debug"));
         SERVER_GROUPS.put("Gameplay", Arrays.asList("minecraftServer"));
-        SERVER_GROUPS.put("Mods", Arrays.asList("cropsnh"));
         SERVER_GROUPS.put("Tools", Arrays.asList("logs", "backupsServer"));
     }
 
