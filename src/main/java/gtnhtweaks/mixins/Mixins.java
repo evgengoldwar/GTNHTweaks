@@ -185,6 +185,20 @@ public enum Mixins implements IMixins {
     LOGS_CHUNK_GENERATION(new MixinBuilder("Time chunk generation for the Chunk generation log").setPhase(Phase.EARLY)
         .setApplyIf(() -> LogsModule.INSTANCE.isEnabled() && LogsModule.writeChunkGeneration)
         .addCommonMixins("logs.MixinChunkProviderServer_ChunkGen", "logs.MixinGameRegistry_ChunkGen")),
+    LOGS_CHUNK_ENGINE(new MixinBuilder("Time the work of Minecraft inside chunk generation").setPhase(Phase.EARLY)
+        .setApplyIf(
+            () -> LogsModule.INSTANCE.isEnabled() && LogsModule.writeChunkGeneration && LogsModule.chunkEngineDetails)
+        .addCommonMixins(
+            "logs.MixinWorld_ChunkGenEngine",
+            "logs.MixinWorldServer_ChunkGenEngine",
+            "logs.MixinChunk_ChunkGenEngine",
+            "logs.MixinMapGenBase_ChunkGenEngine",
+            "logs.MixinMapGenStructure_ChunkGenEngine",
+            "logs.MixinWorldGenerators_ChunkGenEngine",
+            "logs.MixinWorldChunkManager_ChunkGenEngine",
+            "logs.MixinNoiseGeneratorOctaves_ChunkGenEngine",
+            "logs.MixinSpawnerAnimals_ChunkGenEngine",
+            "logs.MixinAnvilChunkLoader_ChunkGenEngine")),
     LOGS_CRASH_SCREEN(new MixinBuilder("Crash screen in place of other crash screens").setPhase(Phase.EARLY)
         .setApplyIf(() -> LogsModule.INSTANCE.isEnabled() && LogsModule.replaceCrashScreen)
         .addClientMixins("logs.MixinMinecraft_CrashScreen")),

@@ -618,6 +618,12 @@ final class SettingsText {
             "Chunk generation: a server tick in which making chunks takes longer gets a line of its own. 50 ms is a "
                 + "whole tick at 20 TPS.");
         set(
+            "chunkEngineDetails",
+            "Minecraft's work in chunk generation",
+            "Chunk generation: also measure the work of Minecraft itself in it: setting blocks, light, neighbor "
+                + "updates, caves, structures, vanilla features, biomes, mob spawning.",
+            Restart.ALWAYS);
+        set(
             "chunkSummaryMinutes",
             "Summary every, minutes",
             "Chunk generation: how often the summary is written while chunks are made.");

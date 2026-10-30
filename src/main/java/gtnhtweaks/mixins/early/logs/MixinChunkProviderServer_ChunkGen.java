@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import gtnhtweaks.modules.logs.ChunkGenEngine;
 import gtnhtweaks.modules.logs.ChunkGenLog;
 
 /**
@@ -48,6 +49,30 @@ public abstract class MixinChunkProviderServer_ChunkGen {
     @Inject(method = "originalLoadChunk", remap = false, at = @At("RETURN"))
     private void gtnhtweaks$endTerrain(int x, int z, CallbackInfoReturnable<Chunk> cir) {
         ChunkGenLog.endTerrain(x, z);
+    }
+
+    /** A chunk read from disk while chunks are made, mostly a neighbor a generator reached into. */
+    @Inject(
+        method = "loadChunk(IILjava/lang/Runnable;)Lnet/minecraft/world/chunk/Chunk;",
+        remap = false,
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraftforge/common/chunkio/ChunkIOExecutor;syncChunkLoad(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/storage/AnvilChunkLoader;Lnet/minecraft/world/gen/ChunkProviderServer;II)Lnet/minecraft/world/chunk/Chunk;"),
+        require = 0)
+    private void gtnhtweaks$enterDiskLoad(int x, int z, Runnable runnable, CallbackInfoReturnable<Chunk> cir) {
+        ChunkGenEngine.enter(ChunkGenEngine.DISK_LOAD);
+    }
+
+    @Inject(
+        method = "loadChunk(IILjava/lang/Runnable;)Lnet/minecraft/world/chunk/Chunk;",
+        remap = false,
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraftforge/common/chunkio/ChunkIOExecutor;syncChunkLoad(Lnet/minecraft/world/World;Lnet/minecraft/world/chunk/storage/AnvilChunkLoader;Lnet/minecraft/world/gen/ChunkProviderServer;II)Lnet/minecraft/world/chunk/Chunk;",
+            shift = At.Shift.AFTER),
+        require = 0)
+    private void gtnhtweaks$exitDiskLoad(int x, int z, Runnable runnable, CallbackInfoReturnable<Chunk> cir) {
+        ChunkGenEngine.exit(ChunkGenEngine.DISK_LOAD);
     }
 
     @Inject(method = "populate", at = @At("HEAD"))

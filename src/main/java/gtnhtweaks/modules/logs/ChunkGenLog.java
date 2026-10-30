@@ -10,6 +10,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -81,7 +82,7 @@ public final class ChunkGenLog {
     private ChunkGenLog() {}
 
     /** A step on the stack of the thread. */
-    private static final class Frame {
+    private static final class Frame implements ChunkGenEngine.Sink {
 
         final String stage, label, where;
         final World world;
@@ -92,6 +93,20 @@ public final class ChunkGenLog {
         Map<String, Long> parts;
         int cascades;
         boolean worked;
+        /** The depth of the hooks of Minecraft when the step began, -1 when they are not measured for it. */
+        int engineBase = -1;
+        /** The own time and the calls of the work of Minecraft inside the step, by kind. */
+        long[] engineNanos = new long[0], engineCalls = new long[0];
+
+        @Override
+        public void engine(int kind, long nanos) {
+            if (kind >= engineNanos.length) {
+                engineNanos = Arrays.copyOf(engineNanos, kind + 8);
+                engineCalls = Arrays.copyOf(engineCalls, kind + 8);
+            }
+            engineNanos[kind] += nanos;
+            engineCalls[kind]++;
+        }
 
         Frame(String stage, String label, World world, int x, int z) {
             this.stage = stage;
@@ -110,6 +125,7 @@ public final class ChunkGenLog {
         final String stage, label, where;
         long nanos, max;
         int count;
+        long[] engineNanos = new long[0], engineCalls = new long[0];
 
         Stat(String stage, String label, String where) {
             this.stage = stage;
@@ -149,6 +165,9 @@ public final class ChunkGenLog {
         final List<Slow> slowest = new ArrayList<>();
         int populated;
         long nanos;
+        long[] engineNanos = new long[0], engineCalls = new long[0];
+        int saves;
+        long saveNanos;
         int ticks, slowTicks;
         long worstTick;
         String worstTickAt = "";
@@ -189,11 +208,19 @@ public final class ChunkGenLog {
         if (!active) return null;
         Deque<Frame> stack = STACK.get();
         // noted before the step starts, so writing it down is not part of its time
-        if (TERRAIN.equals(stage) && !stack.isEmpty()) cascade(stack, where(world), x, z);
+        if (TERRAIN.equals(stage) && !stack.isEmpty()) {
+            long noted = System.nanoTime();
+            cascade(stack, where(world), x, z);
+            // writing it down is not the time of what runs around
+            long bookkeeping = System.nanoTime() - noted;
+            stack.peek().childNanos += bookkeeping;
+            ChunkGenEngine.exclude(bookkeeping);
+        }
         Frame chunk = chunkOf(stack);
         if (chunk != null) chunk.worked = true;
         Frame frame = new Frame(stage, label(source), world, x, z);
         stack.push(frame);
+        frame.engineBase = ChunkGenEngine.stepBegins(frame);
         return frame;
     }
 
@@ -213,8 +240,10 @@ public final class ChunkGenLog {
     /** Begins the population of a chunk; most calls find it populated already and are not counted. */
     public static void beginPopulation(Object generator, World world, int x, int z) {
         if (!active) return;
+        Frame frame = new Frame(POPULATION, label(generator), world, x, z);
         STACK.get()
-            .push(new Frame(POPULATION, label(generator), world, x, z));
+            .push(frame);
+        frame.engineBase = ChunkGenEngine.stepBegins(frame);
     }
 
     /** Ends the innermost population of the chunk, and the steps left open inside it. */
@@ -235,6 +264,27 @@ public final class ChunkGenLog {
                 return;
             }
         }
+    }
+
+    static boolean isActive() {
+        return active;
+    }
+
+    /** A chunk was saved on the server thread, outside generation: new chunks are saved too. */
+    static void chunkSaved(long nanos) {
+        synchronized (LOCK) {
+            for (Stats stats : new Stats[] { period, session }) {
+                if (stats.isEmpty()) continue;
+                stats.saves++;
+                stats.saveNanos += nanos;
+            }
+        }
+    }
+
+    private static long[] add(long[] into, long[] values) {
+        if (values.length > into.length) into = Arrays.copyOf(into, values.length);
+        for (int i = 0; i < values.length; i++) into[i] += values[i];
+        return into;
     }
 
     // ---- measuring
@@ -280,10 +330,22 @@ public final class ChunkGenLog {
     }
 
     private static void finish(Frame frame, Deque<Frame> stack) {
-        long total = System.nanoTime() - frame.start;
+        long end = System.nanoTime();
+        long total = end - frame.start;
+        try {
+            record(frame, stack, total);
+        } finally {
+            // the bookkeeping of the log is not the time of the step around
+            Frame parent = stack.peek();
+            if (parent != null) parent.childNanos += System.nanoTime() - end;
+        }
+    }
+
+    private static void record(Frame frame, Deque<Frame> stack, long total) {
         long own = Math.max(0, total - frame.childNanos);
         Frame parent = stack.peek();
         if (parent != null) parent.childNanos += total;
+        ChunkGenEngine.stepEnds(total, frame.engineBase, parent);
         // a population that found the chunk populated did nothing
         if (POPULATION.equals(frame.stage) && !frame.worked) return;
 
@@ -306,7 +368,7 @@ public final class ChunkGenLog {
 
         synchronized (LOCK) {
             // the period starts with its first chunk, not when the last one ended or the game started
-            if (period.isEmpty()) periodStart = System.currentTimeMillis();
+            if (period.isEmpty()) periodStart = System.currentTimeMillis() - total / 1_000_000;
             for (Stats stats : new Stats[] { period, session }) {
                 if (!POPULATION.equals(frame.stage)) {
                     Stat stat = stats.steps.computeIfAbsent(
@@ -315,7 +377,11 @@ public final class ChunkGenLog {
                     stat.count++;
                     stat.nanos += own;
                     stat.max = Math.max(stat.max, own);
+                    stat.engineNanos = add(stat.engineNanos, frame.engineNanos);
+                    stat.engineCalls = add(stat.engineCalls, frame.engineCalls);
                 }
+                stats.engineNanos = add(stats.engineNanos, frame.engineNanos);
+                stats.engineCalls = add(stats.engineCalls, frame.engineCalls);
                 if (TERRAIN.equals(frame.stage)) stats.newChunks.merge(frame.where, 1, Integer::sum);
                 if (POPULATION.equals(frame.stage)) stats.populated++;
                 if (parent == null) stats.nanos += total;
@@ -638,6 +704,8 @@ public final class ChunkGenLog {
             }
         }
 
+        engineSummary(out, stats);
+
         // slowest chunks
         out.append("\nSlowest chunks (over ")
             .append(LogsModule.chunkSlowMs)
@@ -651,6 +719,109 @@ public final class ChunkGenLog {
         }
         out.append('\n');
         return out.toString();
+    }
+
+    /** The work of Minecraft itself inside the generation, what is worth making faster in Minecraft. */
+    private static void engineSummary(StringBuilder out, Stats stats) {
+        String[] names = ChunkGenEngine.names();
+        long engine = 0;
+        for (long nanos : stats.engineNanos) engine += nanos;
+        if (engine > 0) {
+            out.append(
+                "\nInside Minecraft (own times: a line does not count the lines that ran inside it, so they add up):\n");
+            out.append(
+                String.format(Locale.ROOT, "  %10s %6s %9s %10s  %s\n", "time", "share", "calls", "average", "work"));
+            List<Integer> kinds = new ArrayList<>();
+            for (int i = 0; i < stats.engineNanos.length; i++) if (stats.engineCalls[i] > 0) kinds.add(i);
+            kinds.sort((a, b) -> Long.compare(stats.engineNanos[b], stats.engineNanos[a]));
+            for (int i = 0; i < Math.min(40, kinds.size()); i++) {
+                int kind = kinds.get(i);
+                out.append(
+                    String.format(
+                        Locale.ROOT,
+                        "  %10s %6s %9s %10s  %s\n",
+                        ms(stats.engineNanos[kind]),
+                        share(stats.engineNanos[kind], stats.nanos),
+                        count(stats.engineCalls[kind]),
+                        micros(stats.engineNanos[kind] / Math.max(1, stats.engineCalls[kind])),
+                        kind < names.length ? names[kind] : "?"));
+            }
+            if (kinds.size() > 40) out.append("  ... and ")
+                .append(kinds.size() - 40)
+                .append(" more\n");
+            out.append(
+                String.format(
+                    Locale.ROOT,
+                    "  %10s %6s %9s %10s  %s\n",
+                    ms(Math.max(0, stats.nanos - engine)),
+                    share(Math.max(0, stats.nanos - engine), stats.nanos),
+                    "",
+                    "",
+                    "the own code of the generators, outside all of these"));
+
+            // where it happens
+            List<Stat> steps = new ArrayList<>(stats.steps.values());
+            steps.sort((a, b) -> Long.compare(b.nanos, a.nanos));
+            out.append("\nInside Minecraft, by step (the costliest steps):\n");
+            for (int i = 0; i < Math.min(12, steps.size()); i++) {
+                Stat stat = steps.get(i);
+                long inside = 0;
+                List<Integer> stepKinds = new ArrayList<>();
+                for (int k = 0; k < stat.engineNanos.length; k++) {
+                    inside += stat.engineNanos[k];
+                    if (stat.engineNanos[k] > 0) stepKinds.add(k);
+                }
+                stepKinds.sort((a, b) -> Long.compare(stat.engineNanos[b], stat.engineNanos[a]));
+                out.append("  ")
+                    .append(stat.stage)
+                    .append(' ')
+                    .append(stat.label)
+                    .append("  ·  ")
+                    .append(stat.where)
+                    .append(": ")
+                    .append(ms(stat.nanos))
+                    .append('\n');
+                for (int k = 0; k < Math.min(6, stepKinds.size()); k++) {
+                    int kind = stepKinds.get(k);
+                    out.append(
+                        String.format(
+                            Locale.ROOT,
+                            "      %10s %6s %9s calls  %s\n",
+                            ms(stat.engineNanos[kind]),
+                            share(stat.engineNanos[kind], stat.nanos),
+                            count(stat.engineCalls[kind]),
+                            kind < names.length ? names[kind] : "?"));
+                }
+                out.append(
+                    String.format(
+                        Locale.ROOT,
+                        "      %10s %6s %9s        %s\n",
+                        ms(Math.max(0, stat.nanos - inside)),
+                        share(Math.max(0, stat.nanos - inside), stat.nanos),
+                        "",
+                        "its own code"));
+            }
+        }
+        if (stats.saves > 0) {
+            out.append("\nChunks saved on the server thread (after generation too, written to NBT there): ")
+                .append(count(stats.saves))
+                .append(", ")
+                .append(ms(stats.saveNanos))
+                .append(", ")
+                .append(micros(stats.saveNanos / stats.saves))
+                .append(" each\n");
+        }
+    }
+
+    private static String micros(long nanos) {
+        if (nanos >= 1_000_000) return ms(nanos);
+        return String.format(Locale.ROOT, "%.1f µs", nanos / 1e3);
+    }
+
+    private static String count(long count) {
+        if (count >= 1_000_000) return String.format(Locale.ROOT, "%.1fM", count / 1e6);
+        if (count >= 10_000) return String.format(Locale.ROOT, "%.1fK", count / 1e3);
+        return Long.toString(count);
     }
 
     // ---- names

@@ -42,6 +42,7 @@ public final class LogsModule extends TweakModule {
     static int chunkSlowMs = 50;
     static int chunkSlowTickMs = 50;
     static int chunkSummaryMinutes = 5;
+    public static boolean chunkEngineDetails = true;
 
     public static boolean replaceCrashScreen = true;
     static int maxStackFrames = 12;
@@ -168,6 +169,14 @@ public final class LogsModule extends TweakModule {
             1,
             120,
             "Chunk generation: minutes between the summaries, written only while chunks are made");
+        chunkEngineDetails = config.getBoolean(
+            "chunkEngineDetails",
+            CATEGORY_DETAILS,
+            chunkEngineDetails,
+            "Chunk generation: also measure the work of Minecraft itself inside it (setting blocks, light, neighbor "
+                + "updates, caves and structures, vanilla features, biomes, noise, mob spawning, chunks read from "
+                + "disk), to tell what to make faster in Minecraft. Costs a few percent of the generation time. "
+                + "Changes require a game restart");
         String[] ignore = config.getStringList(
             "ignore",
             CATEGORY_DETAILS,
