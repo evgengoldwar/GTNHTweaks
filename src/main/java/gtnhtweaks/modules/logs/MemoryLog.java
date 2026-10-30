@@ -7,14 +7,13 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import java.lang.management.ThreadMXBean;
 
 import javax.management.Notification;
 import javax.management.NotificationEmitter;
@@ -59,9 +58,14 @@ final class MemoryLog {
                     .findVirtual(type, "isThreadAllocatedMemorySupported", MethodType.methodType(boolean.class))
                     .invoke(THREADS);
                 if (supported) {
-                    lookup.findVirtual(type, "setThreadAllocatedMemoryEnabled", MethodType.methodType(void.class, boolean.class))
+                    lookup
+                        .findVirtual(
+                            type,
+                            "setThreadAllocatedMemoryEnabled",
+                            MethodType.methodType(void.class, boolean.class))
                         .invoke(THREADS, true);
-                    byId = lookup.findVirtual(type, "getThreadAllocatedBytes", MethodType.methodType(long.class, long.class))
+                    byId = lookup
+                        .findVirtual(type, "getThreadAllocatedBytes", MethodType.methodType(long.class, long.class))
                         .bindTo(THREADS);
                     byIds = lookup
                         .findVirtual(type, "getThreadAllocatedBytes", MethodType.methodType(long[].class, long[].class))
