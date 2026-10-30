@@ -284,6 +284,8 @@ public class SettingsScreen extends GuiScreen {
                 for (String key : keys) {
                     Property property = values.get(key);
                     if (!module.showInSettings(name, key)) continue;
+                    // a key no module reads any more, left in an old file, has no comment: Forge sets it when read
+                    if (property.comment == null && SettingsText.setting(id, name, key) == null) continue;
                     Rows.SettingRow row = new Rows.SettingRow(
                         this,
                         p.name + " › " + tab.name,

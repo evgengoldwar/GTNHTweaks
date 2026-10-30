@@ -172,6 +172,9 @@ public final class MinecraftModule extends TweakModule {
 
     @Override
     protected void loadConfig(Configuration config) {
+        // left in the file by features taken out: the opening animation of the screens and the CurseForge tab
+        if (config.hasCategory("screenanimation")) config.removeCategory(config.getCategory("screenanimation"));
+        removeKey(config, CATEGORY_RESOURCE_PACKS, "curseForgeApiKey");
         config.addCustomCategoryComment(
             CATEGORY_OUTLINE,
             "The outline of the looked at block. The settings can also be changed in game, with a live preview, "

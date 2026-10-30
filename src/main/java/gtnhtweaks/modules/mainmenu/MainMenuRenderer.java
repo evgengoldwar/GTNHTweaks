@@ -129,7 +129,7 @@ public final class MainMenuRenderer {
             else button.drawButton(mc, mouseX, mouseY);
         }
 
-        // footer: mod count and the settings button on the left, load time on the right
+        // footer: mod count on the left, load time on the right
         if (MainMenuModule.showModCount) {
             String caption = MainMenuModule.textMods + ": ";
             font.drawString(caption, 4, height - 12, theme.textDim, shadow);
@@ -145,7 +145,7 @@ public final class MainMenuRenderer {
         int left = Integer.MAX_VALUE, top = Integer.MAX_VALUE, right = Integer.MIN_VALUE, bottom = Integer.MIN_VALUE;
         for (Object element : buttons) {
             GuiButton button = (GuiButton) element;
-            if (!button.visible || button.id == MainMenuLayout.SETTINGS || !MainMenuLayout.isKnown(button.id)) continue;
+            if (!button.visible || !MainMenuLayout.isKnown(button.id)) continue;
             left = Math.min(left, button.xPosition);
             top = Math.min(top, button.yPosition);
             right = Math.max(right, button.xPosition + ThemedButton.width(button));
@@ -164,11 +164,6 @@ public final class MainMenuRenderer {
                 .getActiveModList()
                 .size());
         return cachedModCount;
-    }
-
-    /** "Mods: 312", or empty when the mod count is hidden. */
-    static String modCountText() {
-        return MainMenuModule.showModCount ? MainMenuModule.textMods + ": " + modCount() : "";
     }
 
     /** "Loaded in 8.1 s": dim caption, time in the accent color, and an accent strip like the hovered buttons. */

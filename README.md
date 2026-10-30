@@ -130,6 +130,8 @@
   в цветах уровней напряжения GregTech; фон чуть сдвигается за мышью (отключается в разделе `circuit`);
 - подпись под логотипом и пульсирующий жёлтый сплэш-текст в цвете темы;
 - плоские кнопки в цветах темы с подсветкой при наведении;
+- кнопка **GTNHTweaks** (настройки мода) делит ряд с «Mods» пополам — так же, как «Language» делит ряд
+  с «Options» (включается `general/showSettingsButton`);
 - внизу слева копирайт Mojang, справа время запуска сборки, например «Loaded in 8.1 s»
   (нужен модуль `loadingscreen`). Строки версий Minecraft/MCP/FML/Forge не показываются.
 
@@ -143,6 +145,7 @@
 | `general/theme` | `SHADOW` | тема: `SHADOW`, `DARK` или `LIGHT` |
 | `general/showSplashText` | `false` | сплэш-текст под логотипом |
 | `general/showLoadTime` | `false` | время загрузки сборки |
+| `general/showSettingsButton` | `false` | кнопка GTNHTweaks рядом с «Mods», полряда каждой, открывает настройки мода |
 | `general/yieldToResourcePacks` | `false` | если включённый ресурс-пак заменяет логотип Minecraft, панораму или кнопки — показывать ванильное меню с ресурс-паком |
 | `circuit/showCircuit` | `false` | печатная плата на фоне |
 | `circuit/currentColors` | `TIERS` | цвет импульсов: `TIERS` (цвета уровней GT, LV–UEV) или `THEME` (цвет темы) |
@@ -152,6 +155,7 @@
 | `circuit/chips` | `false` | микросхемы на плате; в центре шестерёнки светится цвет уровня, при импульсе она вспыхивает |
 | `circuit/parallax` | `false` | плата чуть сдвигается за мышью |
 | `text/subtitle` | `GT: New Horizons` | подпись под логотипом, пусто чтобы скрыть |
+| `text/settings` | `GTNHTweaks` | надпись на кнопке настроек мода (старая «GTNHTweaks settings» сама заменяется: не влезает в полряда) |
 
 ### menus: все меню и инвентари
 

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraftforge.client.event.GuiScreenEvent;
@@ -29,9 +28,8 @@ public class MainMenuLayout {
     static final int OPTIONS = 0, SINGLEPLAYER = 1, MULTIPLAYER = 2, QUIT = 4, LANGUAGE = 5, MODS = 6, DEMO_PLAY = 11,
         DEMO_RESET = 12, REALMS = 14;
 
-    /** Id of the GTNHTweaks settings button in the footer, far from the ids used by vanilla and other mods. */
+    /** Id of the GTNHTweaks settings button beside Mods, far from the ids used by vanilla and other mods. */
     static final int SETTINGS = 0x47544E48;
-    static final int FOOTER_BUTTON_HEIGHT = 14;
 
     /** Y of the first button row, read by the renderer to place the logo above it. */
     static volatile int buttonsTop = -1;
@@ -45,7 +43,10 @@ public class MainMenuLayout {
         List<List<GuiButton>> rows = new ArrayList<>();
         addRow(rows, find(buttons, SINGLEPLAYER), find(buttons, DEMO_PLAY));
         addRow(rows, find(buttons, MULTIPLAYER), find(buttons, DEMO_RESET));
-        addRow(rows, find(buttons, MODS), find(buttons, REALMS));
+        // the GTNHTweaks settings share the row of Mods, as Language shares the one of Options
+        GuiButton settings = MainMenuModule.showSettingsButton ? settingsButton() : null;
+        if (settings != null) buttons.add(settings);
+        addRow(rows, find(buttons, MODS), settings, find(buttons, REALMS));
         addRow(rows, find(buttons, OPTIONS), find(buttons, LANGUAGE));
         addRow(rows, find(buttons, QUIT));
 
@@ -67,21 +68,10 @@ public class MainMenuLayout {
                 ((AccessorGuiButton) button).gtnhtweaks$setHeight(BUTTON_HEIGHT);
             }
         }
-
-        if (MainMenuModule.showSettingsButton) addSettingsButton(buttons, height);
     }
 
-    /** Small button in the footer, right of the mod count. */
-    private static void addSettingsButton(List<GuiButton> buttons, int height) {
-        FontRenderer font = Minecraft.getMinecraft().fontRenderer;
-        String label = MainMenuModule.textSettings;
-        int x = 4;
-        String modCount = MainMenuRenderer.modCountText();
-        if (!modCount.isEmpty()) x += font.getStringWidth(modCount) + 10;
-        GuiButton button = new GuiButton(SETTINGS, x, height - 15, label);
-        ((AccessorGuiButton) button).gtnhtweaks$setWidth(font.getStringWidth(label) + 12);
-        ((AccessorGuiButton) button).gtnhtweaks$setHeight(FOOTER_BUTTON_HEIGHT);
-        buttons.add(button);
+    private static GuiButton settingsButton() {
+        return new GuiButton(SETTINGS, 0, 0, MainMenuModule.textSettings);
     }
 
     @SubscribeEvent
