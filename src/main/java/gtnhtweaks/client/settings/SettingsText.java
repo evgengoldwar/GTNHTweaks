@@ -653,6 +653,11 @@ final class SettingsText {
             "GTNHTweaks button",
             "The button beside Mods that opens these settings. Mods gets narrower to make room for it.",
             Restart.NONE);
+        set(
+            "languageButton",
+            "Language button",
+            "The small square with a globe beside Options. The language can still be changed in Options.",
+            Restart.NONE);
 
         module("debug", "Developer Tools", "Tools for the makers of mods and modpacks.");
         tab("guiInfo", "Screen Info", "What the open screen is.");

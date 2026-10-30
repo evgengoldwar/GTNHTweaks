@@ -13,6 +13,7 @@ public final class ButtonsModule extends TweakModule {
     private static final String CATEGORY_MAIN_MENU = "mainMenu";
 
     public static boolean settingsButton = true;
+    public static boolean languageButton = true;
 
     private ButtonsModule() {
         super("buttons", "Buttons GTNHTweaks adds to the screens of Minecraft", ModuleSide.CLIENT);
@@ -33,10 +34,17 @@ public final class ButtonsModule extends TweakModule {
             settingsButton,
             "Show the GTNHTweaks button beside Mods, which opens the settings of GTNHTweaks and makes Mods narrower: "
                 + "the two share the row of Mods");
+        languageButton = config.getBoolean(
+            "languageButton",
+            CATEGORY_MAIN_MENU,
+            languageButton,
+            "Show the Language button, the small square with a globe beside Options. The language can still be "
+                + "changed in Options");
     }
 
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         SettingsButton.register();
+        LanguageButton.register();
     }
 }

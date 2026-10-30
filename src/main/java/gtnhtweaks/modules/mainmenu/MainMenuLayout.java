@@ -30,6 +30,9 @@ public class MainMenuLayout {
     /** The GTNHTweaks button beside Mods, added by {@link SettingsButton}. */
     static final int SETTINGS = SettingsButton.ID;
 
+    /** Padding of the beveled panel the renderer draws behind the column of buttons. */
+    static final int PANEL_PADDING = 6;
+
     /** Y of the first button row, read by the renderer to place the logo above it. */
     static volatile int buttonsTop = -1;
 
@@ -42,9 +45,9 @@ public class MainMenuLayout {
         List<List<GuiButton>> rows = new ArrayList<>();
         addRow(rows, find(buttons, SINGLEPLAYER), find(buttons, DEMO_PLAY));
         addRow(rows, find(buttons, MULTIPLAYER), find(buttons, DEMO_RESET));
-        // the GTNHTweaks button shares the row of Mods, as Language shares the one of Options
+        // the GTNHTweaks button shares the row of Mods
         addRow(rows, find(buttons, MODS), find(buttons, SETTINGS), find(buttons, REALMS));
-        addRow(rows, find(buttons, OPTIONS), find(buttons, LANGUAGE));
+        addRow(rows, find(buttons, OPTIONS));
         addRow(rows, find(buttons, QUIT));
 
         int width = event.gui.width;
@@ -64,6 +67,17 @@ public class MainMenuLayout {
                 ((AccessorGuiButton) button).gtnhtweaks$setWidth(cellWidth);
                 ((AccessorGuiButton) button).gtnhtweaks$setHeight(BUTTON_HEIGHT);
             }
+        }
+
+        // Language is a small square with a globe left of the row of Options, as in vanilla; out of the beveled panel
+        GuiButton language = find(buttons, LANGUAGE);
+        GuiButton options = find(buttons, OPTIONS);
+        if (language != null && language.visible) {
+            int gap = MainMenuModule.style.isBeveled() ? PANEL_PADDING + GAP : GAP;
+            language.xPosition = width / 2 - BUTTON_WIDTH / 2 - gap - BUTTON_HEIGHT;
+            language.yPosition = options != null && options.visible ? options.yPosition : top;
+            ((AccessorGuiButton) language).gtnhtweaks$setWidth(BUTTON_HEIGHT);
+            ((AccessorGuiButton) language).gtnhtweaks$setHeight(BUTTON_HEIGHT);
         }
     }
 

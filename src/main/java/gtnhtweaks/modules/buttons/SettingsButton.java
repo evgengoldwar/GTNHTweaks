@@ -17,8 +17,7 @@ import gtnhtweaks.mixins.early.common.AccessorGuiButton;
 
 /**
  * The GTNHTweaks button beside Mods in the main menu, which opens the settings of GTNHTweaks. It takes a share of the
- * row of Mods, as Language does of the row of Options; the GTNH main menu places it there itself. Shown while
- * {@link ButtonsModule#settingsButton} is on.
+ * row of Mods; the GTNH main menu places it there itself. Shown while {@link ButtonsModule#settingsButton} is on.
  */
 public class SettingsButton {
 

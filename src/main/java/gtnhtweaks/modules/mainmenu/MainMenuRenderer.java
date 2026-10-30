@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
 
 import cpw.mods.fml.common.Loader;
@@ -125,7 +124,8 @@ public final class MainMenuRenderer {
         for (Object element : buttons) {
             GuiButton button = (GuiButton) element;
             if (!button.visible) continue;
-            if (isThemed(button)) ThemedButton.draw(button, label(button), font, mouseX, mouseY, theme);
+            if (button.id == MainMenuLayout.LANGUAGE) drawLanguage(button, mouseX, mouseY, theme);
+            else if (isThemed(button)) ThemedButton.draw(button, button.displayString, font, mouseX, mouseY, theme);
             else button.drawButton(mc, mouseX, mouseY);
         }
 
@@ -145,14 +145,15 @@ public final class MainMenuRenderer {
         int left = Integer.MAX_VALUE, top = Integer.MAX_VALUE, right = Integer.MIN_VALUE, bottom = Integer.MIN_VALUE;
         for (Object element : buttons) {
             GuiButton button = (GuiButton) element;
-            if (!button.visible || !MainMenuLayout.isKnown(button.id)) continue;
+            // the Language square stands out of the panel, as in vanilla
+            if (!button.visible || !MainMenuLayout.isKnown(button.id) || button.id == MainMenuLayout.LANGUAGE) continue;
             left = Math.min(left, button.xPosition);
             top = Math.min(top, button.yPosition);
             right = Math.max(right, button.xPosition + ThemedButton.width(button));
             bottom = Math.max(bottom, button.yPosition + ThemedButton.height(button));
         }
         if (left > right) return;
-        int padding = 6;
+        int padding = MainMenuLayout.PANEL_PADDING;
         ThemeShapes.panel(left - padding, top - padding, right - left + padding * 2, bottom - top + padding * 2, theme);
     }
 
@@ -186,12 +187,36 @@ public final class MainMenuRenderer {
         return MainMenuLayout.isKnown(button.id) || button.getClass() == GuiButton.class;
     }
 
-    private static String label(GuiButton button) {
-        String label = button.displayString;
-        if (button.id == MainMenuLayout.LANGUAGE && (label == null || label.isEmpty())) {
-            label = I18n.format("options.language");
+    /** Globe of the Language button, one character per pixel, as the vanilla icon. */
+    private static final String[] GLOBE = { //
+        "....####....", //
+        "..##.##.##..", //
+        ".#..#..#..#.", //
+        ".#..#..#..#.", //
+        "############", //
+        "#...#..#...#", //
+        "#...#..#...#", //
+        "############", //
+        ".#..#..#..#.", //
+        ".#..#..#..#.", //
+        "..##.##.##..", //
+        "....####....", //
+    };
+
+    /** The Language button: a themed square with a globe in the color of the button labels. */
+    private static void drawLanguage(GuiButton button, int mouseX, int mouseY, GTNHTheme theme) {
+        ThemedButton.drawFrame(button, mouseX, mouseY, theme);
+        int color = !button.enabled ? theme.textDisabled
+            : ThemedButton.isHovered(button, mouseX, mouseY) ? theme.hoverText : theme.text;
+        int x = button.xPosition + (ThemedButton.width(button) - GLOBE[0].length()) / 2;
+        int y = button.yPosition + (ThemedButton.height(button) - GLOBE.length) / 2;
+        beginShapes();
+        for (int row = 0; row < GLOBE.length; row++) {
+            for (int column = 0; column < GLOBE[row].length(); column++) {
+                if (GLOBE[row].charAt(column) == '#') GLDraw.rect(x + column, y + row, 1, 1, color);
+            }
         }
-        return label;
+        endShapes();
     }
 
     private static void drawCentered(FontRenderer font, String text, int centerX, int y, int color, boolean shadow) {
