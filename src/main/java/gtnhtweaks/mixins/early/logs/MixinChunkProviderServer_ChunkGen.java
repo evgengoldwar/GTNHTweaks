@@ -1,5 +1,7 @@
 package gtnhtweaks.mixins.early.logs;
 
+import net.minecraft.util.LongHashMap;
+import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
@@ -11,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import gtnhtweaks.modules.logs.ChunkGenLog;
 
@@ -28,21 +31,23 @@ public abstract class MixinChunkProviderServer_ChunkGen {
     @Shadow
     public IChunkProvider currentChunkProvider;
 
-    /** originalLoadChunk is added by Forge, so its name is the same everywhere; the call in it is of vanilla. */
-    @Redirect(
-        method = "originalLoadChunk",
-        remap = false,
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/chunk/IChunkProvider;provideChunk(II)Lnet/minecraft/world/chunk/Chunk;",
-            remap = true))
-    private Chunk gtnhtweaks$timeTerrain(IChunkProvider generator, int x, int z) {
-        Object frame = ChunkGenLog.begin(ChunkGenLog.TERRAIN, generator, worldObj, x, z);
-        try {
-            return generator.provideChunk(x, z);
-        } finally {
-            ChunkGenLog.end(frame);
-        }
+    @Shadow
+    public LongHashMap loadedChunkHashMap;
+
+    /**
+     * A chunk neither loaded nor saved is made in originalLoadChunk, which Forge adds, so its name is the same
+     * everywhere. Its whole call is timed, not the call of the generator in it: ArchaicFix redirects that call, and of
+     * two redirects of one call only one applies. The populations it starts are steps inside it.
+     */
+    @Inject(method = "originalLoadChunk", remap = false, at = @At("HEAD"))
+    private void gtnhtweaks$beginTerrain(int x, int z, CallbackInfoReturnable<Chunk> cir) {
+        if (loadedChunkHashMap.getValueByKey(ChunkCoordIntPair.chunkXZ2Int(x, z)) != null) return;
+        ChunkGenLog.begin(ChunkGenLog.TERRAIN, currentChunkProvider, worldObj, x, z);
+    }
+
+    @Inject(method = "originalLoadChunk", remap = false, at = @At("RETURN"))
+    private void gtnhtweaks$endTerrain(int x, int z, CallbackInfoReturnable<Chunk> cir) {
+        ChunkGenLog.endTerrain(x, z);
     }
 
     @Inject(method = "populate", at = @At("HEAD"))

@@ -218,9 +218,18 @@ public final class ChunkGenLog {
 
     /** Ends the innermost population of the chunk, and the steps left open inside it. */
     public static void endPopulation(int x, int z) {
+        endChunk(POPULATION, x, z);
+    }
+
+    /** Ends the innermost terrain of the chunk begun by {@link #begin}, and the steps left open inside it. */
+    public static void endTerrain(int x, int z) {
+        endChunk(TERRAIN, x, z);
+    }
+
+    private static void endChunk(String stage, int x, int z) {
         if (!active) return;
         for (Frame frame : STACK.get()) {
-            if (POPULATION.equals(frame.stage) && frame.x == x && frame.z == z) {
+            if (stage.equals(frame.stage) && frame.x == x && frame.z == z) {
                 end(frame);
                 return;
             }
@@ -281,7 +290,11 @@ public final class ChunkGenLog {
         if (chunk != null) {
             // a step inside a chunk is one of its parts; a chunk made or populated inside it, with all it took
             if (frame.parts == null) chunk.parts.merge(frame.stage + " " + frame.label, own, Long::sum);
-            else chunk.parts.merge("cascaded " + frame.stage + " " + frame.label, total, Long::sum);
+            // a new chunk populates itself and its neighbors once they are all there; anything else inside a chunk
+            // is a cascade
+            else if (TERRAIN.equals(chunk.stage) && POPULATION.equals(frame.stage)) {
+                chunk.parts.merge("population " + frame.label, total, Long::sum);
+            } else chunk.parts.merge("cascaded " + frame.stage + " " + frame.label, total, Long::sum);
         }
         if (frame.parts != null && own > 0) {
             frame.parts
@@ -478,7 +491,8 @@ public final class ChunkGenLog {
             + "\n\n"
             + "Where the server time goes when new chunks are made. Times are own times: a step does not count the\n"
             + "steps that ran inside it. Steps:\n"
-            + "  terrain        the chunk generator of the dimension makes the blocks of a new chunk\n"
+            + "  terrain        a new chunk is made: the chunk generator of the dimension makes its blocks (and the\n"
+            + "                 populations it starts, written apart, are not in its own time)\n"
             + "  decoration     the chunk generator populates a chunk: vanilla ores, trees, lakes, structures,\n"
             + "                 and the mods that generate through Forge events (DecorateBiome, OreGen, PopulateChunk)\n"
             + "  mod generator  a world generator a mod registered (GameRegistry.registerWorldGenerator)\n"
