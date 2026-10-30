@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -252,7 +254,8 @@ public final class ChunkGenLog {
         }
         if (populated != null) populated.cascades++;
         String culprit = cause == null ? "unknown" : cause.stage + " " + cause.label;
-        String example = where + " " + chunkText(x, z)
+        String example = where + " "
+            + chunkText(x, z)
             + (populated == null ? ""
                 : " while " + (TERRAIN.equals(populated.stage) ? "making the terrain of " : "populating ")
                     + chunkText(populated.x, populated.z));
@@ -281,12 +284,15 @@ public final class ChunkGenLog {
             else chunk.parts.merge("cascaded " + frame.stage + " " + frame.label, total, Long::sum);
         }
         if (frame.parts != null && own > 0) {
-            frame.parts.merge(POPULATION.equals(frame.stage) ? "other" : frame.stage + " " + frame.label, own, Long::sum);
+            frame.parts
+                .merge(POPULATION.equals(frame.stage) ? "other" : frame.stage + " " + frame.label, own, Long::sum);
         }
         boolean slow = frame.parts != null && total >= LogsModule.chunkSlowMs * 1_000_000L;
         String biome = slow ? biome(frame.world, frame.x, frame.z) : "";
 
         synchronized (LOCK) {
+            // the period starts with its first chunk, not when the last one ended or the game started
+            if (period.isEmpty()) periodStart = System.currentTimeMillis();
             for (Stats stats : new Stats[] { period, session }) {
                 if (!POPULATION.equals(frame.stage)) {
                     Stat stat = stats.steps.computeIfAbsent(
@@ -313,7 +319,8 @@ public final class ChunkGenLog {
     }
 
     private static void slowChunk(Frame frame, long total, String biome) {
-        String text = ms(total) + "  " + frame.where
+        String text = ms(total) + "  "
+            + frame.where
             + " "
             + chunkText(frame.x, frame.z)
             + biome
@@ -369,6 +376,8 @@ public final class ChunkGenLog {
             if (tickStart == 0) return;
             long tick = System.nanoTime() - tickStart;
             for (Stats stats : new Stats[] { period, session }) {
+                // the ticks since chunks began to be made
+                if (stats.isEmpty()) continue;
                 stats.ticks++;
                 if (tickChunkNanos > 0 && tick > stats.worstTick) {
                     stats.worstTick = tick;
@@ -548,14 +557,29 @@ public final class ChunkGenLog {
         }
         out.append("By step:\n");
         for (Map.Entry<String, long[]> entry : byStage.entrySet()) {
-            out.append(String.format(Locale.ROOT, "  %-14s %10s  %s\n", entry.getKey(), ms(entry.getValue()[0]), share(entry.getValue()[0], stats.nanos)));
+            out.append(
+                String.format(
+                    Locale.ROOT,
+                    "  %-14s %10s  %s\n",
+                    entry.getKey(),
+                    ms(entry.getValue()[0]),
+                    share(entry.getValue()[0], stats.nanos)));
         }
 
         // the steps that cost the most
         List<Stat> steps = new ArrayList<>(stats.steps.values());
         steps.sort((a, b) -> Long.compare(b.nanos, a.nanos));
         out.append("\nWhat took the most time (own time):\n");
-        out.append(String.format(Locale.ROOT, "  %10s %6s %8s %10s %10s  %s\n", "time", "share", "calls", "average", "max", "step"));
+        out.append(
+            String.format(
+                Locale.ROOT,
+                "  %10s %6s %8s %10s %10s  %s\n",
+                "time",
+                "share",
+                "calls",
+                "average",
+                "max",
+                "step"));
         for (int i = 0; i < Math.min(TOP_ROWS, steps.size()); i++) {
             Stat stat = steps.get(i);
             out.append(
@@ -620,29 +644,78 @@ public final class ChunkGenLog {
         }
         String name = type.getName();
         String simple = name.substring(name.lastIndexOf('.') + 1);
-        String label = simple + " (" + owner(name) + ")";
+        String label = simple + " (" + owner(type) + ")";
         synchronized (LABELS) {
             LABELS.put(type, label);
         }
         return label;
     }
 
-    private static String owner(String className) {
+    /** The name of the mod whose jar the class comes from, or "Minecraft"; the jar or "unknown mod" if none. */
+    private static String owner(Class<?> type) {
+        String className = type.getName();
         if (className.startsWith("net.minecraft.") || className.startsWith("net.minecraftforge.")) return "Minecraft";
-        String jar = StackTraces.jarOf(className);
-        if (jar == null) return "unknown mod";
-        try {
-            for (ModContainer mod : Loader.instance()
-                .getModList()) {
-                if (mod.getSource() != null && jar.equals(
-                    mod.getSource()
-                        .getName()))
-                    return mod.getName();
+        File source = sourceOf(type);
+        if (source != null) {
+            try {
+                for (ModContainer mod : Loader.instance()
+                    .getModList()) {
+                    if (mod.getSource() != null && sameFile(mod.getSource(), source)) return mod.getName();
+                }
+            } catch (RuntimeException ignored) {
+                // the mod list is not there yet
             }
-        } catch (RuntimeException ignored) {
-            // the mod list is not there yet
+            return source.getName();
         }
-        return jar;
+        String jar = StackTraces.jarOf(className);
+        return jar != null ? jar : "unknown mod";
+    }
+
+    /** The jar or folder the class was loaded from, in the mods folder or, in a development run, anywhere. */
+    private static File sourceOf(Class<?> type) {
+        try {
+            if (type.getProtectionDomain() != null && type.getProtectionDomain()
+                .getCodeSource() != null
+                && type.getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation() != null) {
+                return new File(
+                    type.getProtectionDomain()
+                        .getCodeSource()
+                        .getLocation()
+                        .toURI());
+            }
+            String name = type.getName();
+            int dollar = name.indexOf('$');
+            String resource = (dollar > 0 ? name.substring(0, dollar) : name).replace('.', '/') + ".class";
+            ClassLoader loader = type.getClassLoader() != null ? type.getClassLoader()
+                : ClassLoader.getSystemClassLoader();
+            URL url = loader.getResource(resource);
+            if (url == null) return null;
+            String path = url.toString();
+            if (path.startsWith("jar:")) {
+                return new File(new URI(path.substring(4, path.indexOf("!/"))));
+            }
+            if (path.startsWith("file:")) {
+                // a folder of classes: its root
+                File file = new File(url.toURI());
+                for (int i = resource.split("/").length; i > 0 && file != null; i--) file = file.getParentFile();
+                return file;
+            }
+        } catch (Exception ignored) {
+            // no source to tell
+        }
+        return null;
+    }
+
+    private static boolean sameFile(File a, File b) {
+        try {
+            return a.getCanonicalFile()
+                .equals(b.getCanonicalFile());
+        } catch (IOException e) {
+            return a.getAbsoluteFile()
+                .equals(b.getAbsoluteFile());
+        }
     }
 
     private static final Map<Integer, String> DIMENSIONS = new HashMap<>();
