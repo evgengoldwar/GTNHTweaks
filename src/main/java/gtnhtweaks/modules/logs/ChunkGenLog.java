@@ -53,8 +53,8 @@ public final class ChunkGenLog {
     public static final String MOD_GENERATOR = "mod generator";
     private static final String POPULATION = "population";
 
-    /** Lines of slow chunks and cascades written per summary period at most; the rest are only counted. */
-    private static final int MAX_LINES_PER_PERIOD = 200;
+    /** Lines of each kind written per summary period at most; the rest are only counted. */
+    private static final int MAX_LINES_PER_PERIOD = 100;
     private static final int TOP_ROWS = 25;
     private static final int SLOWEST_CHUNKS = 10;
 
@@ -68,7 +68,8 @@ public final class ChunkGenLog {
     private static Stats period = new Stats();
     private static Stats session = new Stats();
     private static long periodStart = System.currentTimeMillis();
-    private static int linesThisPeriod, linesSkipped;
+    /** Lines written and only counted in the period, by kind, so many cascades do not hide the slow ticks. */
+    private static final Map<String, int[]> LINES = new LinkedHashMap<>();
     private static boolean headerWritten;
 
     /** The chunk generation of the tick that runs, on the server thread. */
@@ -425,11 +426,13 @@ public final class ChunkGenLog {
     // ---- writing
 
     private static void line(String text) {
-        if (linesThisPeriod >= MAX_LINES_PER_PERIOD) {
-            linesSkipped++;
+        String kind = text.substring(0, text.indexOf("  "));
+        int[] count = LINES.computeIfAbsent(kind, k -> new int[2]);
+        if (count[0] >= MAX_LINES_PER_PERIOD) {
+            count[1]++;
             return;
         }
-        linesThisPeriod++;
+        count[0]++;
         PENDING.append(LogFiles.time(System.currentTimeMillis()))
             .append("  ")
             .append(text)
@@ -451,14 +454,18 @@ public final class ChunkGenLog {
         synchronized (LOCK) {
             long now = System.currentTimeMillis();
             if (!period.isEmpty()) {
-                if (linesSkipped > 0) PENDING.append("... and ")
-                    .append(linesSkipped)
-                    .append(" more slow chunks and cascades in this period, only counted\n");
+                for (Map.Entry<String, int[]> entry : LINES.entrySet()) {
+                    if (entry.getValue()[1] > 0) PENDING.append("... and ")
+                        .append(entry.getValue()[1])
+                        .append(" more ")
+                        .append(entry.getKey())
+                        .append(" lines in this period, only counted in the summary\n");
+                }
                 PENDING.append(summary(period, "the last " + minutes(now - periodStart), now - periodStart));
             }
             period = new Stats();
             periodStart = now;
-            linesThisPeriod = linesSkipped = 0;
+            LINES.clear();
             if (whole && !session.isEmpty()) {
                 PENDING.append(summary(session, "the whole world session", 0));
                 session = new Stats();
