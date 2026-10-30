@@ -210,6 +210,8 @@ final class Rows {
         /** The main switch of the tab, or null when the tab has none or this is it. */
         Property master;
         String masterName;
+        /** The switch of the module: while it is off, the setting does nothing. */
+        Property moduleSwitch;
 
         SettingRow(SettingsScreen screen, String where, String file, Property property, SettingsText.Setting text,
             int controlWidth) {
@@ -233,9 +235,13 @@ final class Rows {
             return x + w - control.width - RESET_SIZE - 10;
         }
 
-        /** True while the main switch of the tab is off. */
+        /** True while the module or the main switch of the tab is off. */
         boolean inactive() {
-            return master != null && !master.getBoolean(true);
+            return moduleOff() || master != null && !master.getBoolean(true);
+        }
+
+        private boolean moduleOff() {
+            return moduleSwitch != null && !moduleSwitch.getBoolean(false);
         }
 
         boolean needsRestart() {
@@ -335,7 +341,8 @@ final class Rows {
             List<String> lines = new ArrayList<>();
             lines.add("§e" + label);
             if (!info.isEmpty()) lines.addAll(wrap(info));
-            if (inactive()) lines.add("§8Works only while " + masterName + " is on");
+            if (moduleOff()) lines.add("§8Works only while the module is on");
+            else if (inactive()) lines.add("§8Works only while " + masterName + " is on");
             lines.add("");
             lines.add("§7Default: §f" + defaultText(property));
             String restartLine = restartLine(restart, property);

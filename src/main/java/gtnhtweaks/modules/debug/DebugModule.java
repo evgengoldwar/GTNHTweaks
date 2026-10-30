@@ -14,7 +14,7 @@ public final class DebugModule extends TweakModule {
     private static final String CATEGORY_GUI_INFO = "guiInfo";
     private static final String CATEGORY_CRASH_TEST = "crashTest";
 
-    public static boolean guiInfo = false;
+    public static boolean guiInfo = true;
     /** OFF, BEFORE_WINDOW, STARTUP or IN_GAME. */
     public static String mixinCrash = "OFF";
     public static boolean screenCloseCrash = false;

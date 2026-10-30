@@ -30,18 +30,18 @@ public final class LogsModule extends TweakModule {
     static String folder = "GTNHTweaksLogs";
     static int maxBackups = 5;
 
-    static boolean writeAll = false;
-    static boolean writeErrors = false;
-    static boolean writeWarnings = false;
-    static boolean writeCrash = false;
-    static boolean writeFullCrash = false;
-    static boolean writeLoading = false;
-    static boolean writeMods = false;
+    static boolean writeAll = true;
+    static boolean writeErrors = true;
+    static boolean writeWarnings = true;
+    static boolean writeCrash = true;
+    static boolean writeFullCrash = true;
+    static boolean writeLoading = true;
+    static boolean writeMods = true;
 
-    public static boolean replaceCrashScreen = false;
+    public static boolean replaceCrashScreen = true;
     static int maxStackFrames = 12;
     static int maxCrashStackFrames = 30;
-    static boolean stderrAsErrors = false;
+    static boolean stderrAsErrors = true;
     private static volatile List<Pattern> ignorePatterns = new ArrayList<>();
 
     private LogsModule() {

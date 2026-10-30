@@ -12,10 +12,10 @@ public final class NEIModule extends TweakModule {
     private static final String CATEGORY_CRAFTING_TREE = "craftingTree";
     private static final String CATEGORY_RECIPES = "recipes";
 
-    public static boolean preciseDrag = false;
-    public static boolean smoothScroll = false;
+    public static boolean preciseDrag = true;
+    public static boolean smoothScroll = true;
     public static int scrollTimeMs = 120;
-    public static boolean fillOneCraftWithCtrl = false;
+    public static boolean fillOneCraftWithCtrl = true;
 
     private NEIModule() {
         super("nei", "Client side tweaks of NotEnoughItems", ModuleSide.CLIENT);

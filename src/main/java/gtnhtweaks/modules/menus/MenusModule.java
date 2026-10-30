@@ -31,14 +31,14 @@ public final class MenusModule extends TweakModule {
     private static final String CREATIVE_INVENTORY = "net.minecraft.client.gui.inventory.GuiContainerCreative";
 
     public static GTNHTheme style = GTNHTheme.SHADOW;
-    public static boolean recolorText = false;
+    public static boolean recolorText = true;
     public static boolean respectResourcePacks = false;
-    public static boolean themeVanillaScreens = false;
-    public static boolean themeInGame = false;
-    public static boolean fullFramerate = false;
-    public static boolean themeInventories = false;
+    public static boolean themeVanillaScreens = true;
+    public static boolean themeInGame = true;
+    public static boolean fullFramerate = true;
+    public static boolean themeInventories = true;
     /** The mod list of GTNHTweaks in place of the one of FML. */
-    public static boolean modList = false;
+    public static boolean modList = true;
     public static Set<String> extraScreens = Collections.emptySet();
     public static Set<String> excludedScreens = Collections.emptySet();
 

@@ -18,12 +18,12 @@ public final class BeesModule extends TweakModule {
     private static final String CATEGORY_WHERE = "where";
     private static final String CATEGORY_LOOK = "look";
 
-    public static boolean inHand = false;
-    public static boolean inInventory = false;
-    public static boolean onGround = false;
-    public static boolean accessories = false;
-    public static boolean carryProduct = false;
-    public static boolean moods = false;
+    public static boolean inHand = true;
+    public static boolean inInventory = true;
+    public static boolean onGround = true;
+    public static boolean accessories = true;
+    public static boolean carryProduct = true;
+    public static boolean moods = true;
 
     private BeesModule() {
         super(

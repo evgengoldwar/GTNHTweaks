@@ -33,11 +33,10 @@
 | `modules.cfg` | включение и отключение модулей |
 | `<id модуля>.cfg` | настройки конкретного модуля |
 
-По умолчанию все модули и все функции выключены, кроме кнопки настроек GTNHTweaks в главном меню (`mainmenu`, `general/showSettingsButton`; видна, когда включён модуль `mainmenu`): модуль включается переключателем в окне настроек (или
-в `modules.cfg`, нужен перезапуск), а функции внутри него — своими переключателями. Эффекты, у которых
-вместо переключателя количество (падающие листья, дождь из частиц, рябь от дождя), по умолчанию стоят на `0`.
-Уже созданные конфиги сохраняют свои значения: новые значения по умолчанию касаются только новых
-настроек и кнопки ↺.
+По умолчанию все модули выключены, а настройки внутри них включены: модуль — это общий выключатель всех
+своих функций. Чтобы включить функции модуля, достаточно включить сам модуль (переключателем в окне настроек
+или в `modules.cfg`, нужен перезапуск); ненужные функции внутри него выключаются по отдельности. Уже
+созданные конфиги сохраняют свои значения: значения по умолчанию касаются только новых настроек и кнопки ↺.
 
 Настройки удобнее менять в окне настроек мода: клавиша **F7** в игре (меняется в «Управлении»,
 раздел GTNHTweaks), кнопка в главном меню или «Config» в списке модов.
@@ -101,21 +100,21 @@
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
 | `general/theme` | `SHADOW` | тема: `SHADOW` (серый объёмный стиль Shadow UI), `DARK` (тёмный) или `LIGHT` (светлый) |
-| `general/showTimer` | `false` | таймер загрузки |
-| `general/showPreviousLaunch` | `false` | время предыдущего запуска |
-| `general/showMemory` | `false` | использование памяти |
-| `general/showLoadTimeInMainMenu` | `false` | время загрузки в главном меню |
-| `wall/buildWall` | `false` | стена из блоков на фоне экрана загрузки |
-| `wall/modBlocks` | `false` | брать в стену и блоки модов, а не только ванильные |
+| `general/showTimer` | `true` | таймер загрузки |
+| `general/showPreviousLaunch` | `true` | время предыдущего запуска |
+| `general/showMemory` | `true` | использование памяти |
+| `general/showLoadTimeInMainMenu` | `true` | время загрузки в главном меню |
+| `wall/buildWall` | `true` | стена из блоков на фоне экрана загрузки |
+| `wall/modBlocks` | `true` | брать в стену и блоки модов, а не только ванильные |
 | `wall/modBlockShare` | `60` | доля блоков модов в стене, в процентах |
 | `wall/rows` | `9` | сколько рядов блоков по высоте экрана (4–30) |
 | `wall/textVeil` | `70` | насколько фон перекрывает стену во время загрузки, в процентах, чтобы текст читался |
-| `wall/crumbleAtEnd` | `false` | в конце загрузки текст гаснет, а стена рушится, открывая главное меню |
+| `wall/crumbleAtEnd` | `true` | в конце загрузки текст гаснет, а стена рушится, открывая главное меню |
 | `wall/crumbleSpeed` | `100` | скорость финальной анимации в процентах (25–400, `200` — вдвое быстрее) |
-| `wall/crumbleSound` | `false` | звук обрушения стены |
-| `integration/replaceVanillaScreen` | `false` | заменять экран с логотипом Mojang |
-| `integration/replaceForgeSplash` | `false` | рисовать поверх сплэша Forge |
-| `integration/drawOverBetterLoadingScreen` | `false` | рисовать поверх BetterLoadingScreen |
+| `wall/crumbleSound` | `true` | звук обрушения стены |
+| `integration/replaceVanillaScreen` | `true` | заменять экран с логотипом Mojang |
+| `integration/replaceForgeSplash` | `true` | рисовать поверх сплэша Forge |
+| `integration/drawOverBetterLoadingScreen` | `true` | рисовать поверх BetterLoadingScreen |
 | `text/*` | английский | подписи на экране, поддерживается кириллица |
 | `text/unitHours`, `unitMinutes`, `unitSeconds` | `h`, `min`, `s` | единицы времени запуска в главном меню (например `ч`, `мин`, `с`) |
 
@@ -143,17 +142,17 @@
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
 | `general/theme` | `SHADOW` | тема: `SHADOW`, `DARK` или `LIGHT` |
-| `general/showSplashText` | `false` | сплэш-текст под логотипом |
-| `general/showLoadTime` | `false` | время загрузки сборки |
+| `general/showSplashText` | `true` | сплэш-текст под логотипом |
+| `general/showLoadTime` | `true` | время загрузки сборки |
 | `general/showSettingsButton` | `true` | кнопка GTNHTweaks рядом с «Mods», полряда каждой, открывает настройки мода |
 | `general/yieldToResourcePacks` | `false` | если включённый ресурс-пак заменяет логотип Minecraft, панораму или кнопки — показывать ванильное меню с ресурс-паком |
-| `circuit/showCircuit` | `false` | печатная плата на фоне |
+| `circuit/showCircuit` | `true` | печатная плата на фоне |
 | `circuit/currentColors` | `TIERS` | цвет импульсов: `TIERS` (цвета уровней GT, LV–UEV) или `THEME` (цвет темы) |
 | `circuit/rows` | `18` | сколько клеток платы по высоте экрана (8–40): больше — мельче и гуще |
 | `circuit/pulseSpeed` | `10` | скорость импульсов, клеток в секунду (1–30) |
 | `circuit/brightness` | `65` | яркость дорожек и импульсов, в процентах (20–100) |
-| `circuit/chips` | `false` | микросхемы на плате; в центре шестерёнки светится цвет уровня, при импульсе она вспыхивает |
-| `circuit/parallax` | `false` | плата чуть сдвигается за мышью |
+| `circuit/chips` | `true` | микросхемы на плате; в центре шестерёнки светится цвет уровня, при импульсе она вспыхивает |
+| `circuit/parallax` | `true` | плата чуть сдвигается за мышью |
 | `text/subtitle` | `GT: New Horizons` | подпись под логотипом, пусто чтобы скрыть |
 | `text/settings` | `GTNHTweaks` | надпись на кнопке настроек мода (старая «GTNHTweaks settings» сама заменяется: не влезает в полряда) |
 
@@ -197,13 +196,13 @@ Biome Module» — модуль «EndlessIDs»). При поиске списо�
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
 | `general/theme` | `SHADOW` | тема: `SHADOW`, `DARK` или `LIGHT` |
-| `general/recolorText` | `false` | перекрашивать белый и серый текст в цвета темы |
+| `general/recolorText` | `true` | перекрашивать белый и серый текст в цвета темы |
 | `general/yieldToResourcePacks` | `false` | текстуры включённых ресурс-паков важнее темы, см. ниже |
-| `general/fullFramerate` | `false` | лимит FPS из настроек графики в главном меню и других экранах вне мира вместо ванильных 30 FPS |
-| `screens/themeVanillaScreens` | `false` | все экраны Minecraft/Forge/FML и экраны модов, наследующие их |
-| `screens/themeInGame` | `false` | также меню в игре |
-| `screens/themeInventories` | `false` | затемнение ванильных инвентарей |
-| `screens/modList` | `false` | свой список модов вместо списка FML |
+| `general/fullFramerate` | `true` | лимит FPS из настроек графики в главном меню и других экранах вне мира вместо ванильных 30 FPS |
+| `screens/themeVanillaScreens` | `true` | все экраны Minecraft/Forge/FML и экраны модов, наследующие их |
+| `screens/themeInGame` | `true` | также меню в игре |
+| `screens/themeInventories` | `true` | затемнение ванильных инвентарей |
+| `screens/modList` | `true` | свой список модов вместо списка FML |
 | `screens/extraScreens` | пусто | классы экранов модов, которые тоже нужно оформить |
 | `screens/untouchedScreens` | чат | классы экранов, которые остаются ванильными |
 
@@ -258,7 +257,7 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `player/dropSwing` | `false` | взмах рукой при выбрасывании предмета (после перезапуска) |
+| `player/dropSwing` | `true` | взмах рукой при выбрасывании предмета (после перезапуска) |
 
 **Отклик предмета при наведении.** Когда курсор попадает на предмет в слоте, предмет коротко сжимается
 и пружиной возвращается к своему размеру, слегка «перепрыгнув» его. Работает во всех инвентарях,
@@ -267,7 +266,7 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `inventory/hoverBounce` | `false` | предмет в слоте пружинит при наведении (после перезапуска) |
+| `inventory/hoverBounce` | `true` | предмет в слоте пружинит при наведении (после перезапуска) |
 
 **Новые предметы.** Предмет, который только что попал в инвентарь и которого в нём ещё не было с захода
 в мир (подобран, скрафчен или взят из сундука), помечается маленькой золотой искоркой в левом верхнем
@@ -279,7 +278,7 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `inventory/newItemStars` | `false` | звёздочка на новых предметах, пока на них не навести курсор |
+| `inventory/newItemStars` | `true` | звёздочка на новых предметах, пока на них не навести курсор |
 
 **Фон меню и инвентарей.** За экранами, открытыми в мире, мир можно затемнить с нужной силой или
 размыть, как в новых версиях. Размытие делается шейдером на половинном разрешении, один раз за кадр.
@@ -310,12 +309,12 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `waterSplashes/enabled` | `false` | всплески при падении в воду |
-| `waterSplashes/items` | `false` | от предметов |
-| `waterSplashes/mobs` | `false` | от мобов и животных |
-| `waterSplashes/players` | `false` | от игроков |
+| `waterSplashes/enabled` | `true` | всплески при падении в воду |
+| `waterSplashes/items` | `true` | от предметов |
+| `waterSplashes/mobs` | `true` | от мобов и животных |
+| `waterSplashes/players` | `true` | от игроков |
 | `waterSplashes/maxSplashes` | `48` | сколько всплесков одновременно, остальные не появляются |
-| `waterSplashes/rainRipples` | `0` | рябь от дождя на воде, в процентах от обычного количества, `0` — выключить |
+| `waterSplashes/rainRipples` | `100` | рябь от дождя на воде, в процентах от обычного количества, `0` — выключить |
 
 **Рябь от дождя.** Где дождь падает на стоячую воду под открытым небом, по поверхности расходятся
 маленькие кольца ряби — те же, что от капель всплесков. Чем сильнее дождь, тем их больше; в пустынях
@@ -344,7 +343,7 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `fallingLeaves/amount` | `0` | сколько листьев падает, в процентах, `0` — выключить (до 300) |
+| `fallingLeaves/amount` | `100` | сколько листьев падает, в процентах, `0` — выключить (до 300) |
 
 **Погода из частиц.** Вместо ванильных полос дождя и снега погода состоит из частиц:
 
@@ -361,8 +360,8 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `particleRain/amount` | `0` | сколько частиц, в процентах (до 300), `0` — ванильный дождь |
-| `particleRain/hideVanillaRain` | `false` | прятать ванильные полосы дождя и снега, пока падают частицы |
+| `particleRain/amount` | `100` | сколько частиц, в процентах (до 300), `0` — ванильный дождь |
+| `particleRain/hideVanillaRain` | `true` | прятать ванильные полосы дождя и снега, пока падают частицы |
 
 **Подобранные предметы.** Сбоку экрана список того, что игрок подобрал: «64x Булыжник» с иконкой предмета,
 название в цвете редкости (зачарованные и редкие — голубые, эпические — фиолетовые). Если подобрать ещё того же
@@ -372,7 +371,7 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `pickupNotifier/enabled` | `false` | список подобранных предметов |
+| `pickupNotifier/enabled` | `true` | список подобранных предметов |
 | `pickupNotifier/position` | `BOTTOM_RIGHT` | где список: `BOTTOM_RIGHT`, `MIDDLE_RIGHT`, `TOP_RIGHT`, `BOTTOM_LEFT`, `MIDDLE_LEFT`, `TOP_LEFT` |
 | `pickupNotifier/seconds` | `5` | сколько секунд строка видна (1–30) |
 | `pickupNotifier/maxLines` | `10` | сколько строк сразу, лишние старые уходят (1–30) |
@@ -384,7 +383,7 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `screenShake/enabled` | `false` | тряска камеры от взрывов |
+| `screenShake/enabled` | `true` | тряска камеры от взрывов |
 | `screenShake/strength` | `100` | сила тряски в процентах, от 0 до 300 |
 
 **Экран ресурспаков.** Ресурспаки можно перетаскивать мышкой за название: из списка доступных в список
@@ -442,12 +441,12 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `resourcePacks/dragAndDrop` | `false` | перетаскивание ресурспаков мышкой |
-| `resourcePacks/presets` | `false` | панель из 10 пресетов ресурспаков слева от списков |
-| `resourcePacks/hideDefaultPack` | `false` | «По умолчанию» в выбранных скрыт, пока выбран хоть один другой пак |
-| `resourcePacks/skipReloadWithoutChanges` | `false` | «Готово» без изменений паков сразу закрывает экран, без перезагрузки ресурсов |
+| `resourcePacks/dragAndDrop` | `true` | перетаскивание ресурспаков мышкой |
+| `resourcePacks/presets` | `true` | панель из 10 пресетов ресурспаков слева от списков |
+| `resourcePacks/hideDefaultPack` | `true` | «По умолчанию» в выбранных скрыт, пока выбран хоть один другой пак |
+| `resourcePacks/skipReloadWithoutChanges` | `true` | «Готово» без изменений паков сразу закрывает экран, без перезагрузки ресурсов |
 | `resourcePacks/applyPresetAtOnce` | `false` | выбранный пресет сразу применяется и ресурсы перезагружаются, как по «Готово» |
-| `resourcePacks/packBrowser` | `false` | кнопка «Get packs...»: установка и обновление ресурспаков с вики GTNH и с Modrinth |
+| `resourcePacks/packBrowser` | `true` | кнопка «Get packs...»: установка и обновление ресурспаков с вики GTNH и с Modrinth |
 
 ### itemphysics: физика выброшенных предметов
 
@@ -482,10 +481,10 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `items/tumbleInAir` | `false` | кувыркаться в полёте и заваливаться на бок при падении; выключено — падают плашмя |
+| `items/tumbleInAir` | `true` | кувыркаться в полёте и заваливаться на бок при падении; выключено — падают плашмя |
 | `items/tumbleSpeed` | `1.0` | скорость вращения в полёте (0.1–3) |
-| `items/piles` | `false` | стак лежит кучкой: до пяти предметов друг на друге или горка до трёх блоков |
-| `items/keepOutOfBlocks` | `false` | отодвигать предметы от стен, чтобы они не входили в блоки |
+| `items/piles` | `true` | стак лежит кучкой: до пяти предметов друг на друге или горка до трёх блоков |
+| `items/keepOutOfBlocks` | `true` | отодвигать предметы от стен, чтобы они не входили в блоки |
 
 ### gregtech: твики GregTech
 
@@ -507,8 +506,8 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `cables/hideCableInsulation` | `false` | рисовать поставленные изолированные кабели без изоляции |
-| `toolOverlay/modern` | `false` | оверлей инструментов как в GregTech CEu Modern; `false` — сетка GT5 |
+| `cables/hideCableInsulation` | `true` | рисовать поставленные изолированные кабели без изоляции |
+| `toolOverlay/modern` | `true` | оверлей инструментов как в GregTech CEu Modern; `false` — сетка GT5 |
 
 ### chromatictooltips: фиксы Chromatic Tooltips
 
@@ -532,8 +531,8 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `fixes/colorTextTooltips` | `false` | красить тултипы бака ModularUI и квеста BetterQuesting (нужен Chromatic Spectrum) |
-| `fixes/fitTextWidth` | `false` | растягивать рамку тултипа под нарисованный текст |
+| `fixes/colorTextTooltips` | `true` | красить тултипы бака ModularUI и квеста BetterQuesting (нужен Chromatic Spectrum) |
+| `fixes/fitTextWidth` | `true` | растягивать рамку тултипа под нарисованный текст |
 
 ### extrautilities: твики Extra Utilities
 
@@ -588,11 +587,11 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
 | `healingAxe/model` | `PLANT` | кто вместо топора: `PLANT`, `AQUARIUM`, `SLIME`, `LANTERN`, `PEASHOOTER`, `SUNFLOWER` |
-| `healingAxe/inHand` | `false` | вместо топора в руках, вторая рука Backhand тоже |
-| `healingAxe/holdingArm` | `false` | от первого лица его держит рука игрока, а не висит в воздухе |
-| `healingAxe/moods` | `false` | реагирует на ночь, дождь и жару |
-| `healingAxe/inInventory` | `false` | в слотах инвентаря |
-| `healingAxe/onGround` | `false` | когда топор лежит на земле |
+| `healingAxe/inHand` | `true` | вместо топора в руках, вторая рука Backhand тоже |
+| `healingAxe/holdingArm` | `true` | от первого лица его держит рука игрока, а не висит в воздухе |
+| `healingAxe/moods` | `true` | реагирует на ночь, дождь и жару |
+| `healingAxe/inInventory` | `true` | в слотах инвентаря |
+| `healingAxe/onGround` | `true` | когда топор лежит на земле |
 
 ### bees: 3D-пчёлы Forestry
 
@@ -674,12 +673,12 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `where/inHand` | `false` | в руках, от первого и третьего лица |
-| `where/inInventory` | `false` | в слотах инвентаря, машин и в NEI |
-| `where/onGround` | `false` | выброшенная на землю |
-| `look/accessories` | `false` | наряд по виду: шапки, очки, маски, что держит, частицы, светящееся или прозрачное тело |
-| `look/carryProduct` | `false` | держит в лапках то, что производит, если не держит свой инструмент |
-| `look/moods` | `false` | спит ночью, потеет в жаре, дрожит в холоде, прячется от дождя |
+| `where/inHand` | `true` | в руках, от первого и третьего лица |
+| `where/inInventory` | `true` | в слотах инвентаря, машин и в NEI |
+| `where/onGround` | `true` | выброшенная на землю |
+| `look/accessories` | `true` | наряд по виду: шапки, очки, маски, что держит, частицы, светящееся или прозрачное тело |
+| `look/carryProduct` | `true` | держит в лапках то, что производит, если не держит свой инструмент |
+| `look/moods` | `true` | спит ночью, потеет в жаре, дрожит в холоде, прячется от дождя |
 
 ### logs: разобранные логи
 
@@ -779,16 +778,16 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 | --- | --- | --- |
 | `general/folder` | `GTNHTweaksLogs` | папка для логов в корне Minecraft |
 | `general/maxBackups` | `5` | сколько архивов `Backup ... .zip` хранить; `0` — удалять старые логи без архива |
-| `files/writeAll` | `false` | файл `All` |
-| `files/writeErrors` | `false` | файл `Errors` |
-| `files/writeWarnings` | `false` | файл `Warnings` |
-| `files/writeCrash` | `false` | файл `Crash` |
-| `files/writeFullCrash` | `false` | файл `All crash` |
-| `files/writeLoading` | `false` | файл `Loading` |
-| `files/writeMods` | `false` | файл `Mods` |
+| `files/writeAll` | `true` | файл `All` |
+| `files/writeErrors` | `true` | файл `Errors` |
+| `files/writeWarnings` | `true` | файл `Warnings` |
+| `files/writeCrash` | `true` | файл `Crash` |
+| `files/writeFullCrash` | `true` | файл `All crash` |
+| `files/writeLoading` | `true` | файл `Loading` |
+| `files/writeMods` | `true` | файл `Mods` |
 | `details/maxStackFrames` | `12` | сколько кадров стектрейса оставлять на исключение в `Errors` и `Warnings` |
 | `details/maxCrashStackFrames` | `30` | то же для `Crash` |
-| `details/stderrAsErrors` | `false` | считать вывод в `System.err` ошибками |
+| `details/stderrAsErrors` | `true` | считать вывод в `System.err` ошибками |
 | `details/ignore` | пусто | регулярные выражения: подходящие сообщения не пишутся в `Errors` и `Warnings` (остаются в `All`). Проверяется строка `источник: сообщение`, например `Angelica: Frame pacing.*` |
 
 ### minecraftServer: присед и плавание из новых версий
@@ -816,8 +815,8 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
-| `movement/crouch` | `false` | присед из новых версий |
-| `movement/swim` | `false` | плавание и ползание из новых версий |
+| `movement/crouch` | `true` | присед из новых версий |
+| `movement/swim` | `true` | плавание и ползание из новых версий |
 
 В клиенте (`config/GTNHTweaks/minecraft.cfg`): `movement/enabled` (`true`) — принимать присед и плавание
 от серверов, которые их разрешают (после перезапуска).
@@ -855,11 +854,11 @@ Hodgepodge сдвигает сетку крафта в инвентаре и р�
 | Параметр | По умолчанию | Описание |
 | --- | --- | --- |
 | `general/theme` | `SHADOW` | тема: `SHADOW`, `DARK` или `LIGHT` |
-| `general/playSound` | `false` | звук в конце бэкапа |
-| `general/hideChatMessages` | `false` | скрывать сообщения о бэкапе в чате |
+| `general/playSound` | `true` | звук в конце бэкапа |
+| `general/hideChatMessages` | `true` | скрывать сообщения о бэкапе в чате |
 | `general/finishedToastSeconds` | `6` | сколько секунд плашка висит после бэкапа |
 | `general/timeoutMinutes` | `30` | убрать плашку бэкапа из чата, если о нём ничего не слышно столько минут |
-| `detection/detectFromChat` | `false` | распознавать бэкап по чату (сервер без GTNHTweaks) |
+| `detection/detectFromChat` | `true` | распознавать бэкап по чату (сервер без GTNHTweaks) |
 | `detection/keywords`, `ignored`, `failed`, `finished`, `started` | см. файл | регулярные выражения для сообщений чата; можно подстроить под свой язык или версию ServerUtilities |
 | `text/*` | английский | подписи на плашке, поддерживается кириллица |
 

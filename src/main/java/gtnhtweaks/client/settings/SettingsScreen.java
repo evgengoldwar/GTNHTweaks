@@ -293,6 +293,7 @@ public class SettingsScreen extends GuiScreen {
                         property,
                         SettingsText.setting(id, name, key),
                         controlWidth);
+                    row.moduleSwitch = enabled;
                     if ("enabled".equals(key) && property.getType() == Property.Type.BOOLEAN) master = row;
                     tab.settings.add(row);
                     tab.rows.add(row);
@@ -438,7 +439,7 @@ public class SettingsScreen extends GuiScreen {
                 if (!p.isOn()) {
                     rows.add(
                         new Rows.NoticeRow(
-                            "This module is off: its settings do nothing",
+                            "The module is off: all its settings are off with it",
                             "Turn on",
                             () -> toggleModule(p)));
                 } else if (!p.isRunning()) {

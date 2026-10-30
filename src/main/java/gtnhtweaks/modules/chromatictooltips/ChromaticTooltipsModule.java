@@ -14,8 +14,8 @@ public final class ChromaticTooltipsModule extends TweakModule {
 
     private static final String CATEGORY_FIXES = "fixes";
 
-    public static boolean colorTextTooltips = false;
-    public static boolean fitTextWidth = false;
+    public static boolean colorTextTooltips = true;
+    public static boolean fitTextWidth = true;
 
     private ChromaticTooltipsModule() {
         super("chromatictooltips", "Fixes of Chromatic Tooltips and its Chromatic Spectrum addon", ModuleSide.CLIENT);

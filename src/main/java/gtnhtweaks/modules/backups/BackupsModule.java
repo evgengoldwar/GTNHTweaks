@@ -23,12 +23,12 @@ public final class BackupsModule extends TweakModule {
     private static final String CATEGORY_TEXT = "text";
 
     public static GTNHTheme style = GTNHTheme.SHADOW;
-    public static boolean playSound = false;
-    public static boolean hideChatMessages = false;
+    public static boolean playSound = true;
+    public static boolean hideChatMessages = true;
     public static int finishedToastSeconds = 6;
     public static int timeoutMinutes = 30;
 
-    public static boolean detectFromChat = false;
+    public static boolean detectFromChat = true;
 
     public static String textTitle = "Backing up the world";
     public static String textTitleDone = "Backup complete";
