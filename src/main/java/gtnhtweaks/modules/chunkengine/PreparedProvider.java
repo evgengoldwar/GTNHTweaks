@@ -40,7 +40,8 @@ public final class PreparedProvider implements IChunkProvider {
     public static void install(ChunkProviderServer server, WorldServer world, int x, int z) {
         if (server.currentChunkProvider instanceof PreparedProvider) restore(server);
         Chunk chunk = TerrainWorkers.take(world, x, z);
-        if (chunk != null) server.currentChunkProvider = new PreparedProvider(server, server.currentChunkProvider, chunk);
+        if (chunk != null)
+            server.currentChunkProvider = new PreparedProvider(server, server.currentChunkProvider, chunk);
     }
 
     /** At the end of a chunk load: the generator of the world again, also when the chunk came from disk. */

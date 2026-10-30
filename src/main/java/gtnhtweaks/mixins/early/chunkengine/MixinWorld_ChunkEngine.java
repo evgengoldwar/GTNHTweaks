@@ -81,8 +81,7 @@ public abstract class MixinWorld_ChunkEngine {
             target = "Lnet/minecraft/world/World;func_147453_f(IIILnet/minecraft/block/Block;)V",
             remap = true),
         require = 0)
-    private void gtnhtweaks$quietComparators(World world, int x, int y, int z, Block block,
-        Operation<Void> original) {
+    private void gtnhtweaks$quietComparators(World world, int x, int y, int z, Block block, Operation<Void> original) {
         if (!isRemote && ChunkEngine.quiet()) return;
         original.call(world, x, y, z, block);
     }

@@ -164,9 +164,7 @@ public final class TerrainWorkers {
     static String status() {
         StringBuilder out = new StringBuilder();
         for (State state : STATES.values()) {
-            String name = state.world.provider.getDimensionName() + " ("
-                + state.world.provider.dimensionId
-                + ")";
+            String name = state.world.provider.getDimensionName() + " (" + state.world.provider.dimensionId + ")";
             if (state.disabled != null) {
                 out.append("  terrain threads off in ")
                     .append(name)

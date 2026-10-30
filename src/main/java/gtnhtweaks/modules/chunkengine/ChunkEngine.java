@@ -144,7 +144,9 @@ public final class ChunkEngine {
         }
     }
 
-    /** What the chunk engine saved, for the summary of the period (0) or of the session (1); nothing if it did not run. */
+    /**
+     * What the chunk engine saved, for the summary of the period (0) or of the session (1); nothing if it did not run.
+     */
     public static void summary(StringBuilder out, int slot) {
         StringBuilder lines = new StringBuilder();
         for (Counter counter : COUNTERS) {
