@@ -444,6 +444,7 @@ public final class ChunkGenLog {
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.START) {
+            if (LogsModule.serverTickDetails) ServerPerf.tickBegins();
             synchronized (LOCK) {
                 tickStart = System.nanoTime();
                 tickChunkNanos = 0;
@@ -452,7 +453,9 @@ public final class ChunkGenLog {
             }
             return;
         }
+        String lag = LogsModule.serverTickDetails ? ServerPerf.tickEnds(LogsModule.chunkLagTickMs * 1_000_000L) : null;
         synchronized (LOCK) {
+            if (lag != null) line(lag);
             if (tickStart == 0) return;
             long tick = System.nanoTime() - tickStart;
             for (Stats stats : new Stats[] { period, session }) {
@@ -519,7 +522,11 @@ public final class ChunkGenLog {
     private static void summarize(boolean whole) {
         synchronized (LOCK) {
             long now = System.currentTimeMillis();
-            if (!period.isEmpty()) {
+            // the server tick part, counted for the period anyway, written with the summary
+            StringBuilder ticks = new StringBuilder();
+            boolean lagged = ServerPerf.periodLagged();
+            ServerPerf.summary(ticks, 0);
+            if (!period.isEmpty() || lagged) {
                 for (Map.Entry<String, int[]> entry : LINES.entrySet()) {
                     if (entry.getValue()[1] > 0) PENDING.append("... and ")
                         .append(entry.getValue()[1])
@@ -528,14 +535,21 @@ public final class ChunkGenLog {
                         .append(" lines in this period, only counted in the summary\n");
                 }
                 PENDING.append(summary(period, "the last " + minutes(now - periodStart), now - periodStart));
+                PENDING.append(ticks)
+                    .append('\n');
             }
             period = new Stats();
             periodStart = now;
             LINES.clear();
             if (whole && !session.isEmpty()) {
                 PENDING.append(summary(session, "the whole world session", 0));
+                StringBuilder sessionTicks = new StringBuilder();
+                ServerPerf.summary(sessionTicks, 1);
+                PENDING.append(sessionTicks)
+                    .append('\n');
                 session = new Stats();
             }
+            if (whole) ServerPerf.resetSession();
         }
     }
 
@@ -576,6 +590,9 @@ public final class ChunkGenLog {
             + "  SLOW TICK    a server tick in which chunk generation took longer than "
             + LogsModule.chunkSlowTickMs
             + " ms (50 ms is a whole tick at 20 TPS)\n"
+            + "  LAG TICK     a server tick longer than "
+            + LogsModule.chunkLagTickMs
+            + " ms for any reason, with the sections of the profiler that took most of it\n"
             + "  CASCADE      a chunk made while another was populated: a generator reached outside its chunk.\n"
             + "               A cascade makes more chunks, which are populated in turn, and lags the server.\n"
             + "A summary every "
@@ -813,7 +830,7 @@ public final class ChunkGenLog {
         }
     }
 
-    private static String micros(long nanos) {
+    static String micros(long nanos) {
         if (nanos >= 1_000_000) return ms(nanos);
         return String.format(Locale.ROOT, "%.1f µs", nanos / 1e3);
     }
@@ -949,7 +966,7 @@ public final class ChunkGenLog {
         return "chunk (" + x + ", " + z + ") at x " + x * 16 + " z " + z * 16;
     }
 
-    private static String ms(long nanos) {
+    static String ms(long nanos) {
         double ms = nanos / 1e6;
         if (ms >= 10_000) return String.format(Locale.ROOT, "%.1f s", ms / 1000);
         if (ms >= 100) return String.format(Locale.ROOT, "%.0f ms", ms);

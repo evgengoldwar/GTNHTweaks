@@ -199,6 +199,18 @@ public enum Mixins implements IMixins {
             "logs.MixinNoiseGeneratorOctaves_ChunkGenEngine",
             "logs.MixinSpawnerAnimals_ChunkGenEngine",
             "logs.MixinAnvilChunkLoader_ChunkGenEngine")),
+    LOGS_SERVER_TICK(new MixinBuilder("Time the server tick for the Chunk generation log").setPhase(Phase.EARLY)
+        .setApplyIf(
+            () -> LogsModule.INSTANCE.isEnabled() && LogsModule.writeChunkGeneration && LogsModule.serverTickDetails)
+        .addCommonMixins(
+            "logs.MixinProfiler_ServerPerf",
+            "logs.MixinWorldServer_ServerPerf",
+            "logs.MixinS26PacketMapChunkBulk_ServerPerf",
+            "logs.MixinS21PacketChunkData_ServerPerf",
+            "logs.MixinChunkIOExecutor_ServerPerf",
+            "logs.AccessorPlayerManager_ServerPerf",
+            "logs.AccessorWorld_ServerPerf",
+            "logs.AccessorChunkProviderServer_ServerPerf")),
     LOGS_CRASH_SCREEN(new MixinBuilder("Crash screen in place of other crash screens").setPhase(Phase.EARLY)
         .setApplyIf(() -> LogsModule.INSTANCE.isEnabled() && LogsModule.replaceCrashScreen)
         .addClientMixins("logs.MixinMinecraft_CrashScreen")),

@@ -624,6 +624,17 @@ final class SettingsText {
                 + "updates, caves, structures, vanilla features, biomes, mob spawning.",
             Restart.ALWAYS);
         set(
+            "serverTickDetails",
+            "Whole server tick",
+            "Chunk generation: also measure the whole server tick: its sections, tick lengths, garbage collector, "
+                + "dimensions, chunks waiting for players and chunk packets.",
+            Restart.ALWAYS);
+        set(
+            "chunkLagTickMs",
+            "Lagging tick, ms",
+            "Chunk generation: a server tick longer than this, for any reason, gets a line of its own with what "
+                + "took most of it.");
+        set(
             "chunkSummaryMinutes",
             "Summary every, minutes",
             "Chunk generation: how often the summary is written while chunks are made.");

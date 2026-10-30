@@ -43,6 +43,8 @@ public final class LogsModule extends TweakModule {
     static int chunkSlowTickMs = 50;
     static int chunkSummaryMinutes = 5;
     public static boolean chunkEngineDetails = true;
+    public static boolean serverTickDetails = true;
+    static int chunkLagTickMs = 100;
 
     public static boolean replaceCrashScreen = true;
     static int maxStackFrames = 12;
@@ -177,6 +179,21 @@ public final class LogsModule extends TweakModule {
                 + "updates, caves and structures, vanilla features, biomes, noise, mob spawning, chunks read from "
                 + "disk), to tell what to make faster in Minecraft. Costs a few percent of the generation time. "
                 + "Changes require a game restart");
+        serverTickDetails = config.getBoolean(
+            "serverTickDetails",
+            CATEGORY_DETAILS,
+            serverTickDetails,
+            "Chunk generation: also measure the whole server tick: its sections by the profiler of Minecraft, the "
+                + "length of the ticks, the garbage collector, every dimension, the chunks waiting for the players "
+                + "and the compression of the chunk packets. Changes require a game restart");
+        chunkLagTickMs = config.getInt(
+            "chunkLagTickMs",
+            CATEGORY_DETAILS,
+            chunkLagTickMs,
+            1,
+            60_000,
+            "Chunk generation: a server tick longer than this, in milliseconds, for any reason, gets a line of its own "
+                + "with the sections of the profiler that took most of it");
         String[] ignore = config.getStringList(
             "ignore",
             CATEGORY_DETAILS,
