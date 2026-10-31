@@ -2,7 +2,6 @@ package gtnhtweaks.modules.chunkreveal;
 
 import static org.lwjgl.opengl.GL11.*;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,12 +12,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.entity.EntityLivingBase;
 
-import org.lwjgl.BufferUtils;
-
 /**
  * The animation of the chunks drawn by Minecraft itself. A piece of a chunk, 16 blocks a side, starts to appear when it
  * first gets blocks after it moved to a new place; while it appears it is left out of the lists of RenderGlobal and
- * drawn on its own here, moved, scaled or dissolved. With Angelica the same is done by {@link ChunkRevealShaders}.
+ * drawn on its own here, moved or scaled. With Angelica the same is done by {@link ChunkRevealShaders}.
  */
 public final class ChunkReveal {
 
@@ -35,8 +32,6 @@ public final class ChunkReveal {
     private static int pass;
 
     private static final Random RANDOM = new Random();
-    private static final int STIPPLE_LEVELS = 32;
-    private static ByteBuffer[] stipples;
 
     /** A piece that appears: its renderer, the display list of the pass and how far it is. */
     private static final class Held {
@@ -124,9 +119,6 @@ public final class ChunkReveal {
                 case RISE:
                     glTranslatef(0, -(1 - outCubic(t)) * distance, 0);
                     break;
-                case DROP:
-                    glTranslatef(0, (1 - outBounce(t)) * distance, 0);
-                    break;
                 case SLIDE: {
                     double dx = r.posX + 8 - camX, dz = r.posZ + 8 - camZ;
                     double length = Math.sqrt(dx * dx + dz * dz);
@@ -149,49 +141,10 @@ public final class ChunkReveal {
                 default:
                     break;
             }
-            boolean dissolve = style == ChunkRevealModule.Style.DISSOLVE;
-            if (dissolve) {
-                glEnable(GL_POLYGON_STIPPLE);
-                glPolygonStipple(stipple(t));
-            }
             glCallList(held.list);
-            if (dissolve) glDisable(GL_POLYGON_STIPPLE);
             glPopMatrix();
         }
         HELD.clear();
-    }
-
-    /**
-     * A pattern of the screen pixels drawn, 32 by 32 bits: more of them the further the piece is, in a fixed random
-     * order, so the chunk gathers from scattered pixels.
-     */
-    private static ByteBuffer stipple(float t) {
-        if (stipples == null) {
-            int[] order = new int[32 * 32];
-            for (int i = 0; i < order.length; i++) order[i] = i;
-            Random random = new Random(1710);
-            for (int i = order.length - 1; i > 0; i--) {
-                int j = random.nextInt(i + 1);
-                int swap = order[i];
-                order[i] = order[j];
-                order[j] = swap;
-            }
-            stipples = new ByteBuffer[STIPPLE_LEVELS + 1];
-            for (int level = 0; level <= STIPPLE_LEVELS; level++) {
-                byte[] bits = new byte[128];
-                int count = order.length * level / STIPPLE_LEVELS;
-                for (int i = 0; i < count; i++) {
-                    int pixel = order[i];
-                    bits[pixel / 8] |= (byte) (0x80 >>> (pixel % 8));
-                }
-                ByteBuffer buffer = BufferUtils.createByteBuffer(128);
-                buffer.put(bits);
-                buffer.flip();
-                stipples[level] = buffer;
-            }
-        }
-        int level = Math.max(0, Math.min(STIPPLE_LEVELS, Math.round(t * STIPPLE_LEVELS)));
-        return stipples[level];
     }
 
     // ---- easing, as in the shaders
@@ -204,13 +157,5 @@ public final class ChunkReveal {
     static float outBack(float t) {
         float c1 = 1.70158F, c3 = c1 + 1, u = t - 1;
         return 1 + c3 * u * u * u + c1 * u * u;
-    }
-
-    static float outBounce(float t) {
-        float n = 7.5625F, d = 2.75F;
-        if (t < 1 / d) return n * t * t;
-        if (t < 2 / d) return n * (t -= 1.5F / d) * t + 0.75F;
-        if (t < 2.5F / d) return n * (t -= 2.25F / d) * t + 0.9375F;
-        return n * (t -= 2.625F / d) * t + 0.984375F;
     }
 }

@@ -7,9 +7,10 @@ import net.minecraftforge.common.config.Configuration;
 import gtnhtweaks.core.TweakModule;
 
 /**
- * New chunks of the world appear with an animation instead of out of nothing: they rise from below, drop from above,
- * slide in, grow or dissolve in. Works with the renderer of Minecraft and with the one of Angelica; with a shader pack
- * of Angelica the chunks appear as usual.
+ * New chunks of the world appear with an animation instead of out of nothing: they rise from below, slide in or grow.
+ * Works with the renderer of Minecraft and with the one of Angelica; with a shader pack of Angelica the chunks appear
+ * as
+ * usual.
  */
 public final class ChunkRevealModule extends TweakModule {
 
@@ -23,14 +24,14 @@ public final class ChunkRevealModule extends TweakModule {
         /** At once, as in vanilla. */
         DEFAULT,
         RISE,
-        DROP,
         SLIDE,
-        GROW,
-        DISSOLVE;
+        GROW;
 
         static Style parse(String name) {
             try {
-                return valueOf(name.trim().toUpperCase(Locale.ROOT));
+                return valueOf(
+                    name.trim()
+                        .toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException e) {
                 return RISE;
             }
@@ -55,15 +56,19 @@ public final class ChunkRevealModule extends TweakModule {
             CATEGORY_ANIMATION,
             "How new chunks appear. Works with and without Angelica; with an Angelica shader pack the chunks appear "
                 + "as usual. Changes take effect at once");
-        style = Style.parse(
-            config.getString(
-                "style",
-                CATEGORY_ANIMATION,
-                "RISE",
-                "DEFAULT (at once, as in vanilla), RISE (from below), DROP (from above, with a small bounce), SLIDE "
-                    + "(from the outside toward the player), GROW (from the middle of the chunk) or DISSOLVE (from "
-                    + "scattered pixels)",
-                new String[] { "DEFAULT", "RISE", "DROP", "SLIDE", "GROW", "DISSOLVE" }));
+        String styleName = config.getString(
+            "style",
+            CATEGORY_ANIMATION,
+            "RISE",
+            "DEFAULT (at once, as in vanilla), RISE (from below), SLIDE (from the outside toward the player) or GROW "
+                + "(from the middle of the chunk)",
+            new String[] { "DEFAULT", "RISE", "SLIDE", "GROW" });
+        style = Style.parse(styleName);
+        // a style that was removed, as DROP and DISSOLVE, becomes RISE in the file too
+        if (!style.name()
+            .equals(styleName))
+            config.get(CATEGORY_ANIMATION, "style", "RISE")
+                .set(style.name());
         wave = "WAVE".equals(
             config.getString(
                 "order",
@@ -84,6 +89,6 @@ public final class ChunkRevealModule extends TweakModule {
             distance,
             4,
             64,
-            "How far a chunk moves while it appears, in blocks: RISE, DROP and SLIDE");
+            "How far a chunk moves while it appears, in blocks: RISE and SLIDE");
     }
 }

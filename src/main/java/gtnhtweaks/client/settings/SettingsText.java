@@ -672,14 +672,10 @@ final class SettingsText {
             "At once, as in vanilla",
             "RISE",
             "Rises from below",
-            "DROP",
-            "Drops from above with a small bounce",
             "SLIDE",
             "Slides in from the outside toward the player",
             "GROW",
-            "Grows from the middle of the chunk",
-            "DISSOLVE",
-            "Gathers from scattered pixels");
+            "Grows from the middle of the chunk");
         set("order", "Order", "Which chunks appear first.", Restart.NONE);
         values("WAVE", "The chunks near the player first, in a wave", "RANDOM", "In a random order");
         set("durationMs", "Duration", "How long one chunk takes to appear, in milliseconds.", Restart.NONE);
