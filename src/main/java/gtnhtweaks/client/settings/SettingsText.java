@@ -664,6 +664,27 @@ final class SettingsText {
             "The small square with an arrow right of Options: install, update or delete the mods of EvgenWarGold.",
             Restart.NONE);
 
+        module("chunkreveal", "Chunk Reveal", "New chunks appear with an animation instead of out of nothing.");
+        tab("animation", "Animation", "How new chunks appear. Works with and without Angelica.");
+        set("style", "Animation", "How a new chunk appears.", Restart.NONE);
+        values(
+            "DEFAULT",
+            "At once, as in vanilla",
+            "RISE",
+            "Rises from below",
+            "DROP",
+            "Drops from above with a small bounce",
+            "SLIDE",
+            "Slides in from the outside toward the player",
+            "GROW",
+            "Grows from the middle of the chunk",
+            "DISSOLVE",
+            "Gathers from scattered pixels");
+        set("order", "Order", "Which chunks appear first.", Restart.NONE);
+        values("WAVE", "The chunks near the player first, in a wave", "RANDOM", "In a random order");
+        set("durationMs", "Duration", "How long one chunk takes to appear, in milliseconds.", Restart.NONE);
+        set("distance", "Distance", "How far a chunk moves while it appears, in blocks.", Restart.NONE);
+
         module("debug", "Developer Tools", "Tools for the makers of mods and modpacks.");
         tab("guiInfo", "Screen Info", "What the open screen is.");
         set(

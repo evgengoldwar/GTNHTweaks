@@ -58,7 +58,7 @@ public class SettingsScreen extends GuiScreen {
     private static final String SERVER_SECTION = "Server";
 
     static {
-        CLIENT_GROUPS.put("Look", Arrays.asList("loadingscreen", "mainmenu", "menus", "buttons"));
+        CLIENT_GROUPS.put("Look", Arrays.asList("loadingscreen", "mainmenu", "menus", "buttons", "chunkreveal"));
         CLIENT_GROUPS.put("Gameplay", Arrays.asList("minecraft", "itemphysics"));
         CLIENT_GROUPS
             .put("Mods", Arrays.asList("gregtech", "nei", "chromatictooltips", "tinkers", "extrautilities", "bees"));
