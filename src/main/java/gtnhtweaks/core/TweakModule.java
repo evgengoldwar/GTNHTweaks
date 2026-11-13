@@ -78,8 +78,9 @@ public abstract class TweakModule {
         this.enabled = enabled;
     }
 
+    /** Every module starts off: it is turned on in the settings screen or in modules.cfg. */
     public boolean isEnabledByDefault() {
-        return true;
+        return false;
     }
 
     /**

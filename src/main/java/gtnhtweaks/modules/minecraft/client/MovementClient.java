@@ -45,6 +45,8 @@ public final class MovementClient {
     private static float frameDrop;
     private static double framePosY, framePrevPosY, frameLastTickPosY, frameCapeY, framePrevCapeY;
     private static boolean forwardWasDown;
+    /** The own player was sprinting before vanilla moved it in this tick. */
+    private static boolean sprintedBefore;
     private static int tapTimer;
 
     private MovementClient() {}
@@ -118,8 +120,13 @@ public final class MovementClient {
         if (!event.player.worldObj.isRemote) return;
         EntityPlayer player = event.player;
         if (event.phase == TickEvent.Phase.END) {
-            if (player instanceof EntityPlayerSP && player == Minecraft.getMinecraft().thePlayer)
-                afterMove((EntityPlayerSP) player, Movement.state(player));
+            if (player instanceof EntityPlayerSP && player == Minecraft.getMinecraft().thePlayer) {
+                EntityPlayerSP own = (EntityPlayerSP) player;
+                // vanilla stops the sprint on running into a block or after 30 seconds, newer versions not while
+                // swimming; put back before the client tells the server, so the server never sees it stop
+                if (sprintedBefore && !own.isSprinting() && keepSprinting(own)) own.setSprinting(true);
+                afterMove(own, Movement.state(player));
+            }
             return;
         }
         Movement.updateOnClient(player);
@@ -128,6 +135,7 @@ public final class MovementClient {
         state.swim = state.pose == Pose.SWIM ? Math.min(1, state.swim + 0.09F) : Math.max(0, state.swim - 0.09F);
         if (player instanceof EntityPlayerSP && player == Minecraft.getMinecraft().thePlayer) {
             Movement.clientPlayer = player;
+            sprintedBefore = player.isSprinting();
             moveCamera((EntityPlayerSP) player, state);
             swim((EntityPlayerSP) player, state);
         }
@@ -209,7 +217,7 @@ public final class MovementClient {
         boolean canSprint = player.getFoodStats()
             .getFoodLevel() > 6 || player.capabilities.allowFlying;
         boolean forward = player.movementInput.moveForward > 1.0E-5F;
-        return player.onGround || player.movementInput.sneak || forward && canSprint;
+        return canSprint && (forward || player.onGround || player.movementInput.sneak);
     }
 
     /** How far the camera of the own player is to go under that of vanilla, for the eyes of its pose. */

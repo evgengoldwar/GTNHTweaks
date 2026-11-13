@@ -27,7 +27,9 @@ public class GTNHTweaks {
         Network.register();
         ModuleManager.preInit(event);
         if (event.getSide()
-            .isClient()) SettingsKey.register();
+            .isClient()) {
+            SettingsKey.register();
+        }
     }
 
     @Mod.EventHandler

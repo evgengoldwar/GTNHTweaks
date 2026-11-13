@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
 
 import cpw.mods.fml.common.Loader;
@@ -17,6 +16,7 @@ import gtnhtweaks.common.ResourcePackOverrides;
 import gtnhtweaks.common.render.GLDraw;
 import gtnhtweaks.common.render.GTNHLogo;
 import gtnhtweaks.common.render.GTNHTheme;
+import gtnhtweaks.common.render.PixelIcon;
 import gtnhtweaks.common.render.ThemeShapes;
 import gtnhtweaks.common.render.ThemedButton;
 import gtnhtweaks.modules.loadingscreen.LoadingScreenModule;
@@ -125,11 +125,14 @@ public final class MainMenuRenderer {
         for (Object element : buttons) {
             GuiButton button = (GuiButton) element;
             if (!button.visible) continue;
-            if (isThemed(button)) ThemedButton.draw(button, label(button), font, mouseX, mouseY, theme);
+            if (button.id == MainMenuLayout.LANGUAGE) drawIconButton(button, PixelIcon.GLOBE, mouseX, mouseY, theme);
+            else if (button.id == MainMenuLayout.OWN_MODS)
+                drawIconButton(button, PixelIcon.DOWNLOAD, mouseX, mouseY, theme);
+            else if (isThemed(button)) ThemedButton.draw(button, button.displayString, font, mouseX, mouseY, theme);
             else button.drawButton(mc, mouseX, mouseY);
         }
 
-        // footer: mod count and the settings button on the left, load time on the right
+        // footer: mod count on the left, load time on the right
         if (MainMenuModule.showModCount) {
             String caption = MainMenuModule.textMods + ": ";
             font.drawString(caption, 4, height - 12, theme.textDim, shadow);
@@ -145,14 +148,15 @@ public final class MainMenuRenderer {
         int left = Integer.MAX_VALUE, top = Integer.MAX_VALUE, right = Integer.MIN_VALUE, bottom = Integer.MIN_VALUE;
         for (Object element : buttons) {
             GuiButton button = (GuiButton) element;
-            if (!button.visible || button.id == MainMenuLayout.SETTINGS || !MainMenuLayout.isKnown(button.id)) continue;
+            // the small squares stand out of the panel, as Language in vanilla
+            if (!button.visible || !MainMenuLayout.isKnown(button.id) || MainMenuLayout.isSquare(button.id)) continue;
             left = Math.min(left, button.xPosition);
             top = Math.min(top, button.yPosition);
             right = Math.max(right, button.xPosition + ThemedButton.width(button));
             bottom = Math.max(bottom, button.yPosition + ThemedButton.height(button));
         }
         if (left > right) return;
-        int padding = 6;
+        int padding = MainMenuLayout.PANEL_PADDING;
         ThemeShapes.panel(left - padding, top - padding, right - left + padding * 2, bottom - top + padding * 2, theme);
     }
 
@@ -164,11 +168,6 @@ public final class MainMenuRenderer {
                 .getActiveModList()
                 .size());
         return cachedModCount;
-    }
-
-    /** "Mods: 312", or empty when the mod count is hidden. */
-    static String modCountText() {
-        return MainMenuModule.showModCount ? MainMenuModule.textMods + ": " + modCount() : "";
     }
 
     /** "Loaded in 8.1 s": dim caption, time in the accent color, and an accent strip like the hovered buttons. */
@@ -191,12 +190,18 @@ public final class MainMenuRenderer {
         return MainMenuLayout.isKnown(button.id) || button.getClass() == GuiButton.class;
     }
 
-    private static String label(GuiButton button) {
-        String label = button.displayString;
-        if (button.id == MainMenuLayout.LANGUAGE && (label == null || label.isEmpty())) {
-            label = I18n.format("options.language");
-        }
-        return label;
+    /** The small squares beside the column: Language with a globe, the mods of the author with an arrow. */
+    private static void drawIconButton(GuiButton button, String[] icon, int mouseX, int mouseY, GTNHTheme theme) {
+        ThemedButton.drawFrame(button, mouseX, mouseY, theme);
+        int color = !button.enabled ? theme.textDisabled
+            : ThemedButton.isHovered(button, mouseX, mouseY) ? theme.hoverText : theme.text;
+        PixelIcon.drawCentered(
+            icon,
+            button.xPosition,
+            button.yPosition,
+            ThemedButton.width(button),
+            ThemedButton.height(button),
+            color);
     }
 
     private static void drawCentered(FontRenderer font, String text, int centerX, int y, int color, boolean shadow) {

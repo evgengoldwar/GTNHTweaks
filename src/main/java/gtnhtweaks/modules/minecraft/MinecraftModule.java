@@ -10,10 +10,12 @@ import gtnhtweaks.core.ModuleManager;
 import gtnhtweaks.core.TweakModule;
 import gtnhtweaks.modules.minecraft.client.BlockChunks;
 import gtnhtweaks.modules.minecraft.client.FallingLeaves;
+import gtnhtweaks.modules.minecraft.client.InstalledPacks;
 import gtnhtweaks.modules.minecraft.client.MovementClient;
 import gtnhtweaks.modules.minecraft.client.NewItems;
 import gtnhtweaks.modules.minecraft.client.OutlineClient;
 import gtnhtweaks.modules.minecraft.client.OutlineScreen;
+import gtnhtweaks.modules.minecraft.client.PackCatalog;
 import gtnhtweaks.modules.minecraft.client.ParticleRain;
 import gtnhtweaks.modules.minecraft.client.PickupNotifier;
 import gtnhtweaks.modules.minecraft.client.ScreenBackground;
@@ -161,6 +163,8 @@ public final class MinecraftModule extends TweakModule {
     public static boolean hideDefaultPack = true;
     /** Done without a change of the packs closes the screen at once, without reloading the resources. */
     public static boolean skipReloadWithoutChanges = true;
+    /** A button of the resource pack screen opens a search of the packs for 1.7.10 on Modrinth. */
+    public static boolean packBrowser = true;
 
     private MinecraftModule() {
         super("minecraft", "Tweaks of Minecraft itself, like the outline of the looked at block", ModuleSide.CLIENT);
@@ -168,6 +172,9 @@ public final class MinecraftModule extends TweakModule {
 
     @Override
     protected void loadConfig(Configuration config) {
+        // left in the file by features taken out: the opening animation of the screens and the CurseForge tab
+        if (config.hasCategory("screenanimation")) config.removeCategory(config.getCategory("screenanimation"));
+        removeKey(config, CATEGORY_RESOURCE_PACKS, "curseForgeApiKey");
         config.addCustomCategoryComment(
             CATEGORY_OUTLINE,
             "The outline of the looked at block. The settings can also be changed in game, with a live preview, "
@@ -493,6 +500,12 @@ public final class MinecraftModule extends TweakModule {
             skipReloadWithoutChanges,
             "Done closes the resource pack screen at once, like Esc, when the selected packs and their order did not "
                 + "change: vanilla reloads all the resources anyway, which takes long in a big pack");
+        packBrowser = config.getBoolean(
+            "packBrowser",
+            CATEGORY_RESOURCE_PACKS,
+            packBrowser,
+            "A Get packs button on the resource pack screen: the resource packs of the GTNH wiki and the ones for "
+                + "1.7.10 on Modrinth, installed into the resource pack folder and updated when a new version is out");
     }
 
     /** The look of the outline is set on its screen in game, so the settings screen only shows the switch. */
@@ -565,5 +578,7 @@ public final class MinecraftModule extends TweakModule {
         BlockChunks.register();
         ParticleRain.register();
         if (modernMovement) MovementClient.register();
+        InstalledPacks.deleteObsolete();
+        PackCatalog.clearPreviews();
     }
 }

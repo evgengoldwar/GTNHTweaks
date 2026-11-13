@@ -6,6 +6,7 @@ import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 
 import gtnhtweaks.modules.chromatictooltips.ChromaticTooltipsModule;
+import gtnhtweaks.modules.chunkreveal.ChunkRevealModule;
 import gtnhtweaks.modules.debug.DebugModule;
 import gtnhtweaks.modules.gregtech.GregTechModule;
 import gtnhtweaks.modules.itemphysics.ItemPhysicsModule;
@@ -85,7 +86,7 @@ public enum Mixins implements IMixins {
         .addClientMixins("minecraft.MixinEntityRenderer_ParticleRain")),
     MINECRAFT_BLOCK_CHUNKS(new MixinBuilder("Broken blocks fall apart into little cubes").setPhase(Phase.EARLY)
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
-        .addClientMixins("minecraft.MixinEffectRenderer_BlockChunks")),
+        .addClientMixins("minecraft.MixinEffectRenderer_BlockChunks", "minecraft.MixinRenderGlobal_BlockChunks")),
     // Crouching and swimming: the poses are kept on every player wherever one of the two sides runs, the server
     // module on a dedicated server and in singleplayer, the client module on the client
     MINECRAFT_MOVEMENT(new MixinBuilder("Poses of the crouching and swimming of newer versions").setPhase(Phase.EARLY)
@@ -111,6 +112,16 @@ public enum Mixins implements IMixins {
     MINECRAFT_RESOURCE_PACKS(new MixinBuilder("Dragging and presets of the resource packs").setPhase(Phase.EARLY)
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
         .addClientMixins("minecraft.MixinGuiScreenResourcePacks_Packs", "minecraft.MixinGuiSlot_Packs")),
+
+    // Chunk reveal module: the first two for the renderer of Minecraft, the last two for the one of Angelica; each
+    // pair does nothing with the other renderer
+    CHUNK_REVEAL(new MixinBuilder("New chunks appear with an animation").setPhase(Phase.EARLY)
+        .setApplyIf(ChunkRevealModule.INSTANCE::isEnabled)
+        .addClientMixins(
+            "chunkreveal.MixinWorldRenderer_ChunkReveal",
+            "chunkreveal.MixinRenderGlobal_ChunkReveal",
+            "chunkreveal.MixinShaderLoader_ChunkReveal",
+            "chunkreveal.MixinDefaultChunkShaderInterface_ChunkReveal")),
 
     // Item physics module
     ITEM_PHYSICS(new MixinBuilder("Dropped items lie on the ground and tumble when they fall").setPhase(Phase.EARLY)
@@ -191,9 +202,9 @@ public enum Mixins implements IMixins {
                 && !LogsModule.betterCrashesInstalled())
         .addClientMixins("logs.MixinMinecraft_CrashHandler")),
 
-    // Shared by the modules that draw GTNH style buttons
+    // Shared by the modules that draw GTNH style buttons and by the GTNHTweaks button of the main menu, always there
     GUI_BUTTON_ACCESSOR(new MixinBuilder("GuiButton size accessor").setPhase(Phase.EARLY)
-        .setApplyIf(() -> MainMenuModule.INSTANCE.isEnabled() || MenusModule.INSTANCE.isEnabled())
+        .setApplyIf(() -> true)
         .addClientMixins("common.AccessorGuiButton"));
 
     private final MixinBuilder builder;

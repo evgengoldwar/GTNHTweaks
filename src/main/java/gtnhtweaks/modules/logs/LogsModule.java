@@ -48,6 +48,12 @@ public final class LogsModule extends TweakModule {
         super("logs", "Sorted logs: errors, warnings and crashes in separate files without the noise", ModuleSide.BOTH);
     }
 
+    /** On by default: the sorted logs and the crash screen help everyone who meets an error. */
+    @Override
+    public boolean isEnabledByDefault() {
+        return true;
+    }
+
     @Override
     protected void loadConfig(Configuration config) {
         config.addCustomCategoryComment(CATEGORY_GENERAL, "Where the logs are written");

@@ -249,6 +249,13 @@ public final class PickupNotifier {
                 break;
         }
 
+        // the screen drawn after the HUD in the same frame takes the GL state as vanilla leaves it: without the
+        // depth test the player in the inventory was drawn see-through
+        GL11.glPushAttrib(
+            GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT
+                | GL11.GL_CURRENT_BIT
+                | GL11.GL_DEPTH_BUFFER_BIT
+                | GL11.GL_LIGHTING_BIT);
         GL11.glPushMatrix();
         for (int i = 0; i < LINES.size(); i++) {
             Line line = LINES.get(i);
@@ -283,6 +290,7 @@ public final class PickupNotifier {
             GL11.glPopMatrix();
         }
         GL11.glPopMatrix();
+        GL11.glPopAttrib();
         GL11.glColor4f(1, 1, 1, 1);
     }
 

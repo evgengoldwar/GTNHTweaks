@@ -3,16 +3,15 @@ package gtnhtweaks.modules.mainmenu;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraftforge.client.event.GuiScreenEvent;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import gtnhtweaks.client.settings.SettingsScreen;
 import gtnhtweaks.mixins.early.common.AccessorGuiButton;
+import gtnhtweaks.modules.buttons.ModsButton;
+import gtnhtweaks.modules.buttons.SettingsButton;
 
 /**
  * Arranges the vanilla main menu buttons into a compact column under the logo. Runs last, after other mods added
@@ -29,9 +28,13 @@ public class MainMenuLayout {
     static final int OPTIONS = 0, SINGLEPLAYER = 1, MULTIPLAYER = 2, QUIT = 4, LANGUAGE = 5, MODS = 6, DEMO_PLAY = 11,
         DEMO_RESET = 12, REALMS = 14;
 
-    /** Id of the GTNHTweaks settings button in the footer, far from the ids used by vanilla and other mods. */
-    static final int SETTINGS = 0x47544E48;
-    static final int FOOTER_BUTTON_HEIGHT = 14;
+    /** The GTNHTweaks button beside Mods, added by {@link SettingsButton}. */
+    static final int SETTINGS = SettingsButton.ID;
+    /** The square with the mods of the author right of Options, added by {@link ModsButton}. */
+    static final int OWN_MODS = ModsButton.ID;
+
+    /** Padding of the beveled panel the renderer draws behind the column of buttons. */
+    static final int PANEL_PADDING = 6;
 
     /** Y of the first button row, read by the renderer to place the logo above it. */
     static volatile int buttonsTop = -1;
@@ -45,8 +48,9 @@ public class MainMenuLayout {
         List<List<GuiButton>> rows = new ArrayList<>();
         addRow(rows, find(buttons, SINGLEPLAYER), find(buttons, DEMO_PLAY));
         addRow(rows, find(buttons, MULTIPLAYER), find(buttons, DEMO_RESET));
-        addRow(rows, find(buttons, MODS), find(buttons, REALMS));
-        addRow(rows, find(buttons, OPTIONS), find(buttons, LANGUAGE));
+        // the GTNHTweaks button shares the row of Mods
+        addRow(rows, find(buttons, MODS), find(buttons, SETTINGS), find(buttons, REALMS));
+        addRow(rows, find(buttons, OPTIONS));
         addRow(rows, find(buttons, QUIT));
 
         int width = event.gui.width;
@@ -68,28 +72,26 @@ public class MainMenuLayout {
             }
         }
 
-        if (MainMenuModule.showSettingsButton) addSettingsButton(buttons, height);
+        // Language and the mods of the author are small squares left and right of the row of Options, as Language
+        // is in vanilla; out of the beveled panel
+        GuiButton options = find(buttons, OPTIONS);
+        int squaresY = options != null && options.visible ? options.yPosition : top;
+        int gap = MainMenuModule.style.isBeveled() ? PANEL_PADDING + GAP : GAP;
+        square(find(buttons, LANGUAGE), width / 2 - BUTTON_WIDTH / 2 - gap - BUTTON_HEIGHT, squaresY);
+        square(find(buttons, OWN_MODS), width / 2 + BUTTON_WIDTH / 2 + gap, squaresY);
     }
 
-    /** Small button in the footer, right of the mod count. */
-    private static void addSettingsButton(List<GuiButton> buttons, int height) {
-        FontRenderer font = Minecraft.getMinecraft().fontRenderer;
-        String label = MainMenuModule.textSettings;
-        int x = 4;
-        String modCount = MainMenuRenderer.modCountText();
-        if (!modCount.isEmpty()) x += font.getStringWidth(modCount) + 10;
-        GuiButton button = new GuiButton(SETTINGS, x, height - 15, label);
-        ((AccessorGuiButton) button).gtnhtweaks$setWidth(font.getStringWidth(label) + 12);
-        ((AccessorGuiButton) button).gtnhtweaks$setHeight(FOOTER_BUTTON_HEIGHT);
-        buttons.add(button);
+    private static void square(GuiButton button, int x, int y) {
+        if (button == null || !button.visible) return;
+        button.xPosition = x;
+        button.yPosition = y;
+        ((AccessorGuiButton) button).gtnhtweaks$setWidth(BUTTON_HEIGHT);
+        ((AccessorGuiButton) button).gtnhtweaks$setHeight(BUTTON_HEIGHT);
     }
 
-    @SubscribeEvent
-    public void onActionPerformed(GuiScreenEvent.ActionPerformedEvent.Pre event) {
-        if (!(event.gui instanceof GuiMainMenu) || event.button.id != SETTINGS) return;
-        Minecraft.getMinecraft()
-            .displayGuiScreen(new SettingsScreen(event.gui));
-        event.setCanceled(true);
+    /** The small square buttons beside the column. */
+    static boolean isSquare(int id) {
+        return id == LANGUAGE || id == OWN_MODS;
     }
 
     private static void addRow(List<List<GuiButton>> rows, GuiButton... buttons) {
@@ -119,6 +121,7 @@ public class MainMenuLayout {
             case DEMO_RESET:
             case REALMS:
             case SETTINGS:
+            case OWN_MODS:
                 return true;
             default:
                 return false;
