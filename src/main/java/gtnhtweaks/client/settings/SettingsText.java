@@ -378,6 +378,13 @@ final class SettingsText {
             "Top left corner");
         set("seconds", "Time on screen", "How many seconds a line stays.");
         set("maxLines", "Most lines", "The most lines at once; the oldest go first.");
+        tab("itemSwitching", "Item Switching", "Smooth movement of the hand when changing the held item.");
+        set(
+            "enabled",
+            "Animate item switching",
+            "Lower and raise the held item smoothly, with a small turn of the hand.");
+        set("speed", "Speed", "In percent: 100 takes about half a second, 200 is twice as fast.");
+        set("strength", "Strength", "Sideways movement and turn, in percent. 0 restores the vanilla animation.");
         tab("inventory", "Inventory", "Little touches for the slots of every inventory.");
         set(
             "hoverBounce",

@@ -33,6 +33,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_OUTLINE = "blockOutline";
     public static final String CATEGORY_CHAT = "chat";
     public static final String CATEGORY_PLAYER = "player";
+    public static final String CATEGORY_ITEM_SWITCHING = "itemSwitching";
     public static final String CATEGORY_INVENTORY = "inventory";
     public static final String CATEGORY_BACKGROUND = "screenBackground";
     public static final String CATEGORY_SPLASHES = "waterSplashes";
@@ -95,6 +96,11 @@ public final class MinecraftModule extends TweakModule {
 
     /** The hand swings when the player throws an item, as in newer versions. */
     public static boolean dropSwing = true;
+
+    /** Smooth first-person equip motion; the inventory and server-side item selection stay unchanged. */
+    public static boolean itemSwitching = true;
+    public static int itemSwitchSpeed = 100;
+    public static int itemSwitchStrength = 100;
 
     /** The item of a slot squeezes and springs back when the mouse comes onto it. */
     public static boolean hoverBounce = true;
@@ -263,6 +269,26 @@ public final class MinecraftModule extends TweakModule {
             dropSwing,
             "Swing the hand when throwing an item, as in newer versions: with the drop key and out of any inventory. "
                 + "The other players see the swing too. Needs a restart");
+
+        itemSwitching = config.getBoolean(
+            "enabled",
+            CATEGORY_ITEM_SWITCHING,
+            itemSwitching,
+            "Smooth the first-person item switch and turn the hand as the next item is raised. Client side only");
+        itemSwitchSpeed = config.getInt(
+            "speed",
+            CATEGORY_ITEM_SWITCHING,
+            itemSwitchSpeed,
+            50,
+            200,
+            "Speed of the equip animation in percent. 100: about half a second for lowering and raising together");
+        itemSwitchStrength = config.getInt(
+            "strength",
+            CATEGORY_ITEM_SWITCHING,
+            itemSwitchStrength,
+            0,
+            200,
+            "Strength of the sideways motion and turn in percent. 0 restores the vanilla equip animation");
 
         hoverBounce = config.getBoolean(
             "hoverBounce",

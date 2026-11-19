@@ -65,6 +65,9 @@ public enum Mixins implements IMixins {
                 "minecraft.MixinChatLine_ChatHeads",
                 "minecraft.MixinGuiNewChat_ChatHeads",
                 "minecraft.MixinGuiChat_ChatHeads")),
+    MINECRAFT_ITEM_SWITCHING(new MixinBuilder("Smooth first-person item switching").setPhase(Phase.EARLY)
+        .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
+        .addClientMixins("minecraft.MixinItemRenderer_ItemSwitching")),
     MINECRAFT_DROP_SWING(new MixinBuilder("Swing of the hand when throwing an item").setPhase(Phase.EARLY)
         .setApplyIf(() -> MinecraftModule.INSTANCE.isEnabled() && MinecraftModule.dropSwing)
         .addClientMixins("minecraft.MixinEntityPlayer_DropSwing", "minecraft.MixinEntityClientPlayerMP_DropSwing")),
