@@ -12,6 +12,7 @@ public final class NEIModule extends TweakModule {
     private static final String CATEGORY_CRAFTING_TREE = "craftingTree";
     private static final String CATEGORY_RECIPES = "recipes";
 
+    public static boolean bookmarkQuantity = true;
     public static boolean preciseDrag = true;
     public static boolean smoothScroll = true;
     public static int scrollTimeMs = 120;
@@ -45,6 +46,12 @@ public final class NEIModule extends TweakModule {
             10,
             1000,
             "How long a wheel scroll or zoom takes, in milliseconds");
+
+        bookmarkQuantity = config.getBoolean(
+            "quantityEditor",
+            "bookmarks",
+            bookmarkQuantity,
+            "Ctrl + Z over a bookmarked item opens a focused quantity field. Enter applies, Escape cancels. Client only");
 
         fillOneCraftWithCtrl = config.getBoolean(
             "fillOneCraftWithCtrl",

@@ -490,7 +490,9 @@ final class SettingsText {
                 + "of GregTech 5.",
             Restart.TURN_ON);
 
-        module("nei", "NEI", "Smoother crafting tree and a recipe shortcut for NotEnoughItems.");
+        module("nei", "NEI", "Bookmark quantities, smoother crafting tree and a recipe shortcut for NotEnoughItems.");
+        tab("bookmarks", "Bookmarks", "Keyboard alternatives for bookmark quantities.");
+        set("quantityEditor", "Ctrl + Z edits quantity", "Hover a bookmark and press Ctrl + Z. Type a quantity, then Enter.");
         tab("craftingTree", "Crafting Tree", "Moving around the crafting tree of the bookmarks.");
         set(
             "preciseDrag",

@@ -146,6 +146,10 @@ public enum Mixins implements IMixins {
         .addClientMixins("gregtech.MixinBlockOverlayRenderer_GregTech")),
 
     // NEI module
+    NEI_BOOKMARK_QUANTITY(new MixinBuilder("Keyboard quantity editor for NEI bookmarks").setPhase(Phase.LATE)
+        .setApplyIf(NEIModule.INSTANCE::isEnabled)
+        .addRequiredMod(TargetMods.NEI)
+        .addClientMixins("nei.MixinGuiContainerManager_Quantity", "nei.MixinBookmarkGrid_Quantity")),
     NEI_CRAFTING_TREE_CAMERA(new MixinBuilder("Smooth movement in the NEI crafting tree").setPhase(Phase.LATE)
         .setApplyIf(() -> NEIModule.INSTANCE.isEnabled() && (NEIModule.preciseDrag || NEIModule.smoothScroll))
         .addRequiredMod(TargetMods.NEI)
