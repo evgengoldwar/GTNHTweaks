@@ -11,7 +11,7 @@ import gtnhtweaks.modules.minecraft.MinecraftModule;
 /** Client-only appearance lookup. Never writes to an inventory, item stack, or NBT. */
 public final class MaidArmor {
 
-    private static final ModelBiped[][] MODELS = new ModelBiped[2][4];
+    private static final MaidArmorModel[][] MODELS = new MaidArmorModel[2][4];
     private static final ResourceLocation[] TEXTURES = {
         new ResourceLocation("gtnhtweaks", "textures/model/maid/armor_combatmaid.png"),
         new ResourceLocation("gtnhtweaks", "textures/model/maid/armor_cosmeticmaid.png") };
@@ -33,7 +33,7 @@ public final class MaidArmor {
 
     public static ModelBiped model(int slot, ModelBiped player) {
         int style = MinecraftModule.maidStyle.ordinal();
-        ModelBiped model = MODELS[style][slot];
+        MaidArmorModel model = MODELS[style][slot];
         if (model == null) {
             model = style == 0 ? new ModelArmorCombatMaid(slot) : new ModelArmorCosmeticMaid(slot);
             MODELS[style][slot] = model;
@@ -46,6 +46,7 @@ public final class MaidArmor {
         model.heldItemLeft = player.heldItemLeft;
         model.heldItemRight = player.heldItemRight;
         model.aimedBow = player.aimedBow;
+        model.usePlayerPose(player);
         return model;
     }
 }
