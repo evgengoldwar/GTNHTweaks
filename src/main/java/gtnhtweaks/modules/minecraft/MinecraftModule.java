@@ -274,21 +274,21 @@ public final class MinecraftModule extends TweakModule {
             "enabled",
             CATEGORY_ITEM_SWITCHING,
             itemSwitching,
-            "Smooth the first-person item switch and turn the hand as the next item is raised. Client side only");
+            "Flick the wrist down and bring the next item back along a separate curved path. Client side only");
         itemSwitchSpeed = config.getInt(
             "speed",
             CATEGORY_ITEM_SWITCHING,
             itemSwitchSpeed,
             50,
             200,
-            "Speed of the equip animation in percent. 100: about half a second for lowering and raising together");
+            "Speed of the equip animation in percent. 100 keeps vanilla timing, about 0.3 seconds for a full switch");
         itemSwitchStrength = config.getInt(
             "strength",
             CATEGORY_ITEM_SWITCHING,
             itemSwitchStrength,
             0,
             200,
-            "Strength of the sideways motion and turn in percent. 0 restores the vanilla equip animation");
+            "Strength of the wrist turn and curved motion in percent. 0 restores the vanilla equip animation");
 
         hoverBounce = config.getBoolean(
             "hoverBounce",

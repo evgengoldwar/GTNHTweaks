@@ -378,13 +378,16 @@ final class SettingsText {
             "Top left corner");
         set("seconds", "Time on screen", "How many seconds a line stays.");
         set("maxLines", "Most lines", "The most lines at once; the oldest go first.");
-        tab("itemSwitching", "Item Switching", "Smooth movement of the hand when changing the held item.");
+        tab(
+            "itemSwitching",
+            "Item Switching",
+            "A quick change of grip: the wrist turns down, then the next item sweeps back into view.");
         set(
             "enabled",
             "Animate item switching",
-            "Lower and raise the held item smoothly, with a small turn of the hand.");
-        set("speed", "Speed", "In percent: 100 takes about half a second, 200 is twice as fast.");
-        set("strength", "Strength", "Sideways movement and turn, in percent. 0 restores the vanilla animation.");
+            "Flick the wrist down and return along a different arc, with a short settling motion.");
+        set("speed", "Speed", "In percent: 100 keeps vanilla timing (about 0.3 seconds); higher is faster.");
+        set("strength", "Strength", "Wrist turn and curved motion, in percent. 0 restores the vanilla animation.");
         tab("inventory", "Inventory", "Little touches for the slots of every inventory.");
         set(
             "hoverBounce",
