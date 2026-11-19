@@ -409,6 +409,13 @@ final class SettingsText {
             "Bar before server messages",
             "A bar before the messages not written by a player, as in newer versions.",
             Restart.ALWAYS);
+        tab(
+            "maidArmor",
+            "Maid Armor",
+            "Extra Botany's maid outfits on armor renamed Maid. A client-side appearance for all visible players.");
+        set("enabled", "Maid armor by name", "Rename any armor piece Maid to change its worn appearance for that slot.");
+        set("style", "Outfit", "The original model and texture from Extra Botany. Armor stats stay unchanged.");
+        values("COMBAT", "Pleiades Combat Maid", "COSMETIC", "Starry Idol (Cosmetic Maid)");
         tab("player", "Player", "How your character moves.");
         set(
             "dropSwing",

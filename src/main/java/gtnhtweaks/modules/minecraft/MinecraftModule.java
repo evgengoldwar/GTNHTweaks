@@ -33,6 +33,7 @@ public final class MinecraftModule extends TweakModule {
     public static final String CATEGORY_OUTLINE = "blockOutline";
     public static final String CATEGORY_CHAT = "chat";
     public static final String CATEGORY_PLAYER = "player";
+    public static final String CATEGORY_MAID_ARMOR = "maidArmor";
     public static final String CATEGORY_ITEM_SWITCHING = "itemSwitching";
     public static final String CATEGORY_INVENTORY = "inventory";
     public static final String CATEGORY_BACKGROUND = "screenBackground";
@@ -96,6 +97,15 @@ public final class MinecraftModule extends TweakModule {
 
     /** The hand swings when the player throws an item, as in newer versions. */
     public static boolean dropSwing = true;
+
+    public enum MaidStyle {
+        COMBAT,
+        COSMETIC
+    }
+
+    /** Only the player renderer uses this; armor items and their properties never change. */
+    public static boolean maidArmor = true;
+    public static MaidStyle maidStyle = MaidStyle.COMBAT;
 
     /** Smooth first-person equip motion; the inventory and server-side item selection stay unchanged. */
     public static boolean itemSwitching = true;
@@ -269,6 +279,26 @@ public final class MinecraftModule extends TweakModule {
             dropSwing,
             "Swing the hand when throwing an item, as in newer versions: with the drop key and out of any inventory. "
                 + "The other players see the swing too. Needs a restart");
+
+        maidArmor = config.getBoolean(
+            "enabled",
+            CATEGORY_MAID_ARMOR,
+            maidArmor,
+            "Draw each armor piece renamed Maid as the matching part of Extra Botany's maid outfit. Client side only");
+        try {
+            maidStyle = MaidStyle.valueOf(
+                config
+                    .getString(
+                        "style",
+                        CATEGORY_MAID_ARMOR,
+                        MaidStyle.COMBAT.name(),
+                        "COMBAT: Pleiades Combat Maid. COSMETIC: Starry Idol. Only changes the worn model",
+                        new String[] { "COMBAT", "COSMETIC" })
+                    .trim()
+                    .toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            maidStyle = MaidStyle.COMBAT;
+        }
 
         itemSwitching = config.getBoolean(
             "enabled",

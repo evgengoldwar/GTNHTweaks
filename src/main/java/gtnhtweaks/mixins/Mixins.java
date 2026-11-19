@@ -65,6 +65,9 @@ public enum Mixins implements IMixins {
                 "minecraft.MixinChatLine_ChatHeads",
                 "minecraft.MixinGuiNewChat_ChatHeads",
                 "minecraft.MixinGuiChat_ChatHeads")),
+    MINECRAFT_MAID_ARMOR(new MixinBuilder("Maid armor appearance by item name").setPhase(Phase.EARLY)
+        .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
+        .addClientMixins("minecraft.MixinRenderPlayer_MaidArmor")),
     MINECRAFT_ITEM_SWITCHING(new MixinBuilder("Smooth first-person item switching").setPhase(Phase.EARLY)
         .setApplyIf(MinecraftModule.INSTANCE::isEnabled)
         .addClientMixins("minecraft.MixinItemRenderer_ItemSwitching")),
