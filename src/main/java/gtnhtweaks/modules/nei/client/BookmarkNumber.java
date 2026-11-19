@@ -33,7 +33,9 @@ public final class BookmarkNumber {
     }
 
     public static int rawCursor(String text, int cursor) {
-        return text.substring(0, cursor).replace(",", "").length();
+        return text.substring(0, cursor)
+            .replace(",", "")
+            .length();
     }
 
     public static int formattedCursor(String text, int rawCursor) {

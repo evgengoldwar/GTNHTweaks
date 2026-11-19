@@ -39,8 +39,11 @@ public final class BookmarkQuantityEditor {
 
     public boolean key(GuiContainer gui, char character, int key) {
         if (!active(gui)) {
-            if (!NEIModule.bookmarkQuantity || key != Keyboard.KEY_Z || !GuiScreen.isCtrlKeyDown()
-                || Keyboard.isRepeatEvent() || NEIClientConfig.isHidden() || !NEIClientConfig.isEnabled()
+            if (!NEIModule.bookmarkQuantity || key != Keyboard.KEY_Z
+                || !GuiScreen.isCtrlKeyDown()
+                || Keyboard.isRepeatEvent()
+                || NEIClientConfig.isHidden()
+                || !NEIClientConfig.isEnabled()
                 || NEIClientConfig.isBookmarkPanelHidden()) return false;
             panel = LayoutManager.bookmarkPanel;
             if (panel == null || panel.inEditingState()) return false;
@@ -55,7 +58,8 @@ public final class BookmarkQuantityEditor {
             target = grid.getCalculatedItem(index);
             source = grid.getBookmarkItem(index);
             if (target == null || source == null) return false;
-            title = slot.getItemStack().getDisplayName();
+            title = slot.getItemStack()
+                .getDisplayName();
             width = Math.min(280, gui.width - 16);
             x = (gui.width - width) / 2;
             y = (gui.height - 116) / 2;
@@ -109,7 +113,8 @@ public final class BookmarkQuantityEditor {
     private void apply() {
         try {
             if (panel != LayoutManager.bookmarkPanel || panel.getGrid() != grid
-                || grid.getBookmarkItem(index) != source || grid.getCalculatedItem(index) == null) {
+                || grid.getBookmarkItem(index) != source
+                || grid.getCalculatedItem(index) == null) {
                 throw new IllegalArgumentException("Bookmark changed; close and open this dialog again");
             }
             target = grid.getCalculatedItem(index);
@@ -141,15 +146,20 @@ public final class BookmarkQuantityEditor {
         UI.rect(0, 0, gui.width, gui.height, 0x88000000);
         UI.panel(x, y, width, 116);
         UI.text("Bookmark quantity", x + 12, y + 9, UI.theme().text);
-        UI.text(UI.font().trimStringToWidth(title, width - 24), x + 12, y + 22, UI.theme().textDim);
+        UI.text(
+            UI.font()
+                .trimStringToWidth(title, width - 24),
+            x + 12,
+            y + 22,
+            UI.theme().textDim);
         if (System.currentTimeMillis() - lastTick >= 50) {
             field.updateCursorCounter();
             lastTick = System.currentTimeMillis();
         }
         field.drawTextBox();
         String message = error.isEmpty() ? "Enter: apply    Esc: cancel" : error;
-        Minecraft.getMinecraft().fontRenderer.drawSplitString(message, x + 12, y + 61, width - 24,
-            error.isEmpty() ? UI.theme().textDim : 0xFFFF7777);
+        Minecraft.getMinecraft().fontRenderer
+            .drawSplitString(message, x + 12, y + 61, width - 24, error.isEmpty() ? UI.theme().textDim : 0xFFFF7777);
         UI.button(x + 12, y + 90, 80, 18, "Cancel", mouseX, mouseY, true);
         UI.button(x + width - 92, y + 90, 80, 18, "Apply", mouseX, mouseY, true);
         GL11.glPopMatrix();

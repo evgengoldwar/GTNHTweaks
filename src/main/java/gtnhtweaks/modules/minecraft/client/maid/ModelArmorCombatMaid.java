@@ -209,8 +209,8 @@ public class ModelArmorCombatMaid extends MaidArmorModel {
     }
 
     @Override
-    public void render(Entity entity, float limbSwing, float limbSwingAmount, float ageInTicks,
-            float netHeadYaw, float headPitch, float scale) {
+    public void render(Entity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw,
+        float headPitch, float scale) {
 
         helmAnchor.showModel = slot == 0;
         bodyAnchor.showModel = slot == 1;

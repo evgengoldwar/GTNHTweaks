@@ -8,6 +8,7 @@ import net.minecraft.entity.Entity;
  * Source and revision are recorded in THIRD_PARTY.md.
  */
 public class ModelArmorCosmeticMaid extends MaidArmorModel {
+
     private final ModelRenderer helmAnchor;
     private final ModelRenderer bodyAnchor;
     private final ModelRenderer body;
@@ -242,8 +243,8 @@ public class ModelArmorCosmeticMaid extends MaidArmorModel {
     }
 
     @Override
-    public void render(Entity entity, float limbSwing, float limbSwingAmount, float ageInTicks,
-            float netHeadYaw, float headPitch, float scale) {
+    public void render(Entity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw,
+        float headPitch, float scale) {
 
         helmAnchor.showModel = slot == 0;
         bodyAnchor.showModel = slot == 1;

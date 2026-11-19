@@ -6,12 +6,9 @@ public final class ItemSwitchMotion {
     private static final float CHANGE = 0.4F;
     // Phase, camera-space translation, then wrist pitch, yaw and roll in degrees.
     // Both items meet below the screen at CHANGE. The incoming item sweeps left and briefly overshoots its rest pose.
-    private static final float[][] KEYS = {
-        { 0F, 0F, 0F, 0F, 0F, 0F, 0F },
-        { 0.18F, 0.10F, -0.12F, 0.04F, 22F, -10F, -20F },
-        { CHANGE, 0.20F, -1.65F, 0.10F, 95F, -35F, -80F },
-        { 0.58F, -0.42F, -1.25F, 0.06F, 55F, 20F, -65F },
-        { 0.80F, -0.12F, 0.06F, -0.03F, -12F, 8F, 12F },
+    private static final float[][] KEYS = { { 0F, 0F, 0F, 0F, 0F, 0F, 0F },
+        { 0.18F, 0.10F, -0.12F, 0.04F, 22F, -10F, -20F }, { CHANGE, 0.20F, -1.65F, 0.10F, 95F, -35F, -80F },
+        { 0.58F, -0.42F, -1.25F, 0.06F, 55F, 20F, -65F }, { 0.80F, -0.12F, 0.06F, -0.03F, -12F, 8F, 12F },
         { 1F, 0F, 0F, 0F, 0F, 0F, 0F } };
 
     /** Reused by each ItemRenderer, including the offhand renderer. */

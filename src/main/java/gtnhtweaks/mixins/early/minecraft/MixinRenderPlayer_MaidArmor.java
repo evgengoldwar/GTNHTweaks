@@ -38,7 +38,8 @@ public abstract class MixinRenderPlayer_MaidArmor extends RendererLivingEntity {
         if (slot < 0 || slot > 3) return;
         ItemStack stack = player.inventory.armorItemInSlot(3 - slot);
         if (!MaidArmor.matches(stack, slot)) return;
-        Minecraft.getMinecraft().getTextureManager()
+        Minecraft.getMinecraft()
+            .getTextureManager()
             .bindTexture(MaidArmor.texture());
         setRenderPassModel(MaidArmor.model(slot, modelBipedMain));
         GL11.glColor4f(1F, 1F, 1F, 1F);

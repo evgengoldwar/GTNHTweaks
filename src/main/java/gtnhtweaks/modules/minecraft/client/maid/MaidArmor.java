@@ -24,7 +24,9 @@ public final class MaidArmor {
             && stack != null
             && stack.getItem() instanceof ItemArmor
             && stack.hasDisplayName()
-            && "Maid".equalsIgnoreCase(EnumChatFormatting.getTextWithoutFormattingCodes(stack.getDisplayName()).trim());
+            && "Maid".equalsIgnoreCase(
+                EnumChatFormatting.getTextWithoutFormattingCodes(stack.getDisplayName())
+                    .trim());
     }
 
     public static ResourceLocation texture() {

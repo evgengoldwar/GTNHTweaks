@@ -32,10 +32,10 @@ public final class BookmarkAmountChange {
         if (item.factor <= 0) throw new IllegalArgumentException("This bookmark has no adjustable quantity");
         try {
             long amount = Math.multiplyExact(count, Math.max(1, item.fluidCellAmount));
-            long multiplier = FROM_AMOUNT == null
-                ? BigInteger.valueOf(amount).add(BigInteger.valueOf(item.factor - 1))
-                    .divide(BigInteger.valueOf(item.factor)).longValueExact()
-                : (Long) FROM_AMOUNT.invoke(item, amount);
+            long multiplier = FROM_AMOUNT == null ? BigInteger.valueOf(amount)
+                .add(BigInteger.valueOf(item.factor - 1))
+                .divide(BigInteger.valueOf(item.factor))
+                .longValueExact() : (Long) FROM_AMOUNT.invoke(item, amount);
             if (multiplier < 0 || multiplier > Integer.MAX_VALUE) {
                 throw new IllegalArgumentException("Quantity exceeds NEI's multiplier limit");
             }
@@ -51,7 +51,8 @@ public final class BookmarkAmountChange {
     }
 
     public static void apply(BookmarkGrid grid, int index, long multiplier) {
-        long delta = multiplier - grid.getCalculatedItem(index).getMultiplier();
+        long delta = multiplier - grid.getCalculatedItem(index)
+            .getMultiplier();
         if (delta == 0) return;
         ACTIVE.set(new BookmarkAmountChange(grid, delta));
         try {

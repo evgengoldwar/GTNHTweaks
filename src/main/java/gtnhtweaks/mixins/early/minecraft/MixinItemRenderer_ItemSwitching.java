@@ -55,11 +55,7 @@ public class MixinItemRenderer_ItemSwitching {
     }
 
     /** Local 2 is the interpolated equip progress, immediately after the partialTicks argument. */
-    @ModifyVariable(
-        method = "renderItemInFirstPerson",
-        at = @At(value = "STORE", ordinal = 0),
-        index = 2,
-        require = 1)
+    @ModifyVariable(method = "renderItemInFirstPerson", at = @At(value = "STORE", ordinal = 0), index = 2, require = 1)
     private float gtnhtweaks$replaceEquip(float progress, float partialTicks) {
         gtnhtweaks$switchActive = false;
         if (!gtnhtweaks$animateSwitch()) return progress;

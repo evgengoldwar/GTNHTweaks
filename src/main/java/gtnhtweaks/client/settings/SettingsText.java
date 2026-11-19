@@ -413,7 +413,10 @@ final class SettingsText {
             "maidArmor",
             "Maid Armor",
             "Extra Botany's maid outfits on armor renamed Maid. A client-side appearance for all visible players.");
-        set("enabled", "Maid armor by name", "Rename any armor piece Maid to change its worn appearance for that slot.");
+        set(
+            "enabled",
+            "Maid armor by name",
+            "Rename any armor piece Maid to change its worn appearance for that slot.");
         set("style", "Outfit", "The original model and texture from Extra Botany. Armor stats stay unchanged.");
         values("COMBAT", "Pleiades Combat Maid", "COSMETIC", "Starry Idol (Cosmetic Maid)");
         tab("player", "Player", "How your character moves.");
@@ -492,7 +495,10 @@ final class SettingsText {
 
         module("nei", "NEI", "Bookmark quantities, smoother crafting tree and a recipe shortcut for NotEnoughItems.");
         tab("bookmarks", "Bookmarks", "Keyboard alternatives for bookmark quantities.");
-        set("quantityEditor", "Ctrl + Z edits quantity", "Hover a bookmark and press Ctrl + Z. Type a quantity, then Enter.");
+        set(
+            "quantityEditor",
+            "Ctrl + Z edits quantity",
+            "Hover a bookmark and press Ctrl + Z. Type a quantity, then Enter.");
         tab("craftingTree", "Crafting Tree", "Moving around the crafting tree of the bookmarks.");
         set(
             "preciseDrag",
