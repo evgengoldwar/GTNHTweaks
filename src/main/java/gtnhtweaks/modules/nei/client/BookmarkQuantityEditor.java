@@ -135,9 +135,9 @@ public final class BookmarkQuantityEditor {
 
     public void draw(GuiContainer gui, int mouseX, int mouseY) {
         if (!active(gui)) return;
-        // GuiContainerManager has restored the container-relative matrix before this TAIL hook.
+        // The hook runs while NEI's screen-space translation is still active (at z = 200).
         GL11.glPushMatrix();
-        GL11.glTranslatef(-gui.guiLeft, -gui.guiTop, 400F);
+        GL11.glTranslatef(0F, 0F, 200F);
         UI.rect(0, 0, gui.width, gui.height, 0x88000000);
         UI.panel(x, y, width, 116);
         UI.text("Bookmark quantity", x + 12, y + 9, UI.theme().text);

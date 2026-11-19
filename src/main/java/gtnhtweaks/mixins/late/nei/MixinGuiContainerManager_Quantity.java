@@ -63,7 +63,11 @@ public class MixinGuiContainerManager_Quantity {
         if (gtnhtweaks$quantity.active(window)) ci.cancel();
     }
 
-    @Inject(method = "renderObjects(II)V", at = @At("TAIL"), require = 1)
+    // Draw before NEI restores the container-relative matrix; no access to protected GUI offsets is needed.
+    @Inject(
+        method = "renderObjects(II)V",
+        at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glTranslatef(FFF)V", ordinal = 1),
+        require = 1)
     private void gtnhtweaks$draw(int x, int y, CallbackInfo ci) {
         gtnhtweaks$quantity.draw(window, x, y);
     }
