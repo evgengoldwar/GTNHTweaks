@@ -5,6 +5,7 @@ import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.renderer.entity.RenderPlayer;
+import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import net.minecraft.item.ItemStack;
 
 import org.lwjgl.opengl.GL11;
@@ -18,13 +19,14 @@ import gtnhtweaks.modules.minecraft.client.maid.MaidArmor;
 
 /** Replaces one worn armor render pass; the real stack and its gameplay hooks are never replaced. */
 @Mixin(RenderPlayer.class)
-public abstract class MixinRenderPlayer_MaidArmor {
+public abstract class MixinRenderPlayer_MaidArmor extends RendererLivingEntity {
 
     @Shadow
     public ModelBiped modelBipedMain;
 
-    @Shadow
-    protected abstract void setRenderPassModel(ModelBase model);
+    protected MixinRenderPlayer_MaidArmor(ModelBase model, float shadowSize) {
+        super(model, shadowSize);
+    }
 
     @Inject(
         method = "shouldRenderPass(Lnet/minecraft/client/entity/AbstractClientPlayer;IF)I",
